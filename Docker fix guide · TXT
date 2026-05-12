@@ -1,0 +1,510 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║              🔧 دليل حل مشكلة مسار الملفات في Docker/Kubernetes           ║
+║                                                                            ║
+║                    PATH MOUNTING ERROR FIX GUIDE                          ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+═══════════════════════════════════════════════════════════════════════════════
+🔍 تحليل المشكلة
+═══════════════════════════════════════════════════════════════════════════════
+
+الخطأ:
+  ❌ cat: /mount/admin/install_path: No such file or directory
+
+المعنى:
+  • الخادم بدأ يعمل بنجاح ✅
+  • لكن هناك أمر يحاول قراءة ملف غير موجود ❌
+  • المسار /mount/admin/install_path لم يتم ربطه بشكل صحيح
+
+الموقع المحتمل للمشكلة:
+  • docker-compose.yml
+  • Dockerfile
+  • entrypoint.sh أو startup.sh
+  • متغيرات البيئة
+
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ الحل السريع (5 دقائق)
+═══════════════════════════════════════════════════════════════════════════════
+
+الخطوة 1: افحص ملف entrypoint.sh
+─────────────────────────────────
+
+# ابحث عن السطر الذي يحتوي على cat
+$ grep -n "cat" Dockerfile
+$ grep -n "cat" entrypoint.sh
+
+إذا وجدت شيء مثل:
+  cat /mount/admin/install_path
+
+
+الخطوة 2: أصلح السطر بإضافة شرط
+─────────────────────────────────
+
+❌ الطريقة الخاطئة:
+cat /mount/admin/install_path
+
+✅ الطريقة الصحيحة:
+if [ -f /mount/admin/install_path ]; then
+    cat /mount/admin/install_path
+else
+    echo "File not found: /mount/admin/install_path"
+fi
+
+
+الخطوة 3: أعد بناء الصورة
+─────────────────────────
+
+$ docker-compose down
+$ docker-compose build --no-cache
+$ docker-compose up -d
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 حل شامل حسب البيئة
+═══════════════════════════════════════════════════════════════════════════════
+
+🐳 الحل 1: Docker Compose
+───────────────────────────
+
+المشكلة في docker-compose.yml:
+
+❌ الكود الخاطئ:
+version: '3'
+services:
+  app:
+    build: .
+    volumes:
+      - /mount/admin:/app/mount  # خطأ! هذا المسار غير موجود
+
+✅ الكود الصحيح:
+version: '3'
+services:
+  app:
+    build: .
+    volumes:
+      # استخدم مسار نسبي أو فعلي
+      - ./config:/app/config
+      - ./data:/app/data
+      # أو
+      - ${HOME}/admin:/app/admin
+    environment:
+      - APP_CONFIG_PATH=/app/config
+      - INSTALL_PATH=/app/data/install_path
+
+# الملف: Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install
+
+# أنشئ المجلدات المطلوبة
+RUN mkdir -p /app/config /app/data
+
+# أصلح الـ entrypoint
+COPY entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+
+🔷 الحل 2: Kubernetes
+──────────────────────
+
+metadata:
+  name: app-deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: app:latest
+        volumeMounts:
+        - name: admin-config
+          mountPath: /mount/admin
+      volumes:
+      - name: admin-config
+        configMap:
+          name: admin-config
+        # أو استخدم persistentVolumeClaim
+        # persistentVolumeClaim:
+        #   claimName: admin-pvc
+
+
+🔸 الحل 3: Docker محلي
+────────────────────────
+
+$ docker run -it \
+  -v $(pwd)/config:/mount/admin \
+  -e INSTALL_PATH=/mount/admin \
+  my-app:latest
+
+أو:
+
+$ docker run -it \
+  --mount type=bind,source=$(pwd)/config,target=/mount/admin \
+  my-app:latest
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📄 ملفات مثالية للإصلاح
+═══════════════════════════════════════════════════════════════════════════════
+
+الملف: entrypoint.sh (مُصحح)
+─────────────────────────────
+
+#!/bin/bash
+
+set -e
+
+# معالجة الأخطاء
+handle_error() {
+    echo "❌ خطأ: $1"
+    exit 1
+}
+
+# التحقق من المسارات المطلوبة
+check_paths() {
+    local paths=("$@")
+    for path in "${paths[@]}"; do
+        if [ ! -e "$path" ]; then
+            echo "⚠️  تحذير: المسار غير موجود: $path"
+            # إنشاء المجلد إذا كان مجلداً
+            if [[ "$path" == */ ]]; then
+                mkdir -p "$path"
+                echo "✓ تم إنشاء المجلد: $path"
+            fi
+        fi
+    done
+}
+
+# تحميل الإعدادات
+load_config() {
+    local config_file="${1:-/mount/admin/install_path}"
+    
+    if [ -f "$config_file" ]; then
+        echo "✓ تحميل الإعدادات من: $config_file"
+        source "$config_file"
+    else
+        echo "⚠️  لم يتم العثور على ملف الإعدادات: $config_file"
+        echo "📝 سيتم استخدام الإعدادات الافتراضية"
+        
+        # استخدم المتغيرات البيئية أو القيم الافتراضية
+        export APP_PORT=${APP_PORT:-8000}
+        export APP_HOST=${APP_HOST:-0.0.0.0}
+        export DATABASE_URL=${DATABASE_URL:-""}
+    fi
+}
+
+# التحقق من المسارات المطلوبة
+check_paths "/mount/admin/" "/app/data/"
+
+# تحميل الإعدادات
+load_config
+
+# عرض معلومات البدء
+echo "════════════════════════════════════════════════"
+echo "🚀 بدء التطبيق"
+echo "════════════════════════════════════════════════"
+echo "🔧 البيئة: ${APP_ENV:-development}"
+echo "🌐 الخادم: ${APP_HOST}:${APP_PORT}"
+echo "════════════════════════════════════════════════"
+
+# بدء التطبيق
+exec "$@"
+
+
+الملف: docker-compose.yml (مُصحح)
+──────────────────────────────────
+
+version: '3.8'
+
+services:
+  # ✅ الخادم الخلفي
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: stock-analyzer-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      # استخدم مسارات نسبية
+      - ./server:/app/server
+      - ./config:/app/config
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - DATABASE_URL=postgresql://user:pass@db:5432/stock_analyzer
+      - REDIS_URL=redis://redis:6379
+      - INSTALL_PATH=/app/config
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ✅ العميل الأمامي
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: stock-analyzer-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://backend:5000/api
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ✅ قاعدة البيانات
+  db:
+    image: postgres:15-alpine
+    container_name: stock-analyzer-db
+    environment:
+      - POSTGRES_USER=stock_user
+      - POSTGRES_PASSWORD=secure_password
+      - POSTGRES_DB=stock_analyzer
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ✅ Redis
+  redis:
+    image: redis:7-alpine
+    container_name: stock-analyzer-redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
+
+
+الملف: Dockerfile (مُصحح للخادم)
+───────────────────────────────────
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+# نسخ ملفات المشروع
+COPY package*.json ./
+COPY . .
+
+# تثبيت المكتبات
+RUN npm ci --only=production
+
+# إنشاء المجلدات المطلوبة
+RUN mkdir -p /app/config /app/data /mount/admin
+
+# نسخ ملف البدء
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# منافذ التطبيق
+EXPOSE 5000
+
+# بدء التطبيق
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["node", "index.js"]
+
+
+═══════════════════════════════════════════════════════════════════════════════
+🔐 متغيرات البيئة الآمنة
+═══════════════════════════════════════════════════════════════════════════════
+
+الملف: .env (لا تضعه في Git!)
+──────────────────────────────
+
+# البيئة
+NODE_ENV=production
+
+# المسارات
+INSTALL_PATH=/app/config
+CONFIG_PATH=/app/config
+DATA_PATH=/app/data
+
+# قاعدة البيانات
+DATABASE_URL=postgresql://stock_user:secure_password@db:5432/stock_analyzer
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# المصادقة
+JWT_SECRET=your-secret-key-here
+JWT_EXPIRATION=24h
+
+# البريد الإلكتروني
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
+# APIs الخارجية
+ALPHA_VANTAGE_KEY=your-api-key
+IEX_CLOUD_KEY=your-api-key
+
+# الخادم
+HOST=0.0.0.0
+PORT=5000
+
+
+الملف: .env.example (يمكن وضعه في Git)
+────────────────────────────────────────
+
+# البيئة
+NODE_ENV=development
+
+# المسارات
+INSTALL_PATH=/app/config
+CONFIG_PATH=/app/config
+DATA_PATH=/app/data
+
+# قاعدة البيانات
+DATABASE_URL=postgresql://user:password@localhost:5432/stock_analyzer
+
+# Redis
+REDIS_URL=redis://localhost:6379/0
+
+# المصادقة
+JWT_SECRET=change-me-in-production
+JWT_EXPIRATION=24h
+
+# البريد الإلكتروني
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@example.com
+SMTP_PASS=your-app-password
+
+# APIs الخارجية
+ALPHA_VANTAGE_KEY=get-from-website
+IEX_CLOUD_KEY=get-from-website
+
+# الخادم
+HOST=0.0.0.0
+PORT=5000
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 قائمة التحقق قبل النشر
+═══════════════════════════════════════════════════════════════════════════════
+
+قبل نشر التطبيق في الإنتاج:
+
+☐ 1. تحقق من جميع المسارات في docker-compose.yml
+☐ 2. أنشئ مجلدات البيانات والإعدادات محلياً
+☐ 3. اختبر التطبيق محلياً مع Docker
+☐ 4. تأكد من متغيرات البيئة
+☐ 5. تحقق من أذونات الملفات
+☐ 6. اختبر مع البيانات الفعلية
+☐ 7. اختبر الاتصالات (DB, Redis, APIs)
+☐ 8. جهز ملفات النسخ الاحتياطية
+☐ 9. جهز خطة الاسترجاع
+☐ 10. وثق عملية النشر
+
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 خطوات النشر النهائية
+═══════════════════════════════════════════════════════════════════════════════
+
+الخطوة 1: تنظيف البيئة
+──────────────────────
+$ docker-compose down -v
+$ docker system prune -a
+$ docker volume prune
+
+
+الخطوة 2: بناء الصور الجديدة
+──────────────────────────────
+$ docker-compose build --no-cache
+
+
+الخطوة 3: التحقق من البيانات
+─────────────────────────────
+$ mkdir -p ./config ./data
+$ chmod 777 ./config ./data
+
+
+الخطوة 4: البدء الآمن
+───────────────────
+$ docker-compose up -d --wait
+
+
+الخطوة 5: التحقق من الصحة
+──────────────────────────
+$ docker-compose ps
+$ docker-compose logs backend
+$ curl http://localhost:5000/health
+
+
+الخطوة 6: اختبارات الدخان
+──────────────────────────
+$ curl http://localhost:3000/
+$ curl http://localhost:5000/api/stocks
+
+
+═══════════════════════════════════════════════════════════════════════════════
+🔧 أدوات مفيدة للتصحيح
+═══════════════════════════════════════════════════════════════════════════════
+
+# عرض السجلات
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f db
+
+# دخول الحاوية
+docker-compose exec backend sh
+docker-compose exec backend npm test
+
+# فحص الأداء
+docker stats
+
+# تنظيف الموارد
+docker-compose down -v --remove-orphans
+
+# إعادة بناء خدمة واحدة
+docker-compose up -d --build backend
+
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ النتيجة المتوقعة بعد الحل
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ التطبيق يبدأ بدون أخطاء
+✅ جميع المخدمات متصلة بشكل صحيح
+✅ قاعدة البيانات تعمل
+✅ Redis متاح
+✅ الـ Frontend متاح على http://localhost:3000
+✅ الـ Backend متاح على http://localhost:5000
+✅ جميع المسارات محققة بشكل صحيح
+
+
+═══════════════════════════════════════════════════════════════════════════════
+Generated: 2025-01-10
+Status: DOCKER/KUBERNETES FIX GUIDE ✅
+═══════════════════════════════════════════════════════════════════════════════
