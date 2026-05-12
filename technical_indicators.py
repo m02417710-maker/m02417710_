@@ -7,126 +7,122 @@ import plotly.express as px
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 
-# 1. إعدادات المنصة الشاملة
-st.set_page_config(page_title="EGX Ultimate Terminal 2026", layout="wide")
-st_autorefresh(interval=180 * 1000, key="mega_terminal_refresh")
+# 1. إعدادات المنصة المتكاملة
+st.set_page_config(page_title="EGX Global Terminal 2026", layout="wide")
+st_autorefresh(interval=180 * 1000, key="mega_terminal_final")
 
-# ============================================================
-# 2. قاعدة بيانات الأسهم والمؤشرات (المسح الشامل)
-# ============================================================
-EGX_30_TICKERS = [
+# قائمة الأسهم القيادية (EGX30)
+EGX_TICKERS = [
     "COMI", "FWRY", "TMGH", "ABUK", "SWDY", "EKHO", "ETEL", "ORAS", "ESRS", "JUFO",
-    "PHDC", "AMOC", "HELI", "MNHD", "MFOT", "SKPC", "EFIC", "CCAP", "CIEB", "BTEL",
-    "HRHO", "ORWE", "ISMA", "KABO", "RAMEDA", "CLHO", "AUTO", "MTIE", "BINV", "DSCW"
+    "PHDC", "AMOC", "HELI", "MNHD", "MFOT", "SKPC", "EFIC", "CCAP", "CIEB"
 ]
 
 # ============================================================
-# 3. المحرك التحليلي الخارق
+# 2. المحرك التحليلي (فني + مالي + توزيعات)
 # ============================================================
 @st.cache_data(ttl=600)
-def fetch_full_market():
-    market_data = []
-    for t in EGX_30_TICKERS:
+def fetch_market_intelligence():
+    data_list = []
+    for t in EGX_TICKERS:
         try:
             symbol = f"{t}.CA"
-            s = yf.Ticker(symbol)
-            hist = s.history(period="5d")
+            stock = yf.Ticker(symbol)
+            hist = stock.history(period="1y")
             if hist.empty: continue
             
-            info = s.info
+            # تنظيف البيانات
+            if isinstance(hist.columns, pd.MultiIndex):
+                hist.columns = hist.columns.get_level_values(0)
+            
+            info = stock.info
             cp = hist['Close'].iloc[-1]
-            prev_cp = hist['Close'].iloc[-2]
-            chg = ((cp / prev_cp) - 1) * 100
+            chg = ((cp / hist['Close'].iloc[-2]) - 1) * 100
             
-            # جلب التوزيعات والأخبار بشكل مبسط
-            div = info.get('dividendYield', 0) * 100
+            # حساب RSI
+            delta = hist['Close'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+            rs = gain / (loss.replace(0, np.nan))
+            rsi = 100 - (100 / (1 + rs.fillna(0)))
+            
+            # حساب جودة الاستثمار
+            score = 0
             pe = info.get('trailingPE', 0)
+            div = info.get('dividendYield', 0)
+            if 0 < pe < 15: score += 5
+            if div > 0.05: score += 5
             
-            market_data.append({
-                "الرمز": t,
-                "السعر": round(cp, 2),
-                "التغير%": round(chg, 2),
-                "التوزيعات%": f"{div:.2f}%",
-                "P/E": round(pe, 1) if pe else "N/A",
-                "الحجم": info.get('volume', 0),
-                "القيمة السوقية": info.get('marketCap', 0),
-                "القرار": "شراء 🟢" if chg < -2 else "بيع 🔴" if chg > 3 else "مراقبة 🟡"
+            data_list.append({
+                "الرمز": t, "السعر": round(cp, 2), "التغير%": round(chg, 2),
+                "RSI": round(rsi.iloc[-1], 1), "P/E": round(pe, 1) if pe else "N/A",
+                "توزيعات": f"{div*100:.2f}%", "الجودة": f"{score}/10",
+                "القرار": "دخول 🟢" if rsi.iloc[-1] < 35 else "خروج 🔴" if rsi.iloc[-1] > 65 else "مراقبة 🟡",
+                "history": hist, "info": info
             })
         except: continue
-    return pd.DataFrame(market_data)
+    return data_list
 
 # ============================================================
-# 4. واجهة المستخدم المتعددة الأقسام (Tabs)
+# 3. الواجهة الرسومية وتوزيع الأقسام
 # ============================================================
+all_intel = fetch_market_intelligence()
+df_market = pd.DataFrame(all_intel).drop(columns=['history', 'info'])
 
-st.title("🏛️ منصة البورصة المصرية المتكاملة (EGX Terminal)")
+st.title("🏛️ منصة البورصة المصرية الشاملة | EGX Ultimate")
 
-tab1, tab2, tab3, tab4 = st.tabs(["📈 رادار السوق", "🗞️ الأخبار والنبض", "📊 تحليل المؤشرات", "🛡️ محفظتي الذكية"])
+tab1, tab2, tab3 = st.tabs(["📈 رادار السوق", "🔍 فحص السهم", "🛡️ إدارة المحفظة"])
 
-# --- TAB 1: رادار السوق الشامل ---
+# --- التبويب الأول: الرادار الشامل ---
 with tab1:
-    col_m1, col_m2 = st.columns([3, 1])
-    df_m = fetch_full_market()
-    
-    with col_m1:
-        st.subheader("🌡️ خريطة سيولة السوق (Heatmap)")
-        fig_h = px.treemap(df_m, path=['الرمز'], values='السعر', color='التغير%',
-                          color_continuous_scale='RdYlGn', range_color=[-4, 4])
-        st.plotly_chart(fig_h, use_container_width=True)
-    
-    with col_m2:
-        st.subheader("🔝 الأفضل أداءً")
-        st.dataframe(df_m.sort_values('التغير%', ascending=False)[['الرمز', 'التغير%']].head(5))
+    col_h1, col_h2 = st.columns([2, 1])
+    with col_h1:
+        st.subheader("🌡️ خريطة سيولة السوق")
+        fig_heat = px.treemap(df_market, path=['الرمز'], values='السعر', color='التغير%',
+                             color_continuous_scale='RdYlGn', range_color=[-3, 3])
+        st.plotly_chart(fig_heat, use_container_width=True)
+    with col_h2:
+        st.subheader("🔔 نبض الأخبار")
+        for i in range(min(5, len(all_intel))):
+            st.info(f"**{all_intel[i]['الرمز']}**: جودة الاستثمار {all_intel[i]['الجودة']} | السعر {all_intel[i]['السعر']}")
 
-    st.subheader("📋 قائمة الأسعار والتوزيعات الكاملة")
-    st.dataframe(df_m, use_container_width=True, hide_index=True)
+    st.subheader("📋 قائمة الأسعار والتوزيعات")
+    st.dataframe(df_market, use_container_width=True, hide_index=True)
 
-# --- TAB 2: الأخبار والنبض اللحظي ---
+# --- التبويب الثاني: الفحص المجهري ---
 with tab2:
-    st.subheader("📰 شريط أخبار الشركات والنبض")
-    # محاكاة للأخبار اللحظية بناءً على أداء السوق
-    for index, row in df_m.head(10).iterrows():
-        status = "صعود قوي" if row['التغير%'] > 0 else "تراجع هادئ"
-        st.write(f"🔔 **{row['الرمز']}**: {status} بسعر {row['السعر']} ج.م | توزيعات الأرباح الحالية: {row['التوزيعات%']}")
-        st.divider()
-
-# --- TAB 3: تحليل المؤشرات الرئيسية ---
-with tab3:
-    st.subheader("📉 أداء مؤشر EGX30")
-    idx = yf.Ticker("^CASE30")
-    idx_hist = idx.history(period="1mo")
-    fig_idx = go.Figure(data=[go.Scatter(x=idx_hist.index, y=idx_hist['Close'], mode='lines', line=dict(color='#00ff00'))])
-    fig_idx.update_layout(template="plotly_dark", title="مؤشر البورصة المصرية الرئيسي (30 يوم)")
-    st.plotly_chart(fig_idx, use_container_width=True)
-
-# --- TAB 4: محفظتي الذكية وغرفة الفحص ---
-with tab4:
-    with st.sidebar:
-        st.header("⚙️ إعدادات المحفظة")
-        cap = st.number_input("إجمالي رأس المال:", value=500000)
-        risk = st.slider("المخاطرة %", 0.5, 5.0, 2.0)
-
-    target = st.selectbox("اختر سهم للفحص العميق من المحفظة:", df_m['الرمز'].tolist())
-    s_info = df_m[df_m['الرمز'] == target].iloc[0]
+    target = st.selectbox("اختر سهم للفحص العميق:", df_market['الرمز'].tolist())
+    s = next(item for item in all_intel if item["الرمز"] == target)
     
-    c1, c2 = st.columns(2)
+    c1, c2 = st.columns([2, 1])
     with c1:
-        st.metric(f"سعر {target}", s_info['السعر'], s_info['التغير%'])
-        st.write(f"💰 **توزيعات السهم:** {s_info['التوزيعات%']}")
-        st.write(f"📊 **مكرر الربحية:** {s_info['P/E']}")
-    
+        fig_candle = go.Figure(data=[go.Candlestick(x=s['history'].index, open=s['history']['Open'], 
+                        high=s['history']['High'], low=s['history']['Low'], close=s['history']['Close'])])
+        fig_candle.update_layout(template="plotly_dark", xaxis_rangeslider_visible=False)
+        st.plotly_chart(fig_candle, use_container_width=True)
     with c2:
-        st.subheader("🧮 حاسبة الكمية الآمنة")
-        stop = st.number_input("حدد سعر وقف الخسارة:", value=s_info['السعر'] * 0.95)
-        diff = s_info['السعر'] - stop
-        if diff > 0:
-            pos = int((cap * (risk/100)) / diff)
-            st.success(f"الكمية المقترحة: {pos} سهم")
-            st.info(f"إجمالي قيمة المركز: {pos * s_info['السعر']:,.2f} ج.م")
+        st.subheader("📋 التقرير المالي")
+        st.write(f"💵 **صافي الدخل:** {s['info'].get('netIncomeToCommon', 0):,.0f} ج.م")
+        st.write(f"📊 **مكرر الربحية:** {s['P/E']}")
+        st.write(f"💰 **توزيعات الأرباح:** {s['توزيعات']}")
+        st.progress(int(s['الجودة'].split('/')[0])*10)
 
-# --- شريط النبض السفلي الثابت ---
+# --- التبويب الثالث: إدارة المخاطر ---
+with tab3:
+    st.sidebar.header("⚙️ إعدادات المحفظة")
+    capital = st.sidebar.number_input("رأس المال:", value=500000)
+    risk_pct = st.sidebar.slider("المخاطرة %", 0.5, 5.0, 2.0)
+    
+    st.subheader(f"🛡️ حاسبة الكمية الآمنة لـ {target}")
+    sl = st.number_input("سعر وقف الخسارة المقترح:", value=s['السعر'] * 0.95)
+    diff = s['السعر'] - sl
+    if diff > 0:
+        qty = int((capital * (risk_pct/100)) / diff)
+        st.success(f"الكمية المقترحة للشراء: **{qty} سهم**")
+        st.info(f"إجمالي القيمة: {qty * s['السعر']:,.2f} ج.م")
+
+# شريط النبض السفلي
 st.markdown(f"""
     <div style="position: fixed; bottom: 0; width: 100%; background-color: #111; color: #0f0; padding: 5px; text-align: center; border-top: 1px solid #444;">
-        🔥 نبض البورصة المصرية: مؤشر EGX30 في حالة توازن | أكثر الأسهم توزيعاً للأرباح حالياً: {df_main.sort_values('التوزيعات%', ascending=False).iloc[0]['الرمز'] if 'df_main' in locals() else 'جاري التحميل...'}
+        <marquee>🔥 نبض السوق: سهم {target} في حالة {s['القرار']} | RSI: {s['RSI']} | أفضل توزيعات حالية في القائمة: {df_market.sort_values('توزيعات', ascending=False).iloc[0]['الرمز']}</marquee>
     </div>
 """, unsafe_allow_html=True)
