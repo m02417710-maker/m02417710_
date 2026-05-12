@@ -1,0 +1,174 @@
+/**
+ * صفحة تسجيل الدخول
+ * Login Page
+ */
+
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser, selectUserLoading, selectUserError } from '../redux/slices/userSlice';
+import { showNotification } from '../redux/slices/uiSlice';
+
+function LoginPage() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const loading = useSelector(selectUserLoading);
+  const error = useSelector(selectUserError);
+  const location = useLocation();
+
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.email || !formData.password) {
+      dispatch(
+        showNotification({
+          type: 'error',
+          message: 'يرجى ملء جميع الحقول',
+        })
+      );
+      return;
+    }
+
+    const result = await dispatch(loginUser(formData));
+
+    if (result.meta.requestStatus === 'fulfilled') {
+      dispatch(
+        showNotification({
+          type: 'success',
+          message: 'تم تسجيل الدخول بنجاح',
+        })
+      );
+      const from = location.state?.from?.pathname || '/';
+      navigate(from);
+    }
+  };
+
+  return (
+    <div className="login-page">
+      <div className="login-container">
+        {/* الجانب الأيسر - الصورة */}
+        <div className="login-image">
+          <div className="image-content">
+            <h1>📊 محلل الأسهم</h1>
+            <p>منصة تحليل أسهم احترافية</p>
+            <ul className="features-list">
+              <li>✓ مؤشرات فنية متقدمة</li>
+              <li>✓ إشارات تداول ذكية</li>
+              <li>✓ إدارة محفظة شاملة</li>
+              <li>✓ تنبيهات فورية</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* الجانب الأيمن - النموذج */}
+        <div className="login-form-wrapper">
+          <div className="login-form">
+            <h2>🔐 تسجيل الدخول</h2>
+            <p>ادخل بيانات حسابك للمتابعة</p>
+
+            {error && (
+              <div className="error-message">
+                <p>❌ {error.message || 'فشل تسجيل الدخول'}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              {/* البريد الإلكتروني */}
+              <div className="form-group">
+                <label htmlFor="email">البريد الإلكتروني</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="أدخل بريدك الإلكتروني"
+                  disabled={loading}
+                />
+              </div>
+
+              {/* كلمة المرور */}
+              <div className="form-group">
+                <label htmlFor="password">كلمة المرور</label>
+                <div className="password-input">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="أدخل كلمة مرورك"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    className="toggle-password"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
+              </div>
+
+              {/* تذكرني */}
+              <div className="remember-me">
+                <input type="checkbox" id="remember" />
+                <label htmlFor="remember">تذكرني</label>
+              </div>
+
+              {/* زر تسجيل الدخول */}
+              <button
+                type="submit"
+                className="btn btn-primary btn-full"
+                disabled={loading}
+              >
+                {loading ? '⏳ جاري التسجيل...' : '🔐 تسجيل الدخول'}
+              </button>
+
+              {/* الفاصل */}
+              <div className="divider">أو</div>
+
+              {/* تسجيل اجتماعي */}
+              <div className="social-login">
+                <button type="button" className="btn-social google">
+                  Google
+                </button>
+                <button type="button" className="btn-social facebook">
+                  Facebook
+                </button>
+              </div>
+            </form>
+
+            {/* رابط التسجيل */}
+            <p className="signup-link">
+              ليس لديك حساب؟{' '}
+              <a href="/register">اضغط هنا للتسجيل</a>
+            </p>
+
+            {/* رابط نسيان كلمة المرور */}
+            <p className="forgot-link">
+              <a href="/forgot-password">هل نسيت كلمة مرورك؟</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default LoginPage;
