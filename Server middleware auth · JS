@@ -1,0 +1,128 @@
+/**
+ * وسيط المصادقة
+ * Authentication Middleware
+ */
+
+const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
+
+/**
+ * التحقق من صحة التوكن
+ */
+const verifyToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret-key');
+    return decoded;
+  } catch (error) {
+    throw new Error('التوكن غير صحيح أو منتهي الصلاحية');
+  }
+};
+
+/**
+ * وسيط المصادقة الرئيسي
+ */
+const authMiddleware = (req, res, next) => {
+  try {
+    // الحصول على التوكن من رأس الطلب
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logger.warn('محاولة وصول بدون توكن');
+      return res.status(401).json({
+        success: false,
+        message: 'توكن المصادقة مطلوب',
+      });
+    }
+
+    const token = authHeader.substring(7); // إزالة "Bearer "
+
+    // التحقق من التوكن
+    const decoded = verifyToken(token);
+
+    // إضافة بيانات المستخدم إلى الطلب
+    req.user = decoded;
+    req.userId = decoded.id;
+
+    logger.info(`مستخدم مصرح: ${decoded.id}`);
+
+    next();
+  } catch (error) {
+    logger.error(`خطأ في المصادقة: ${error.message}`);
+    res.status(401).json({
+      success: false,
+      message: error.message || 'فشل المصادقة',
+    });
+  }
+};
+
+/**
+ * وسيط اختياري - إذا كان المستخدم موجود
+ */
+const optionalAuth = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const decoded = verifyToken(token);
+      req.user = decoded;
+      req.userId = decoded.id;
+    }
+
+    next();
+  } catch (error) {
+    logger.warn(`مستخدم غير مصرح: ${error.message}`);
+    next();
+  }
+};
+
+/**
+ * توليد توكن جديد
+ */
+const generateToken = (userId, email, role = 'user') => {
+  const token = jwt.sign(
+    {
+      id: userId,
+      email,
+      role,
+    },
+    process.env.JWT_SECRET || 'secret-key',
+    {
+      expiresIn: process.env.JWT_EXPIRATION || '24h',
+    }
+  );
+
+  return token;
+};
+
+/**
+ * وسيط فحص الدور (Role Check)
+ */
+const checkRole = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'يجب أن تكون مصرح',
+      });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      logger.warn(`محاولة وصول غير مصرح من: ${req.user.id}`);
+      return res.status(403).json({
+        success: false,
+        message: 'ليس لديك صلاحية الوصول إلى هذا المورد',
+      });
+    }
+
+    next();
+  };
+};
+
+module.exports = {
+  authMiddleware,
+  optionalAuth,
+  generateToken,
+  verifyToken,
+  checkRole,
+};
