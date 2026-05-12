@@ -1,0 +1,137 @@
+/**
+ * نظام السجلات
+ * Logging System
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+// إنشاء مجلد السجلات إذا لم يكن موجوداً
+const logsDir = path.join(__dirname, '../../logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
+
+// مستويات السجلات
+const LogLevel = {
+  ERROR: 'ERROR',
+  WARN: 'WARN',
+  INFO: 'INFO',
+  DEBUG: 'DEBUG',
+};
+
+// ألوان للطباعة في Terminal
+const colors = {
+  reset: '\x1b[0m',
+  red: '\x1b[31m',
+  yellow: '\x1b[33m',
+  green: '\x1b[32m',
+  blue: '\x1b[34m',
+  cyan: '\x1b[36m',
+};
+
+/**
+ * تنسيق الرسالة
+ */
+const formatMessage = (level, message, data = null) => {
+  const timestamp = new Date().toISOString();
+  let formatted = `[${timestamp}] [${level}] ${message}`;
+
+  if (data) {
+    formatted += ` | ${JSON.stringify(data)}`;
+  }
+
+  return formatted;
+};
+
+/**
+ * كتابة السجل إلى الملف
+ */
+const writeToFile = (filename, message) => {
+  const filepath = path.join(logsDir, filename);
+
+  fs.appendFile(filepath, message + '\n', (err) => {
+    if (err) {
+      console.error(`خطأ في كتابة السجل: ${err.message}`);
+    }
+  });
+};
+
+/**
+ * كائن المسجل
+ */
+const logger = {
+  /**
+   * تسجيل الأخطاء
+   */
+  error: (message, data = null) => {
+    const formatted = formatMessage(LogLevel.ERROR, message, data);
+    console.log(`${colors.red}${formatted}${colors.reset}`);
+    writeToFile('error.log', formatted);
+  },
+
+  /**
+   * تسجيل التحذيرات
+   */
+  warn: (message, data = null) => {
+    const formatted = formatMessage(LogLevel.WARN, message, data);
+    console.log(`${colors.yellow}${formatted}${colors.reset}`);
+    writeToFile('app.log', formatted);
+  },
+
+  /**
+   * تسجيل المعلومات
+   */
+  info: (message, data = null) => {
+    const formatted = formatMessage(LogLevel.INFO, message, data);
+    console.log(`${colors.green}${formatted}${colors.reset}`);
+    writeToFile('app.log', formatted);
+  },
+
+  /**
+   * تسجيل المعلومات التصحيحية
+   */
+  debug: (message, data = null) => {
+    if (process.env.NODE_ENV === 'development') {
+      const formatted = formatMessage(LogLevel.DEBUG, message, data);
+      console.log(`${colors.blue}${formatted}${colors.reset}`);
+    }
+  },
+
+  /**
+   * تسجيل طلب HTTP
+   */
+  http: (method, url, statusCode, duration) => {
+    const message = `${method} ${url} - ${statusCode} (${duration}ms)`;
+    const formatted = formatMessage('HTTP', message);
+    console.log(`${colors.cyan}${formatted}${colors.reset}`);
+    writeToFile('access.log', formatted);
+  },
+
+  /**
+   * تسجيل قاعدة البيانات
+   */
+  database: (query, duration, error = null) => {
+    const message = `Database Query (${duration}ms)`;
+    const data = { query: query.substring(0, 100) + '...', error };
+    const formatted = formatMessage('DATABASE', message, data);
+
+    if (error) {
+      console.log(`${colors.red}${formatted}${colors.reset}`);
+    } else {
+      console.log(`${colors.cyan}${formatted}${colors.reset}`);
+    }
+  },
+
+  /**
+   * تسجيل خدمات خارجية
+   */
+  external: (service, action, status, data = null) => {
+    const message = `External Service: ${service} - ${action} - ${status}`;
+    const formatted = formatMessage('EXTERNAL', message, data);
+    console.log(`${colors.cyan}${formatted}${colors.reset}`);
+    writeToFile('app.log', formatted);
+  },
+};
+
+module.exports = logger;
