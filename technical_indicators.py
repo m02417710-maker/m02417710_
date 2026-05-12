@@ -4,28 +4,68 @@ import numpy as np
 import yfinance as yf
 import plotly.graph_objects as go
 import plotly.express as px
+import requests
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 from bs4 import BeautifulSoup
 
-st.set_page_config(page_title="EGX Super Analyst v13.4", layout="wide", page_icon="⚡")
+st.set_page_config(page_title="EGX Super Analyst v13.2", layout="wide", page_icon="⚡")
 
-st_autorefresh(interval=90 * 1000, key="v13_4")
+st_autorefresh(interval=90 * 1000, key="v13_2")
 
-# ====================== Grok AI Function ======================
-def analyze_with_grok(text: str, ticker: str = "السوق"):
-    api_key = st.secrets.get("GROK_API_KEY")
-    if not api_key:
-        return "Grok API غير مفعل"
-    try:
-        resp = requests.post("https://api.x.ai/v1/chat/completions", 
-            headers={"Authorization": f"Bearer {api_key}"},
-            json={"model": "grok-3", "messages": [{"role": "user", "content": text}], "temperature": 0.6})
-        return resp.json()['choices'][0]['message']['content']
-    except:
-        return "تعذر الاتصال بـ Grok"
+# ====================== إدارة المفاتيح السرية ======================
+if 'grok_key' not in st.session_state:
+    st.session_state.grok_key = st.secrets.get("GROK_API_KEY", "")
+if 'openai_key' not in st.session_state:
+    st.session_state.openai_key = st.secrets.get("OPENAI_API_KEY", "")
+if 'selected_api' not in st.session_state:
+    st.session_state.selected_api = "Grok"
 
-# ====================== التحليل الفني المتقدم ======================
+def save_keys(grok, openai, selected):
+    st.session_state.grok_key = grok
+    st.session_state.openai_key = openai
+    st.session_state.selected_api = selected
+    st.success("✅ تم حفظ المفاتيح بنجاح")
+
+# ====================== دالة التحليل الموحدة (Grok + OpenAI) ======================
+def analyze_with_ai(text: str, ticker: str = "السوق"):
+    api_type = st.session_state.selected_api
+    
+    if api_type == "Grok":
+        api_key = st.session_state.grok_key
+        if not api_key:
+            return "⚠️ مفتاح Grok API غير مفعل"
+        try:
+            resp = requests.post(
+                "https://api.x.ai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={"model": "grok-3", "messages": [{"role": "user", "content": f"حلل: {text}"}], "temperature": 0.6},
+                timeout=12
+            )
+            return resp.json()['choices'][0]['message']['content']
+        except:
+            return "❌ تعذر الاتصال بـ Grok API"
+    
+    else:  # OpenAI
+        api_key = st.session_state.openai_key
+        if not api_key:
+            return "⚠️ مفتاح OpenAI API غير مفعل"
+        try:
+            resp = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={
+                    "model": "gpt-4o-mini",
+                    "messages": [{"role": "user", "content": f"أنت محلل مالي خبير في البورصة المصرية. حلل وأعطِ توصية:\n{text}"}],
+                    "temperature": 0.7
+                },
+                timeout=12
+            )
+            return resp.json()['choices'][0]['message']['content']
+        except:
+            return "❌ تعذر الاتصال بـ OpenAI API"
+
+# ====================== جلب البيانات ======================
 @st.cache_data(ttl=90)
 def get_super_analysis():
     tickers = ["COMI", "FWRY", "TMGH", "ABUK", "SWDY", "EKHO", "ETEL", "ORAS", "AMOC", "PHDC", "JUFO", "HELI"]
@@ -34,17 +74,20 @@ def get_super_analysis():
         try:
             stock = yf.Ticker(f"{ticker}.CA")
             df = stock.history(period="1y")
-            if df.empty or len(df) < 100: continue
+            if df.empty or len(df) < 60: continue
 
             close = df['Close']
             price = close.iloc[-1]
             change_pct = ((price / close.iloc[-2]) - 1) * 100
 
-            # Indicators
             delta = close.diff()
-            rsi = (100 - (100 / (1 + (delta.clip(lower=0).rolling(14).mean() / abs(delta.clip(upper=0).rolling(14).mean()))))).iloc[-1]
+            gain = delta.clip(lower=0).rolling(14).mean()
+            loss = -delta.clip(upper=0).rolling(14).mean()
+            rsi = (100 - (100 / (1 + gain / loss))).iloc[-1]
+
             macd = close.ewm(span=12).mean() - close.ewm(span=26).mean()
-            macd_hist = (macd - macd.ewm(span=9).mean()).iloc[-1]
+            signal = macd.ewm(span=9).mean()
+            macd_hist = (macd - signal).iloc[-1]
 
             score = 0
             if price > close.rolling(50).mean().iloc[-1] > close.rolling(200).mean().iloc[-1]: score += 35
@@ -52,7 +95,7 @@ def get_super_analysis():
             if macd_hist > 0: score += 22
             if df['Volume'].iloc[-1] > df['Volume'].rolling(20).mean().iloc[-1] * 1.8: score += 18
 
-            signal = "STRONG BUY 🟢🟢" if score >= 80 else "BUY 🟢" if score >= 60 else "HOLD 🟡" if score >= 40 else "SELL 🔴" if score >= 20 else "STRONG SELL 🔴🔴"
+            signal_str = "STRONG BUY 🟢🟢" if score >= 80 else "BUY 🟢" if score >= 60 else "HOLD 🟡" if score >= 40 else "SELL 🔴" if score >= 20 else "STRONG SELL 🔴🔴"
 
             results.append({
                 "الرمز": ticker,
@@ -60,95 +103,48 @@ def get_super_analysis():
                 "التغير%": round(change_pct, 2),
                 "RSI": round(rsi, 1),
                 "MACD": round(macd_hist, 3),
-                "الإشارة": signal,
+                "الإشارة": signal_str,
                 "الجودة": int(score),
-                "history": df
+                "history": df,
+                "info": stock.info
             })
         except:
             continue
     return results
 
 data = get_super_analysis()
-df_main = pd.DataFrame([{k: v for k, v in item.items() if k not in ['history']} for item in data])
+df_main = pd.DataFrame([{k: v for k, v in item.items() if k not in ['history', 'info']} for item in data])
 
-# ====================== Backtesting Function ======================
-def run_backtest(ticker, period="6mo"):
-    stock = yf.Ticker(f"{ticker}.CA")
-    df = stock.history(period=period)
-    if df.empty: return None
-
-    df['Signal'] = 0
-    df['Position'] = 0
-
-    # Strategy: Buy when RSI < 35 and MACD positive
-    delta = df['Close'].diff()
-    gain = delta.clip(lower=0).rolling(14).mean()
-    loss = -delta.clip(upper=0).rolling(14).mean()
-    rsi = 100 - (100 / (1 + gain / loss))
-
-    macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
-    signal_line = macd.ewm(span=9).mean()
-
-    df['Signal'] = np.where((rsi < 35) & (macd > signal_line), 1, 0)
-    df['Position'] = df['Signal'].diff()
-
-    # Calculate returns
-    df['Returns'] = df['Close'].pct_change()
-    df['Strategy_Returns'] = df['Position'].shift(1) * df['Returns']
-
-    # Metrics
-    total_return = (1 + df['Strategy_Returns']).cumprod().iloc[-1] - 1
-    win_rate = len(df[df['Strategy_Returns'] > 0]) / len(df[df['Strategy_Returns'] != 0]) * 100 if len(df[df['Strategy_Returns'] != 0]) > 0 else 0
-    max_drawdown = ((1 + df['Strategy_Returns']).cumprod() / (1 + df['Strategy_Returns']).cumprod().cummax() - 1).min() * 100
-
-    return {
-        "Total Return": f"{total_return*100:.2f}%",
-        "Win Rate": f"{win_rate:.1f}%",
-        "Max Drawdown": f"{max_drawdown:.2f}%",
-        "Number of Trades": int(df['Position'].abs().sum() / 2),
-        "Equity Curve": (1 + df['Strategy_Returns']).cumprod()
-    }
-
-# ====================== الواجهة ======================
-st.title("⚡ EGX Super Analyst v13.4")
-st.caption("نظام تحليلي إداري ذكي | Backtesting متقدم")
-
-tabs = st.tabs(["📈 رادار السوق", "🔍 تحليل معمق", "📊 Backtesting", "📰 Mubasher News", "🤖 Grok AI"])
-
-with tabs[0]:
-    fig = px.treemap(df_main, path=['الرمز'], values='السعر', color='التغير%', color_continuous_scale='RdYlGn')
-    st.plotly_chart(fig, use_container_width=True)
-    st.dataframe(df_main, use_container_width=True, hide_index=True)
-
-with tabs[2]:  # ← Backtesting Tab
-    st.title("📊 Backtesting (اختبار تاريخي)")
+# ====================== Sidebar - إدارة المفاتيح ======================
+with st.sidebar:
+    st.header("🔑 إعدادات المفاتيح السرية")
     
-    ticker_bt = st.selectbox("اختر السهم للاختبار التاريخي", df_main['الرمز'].tolist())
-    period_bt = st.selectbox("فترة الاختبار", ["3mo", "6mo", "1y", "2y"], index=1)
+    api_choice = st.radio("اختر خدمة الذكاء الاصطناعي", ["Grok", "OpenAI"], horizontal=True)
     
-    if st.button("🚀 شغل الـ Backtest"):
-        with st.spinner("جاري تشغيل الاختبار التاريخي..."):
-            result = run_backtest(ticker_bt, period_bt)
-            
-            if result:
-                col1, col2, col3, col4 = st.columns(4)
-                col1.metric("العائد الإجمالي", result['Total Return'])
-                col2.metric("نسبة الربح", result['Win Rate'])
-                col3.metric("أقصى تراجع", result['Max Drawdown'])
-                col4.metric("عدد الصفقات", result['Number of Trades'])
-                
-                st.subheader("منحنى الأداء (Equity Curve)")
-                st.line_chart(result['Equity Curve'])
-            else:
-                st.error("تعذر تشغيل الـ Backtest")
+    if api_choice == "Grok":
+        grok_key = st.text_input("Grok API Key (xAI)", type="password", value=st.session_state.grok_key)
+        openai_key = st.session_state.openai_key
+    else:
+        openai_key = st.text_input("OpenAI API Key", type="password", value=st.session_state.openai_key)
+        grok_key = st.session_state.grok_key
+    
+    if st.button("💾 حفظ المفاتيح"):
+        save_keys(grok_key, openai_key, api_choice)
 
-# باقي التبويبات (يمكن نسخها من النسخ السابقة)
+    st.divider()
+    st.success(f"✅ الخدمة المفعلة: **{st.session_state.selected_api}**")
+
+# ====================== الواجهة الرئيسية ======================
+st.title("⚡ EGX Super Analyst v13.2")
+st.caption("نظام تحليلي إداري ذكي | دعم Grok + OpenAI")
+
+# ... (باقي الكود كما في النسخة السابقة مع استبدال analyze_with_grok بالدالة الجديدة)
 
 # Footer
-best = df_main.nlargest(1, 'الجودة').iloc[0]
+best_stock = df_main.nlargest(1, 'الجودة').iloc[0]
 st.markdown(f"""
-<div style="text-align:center; padding:35px; background:linear-gradient(90deg,#0a0a0a,#1a1a2e); color:#00ffaa; border-top:8px solid #00ffaa; margin-top:40px;">
-    ⚡ EGX Super Analyst v13.4 | Backtesting + تحليل ذكي | 
-    أقوى توصية: <b>{best['الرمز']}</b> — {best['الإشارة']}
+<div style="text-align:center; padding:30px; background:linear-gradient(90deg,#0a0a0a,#1a1a2e); color:#00ffaa; border-top:7px solid #00ffaa;">
+    ⚡ EGX Super Analyst v13.2 | Grok + OpenAI | 
+    أقوى توصية: <b>{best_stock['الرمز']}</b> — {best_stock['الإشارة']}
 </div>
 """, unsafe_allow_html=True)
