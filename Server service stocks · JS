@@ -1,0 +1,380 @@
+/**
+ * خدمة الأسهم
+ * Stock Service
+ */
+
+const logger = require('../utils/logger');
+const technicalService = require('./technicalIndicators');
+
+/**
+ * قاعدة بيانات وهمية للأسهم (سيتم استبدالها بقاعدة البيانات الفعلية)
+ */
+const mockStocks = [
+  {
+    id: '1',
+    code: 'TELECOM',
+    name: 'اتصالات مصر',
+    sector: 'الاتصالات',
+    currentPrice: 18.50,
+    change: 0.35,
+    changePercent: 2.3,
+    volume: 5200000,
+    pe: 12.5,
+    eps: 1.48,
+    dividendYield: 4.2,
+  },
+  {
+    id: '2',
+    code: 'ORWA',
+    name: 'أور وا',
+    sector: 'العقارات',
+    currentPrice: 5.32,
+    change: 0.18,
+    changePercent: 3.5,
+    volume: 3800000,
+    pe: 22.1,
+    eps: 0.24,
+    dividendYield: 0.5,
+  },
+  {
+    id: '3',
+    code: 'ETEL',
+    name: 'اتحاد الاتصالات',
+    sector: 'الاتصالات',
+    currentPrice: 22.30,
+    change: 0.40,
+    changePercent: 1.8,
+    volume: 2100000,
+    pe: 15.7,
+    eps: 1.42,
+    dividendYield: 3.8,
+  },
+];
+
+/**
+ * الحصول على قائمة الأسهم مع الفلترة
+ */
+exports.getStocks = async (options = {}) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      sector,
+      minPrice,
+      maxPrice,
+      sort = 'price',
+    } = options;
+
+    logger.info(`جاري جلب الأسهم - الفلاترة: ${JSON.stringify(options)}`);
+
+    // فلترة الأسهم
+    let filtered = mockStocks;
+
+    if (sector) {
+      filtered = filtered.filter(s => s.sector === sector);
+    }
+
+    if (minPrice) {
+      filtered = filtered.filter(s => s.currentPrice >= minPrice);
+    }
+
+    if (maxPrice) {
+      filtered = filtered.filter(s => s.currentPrice <= maxPrice);
+    }
+
+    // ترتيب الأسهم
+    if (sort === 'price') {
+      filtered.sort((a, b) => b.currentPrice - a.currentPrice);
+    } else if (sort === 'change') {
+      filtered.sort((a, b) => b.changePercent - a.changePercent);
+    }
+
+    // التقسيم إلى صفحات
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const paginatedData = filtered.slice(start, end);
+
+    return {
+      data: paginatedData,
+      total: filtered.length,
+    };
+  } catch (error) {
+    logger.error(`خطأ في جلب الأسهم: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * الحصول على تفاصيل سهم محدد
+ */
+exports.getStockById = async (stockId) => {
+  try {
+    logger.info(`جاري جلب تفاصيل السهم: ${stockId}`);
+
+    // البحث عن السهم
+    const stock = mockStocks.find(s => s.id === stockId);
+
+    if (!stock) {
+      throw new Error('السهم غير موجود');
+    }
+
+    // إضافة المؤشرات الفنية
+    const indicators = await technicalService.calculateIndicators(stockId, 30);
+
+    return {
+      ...stock,
+      indicators,
+      lastUpdated: new Date(),
+    };
+  } catch (error) {
+    logger.error(`خطأ في جلب السهم: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * الحصول على البيانات التاريخية
+ */
+exports.getStockHistory = async (stockId, options = {}) => {
+  try {
+    const {
+      startDate,
+      endDate,
+      interval = 'daily',
+    } = options;
+
+    logger.info(`جاري جلب السجل التاريخي للسهم: ${stockId}`);
+
+    // إنشاء بيانات تاريخية وهمية
+    const history = [];
+    const days = 30;
+
+    for (let i = days; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+
+      history.push({
+        date: date.toISOString().split('T')[0],
+        open: 17.5 + Math.random() * 2,
+        high: 18.5 + Math.random() * 1,
+        low: 17 + Math.random() * 1,
+        close: 17.5 + Math.random() * 2,
+        volume: Math.floor(Math.random() * 5000000) + 1000000,
+      });
+    }
+
+    return history;
+  } catch (error) {
+    logger.error(`خطأ في جلب السجل: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * الحصول على التوصيات
+ */
+exports.getRecommendations = async (stockId) => {
+  try {
+    logger.info(`جاري حساب التوصيات للسهم: ${stockId}`);
+
+    const stock = mockStocks.find(s => s.id === stockId);
+    if (!stock) throw new Error('السهم غير موجود');
+
+    // حساب درجة التوصية
+    let score = 50;
+
+    // معايير أساسية
+    if (stock.pe < 15) score += 15;
+    if (stock.dividendYield > 3) score += 15;
+    if (stock.changePercent > 0) score += 10;
+
+    // التوصية النهائية
+    let recommendation = 'احتفاظ';
+    if (score >= 75) recommendation = 'شراء قوي';
+    else if (score >= 65) recommendation = 'شراء';
+    else if (score >= 40) recommendation = 'احتفاظ';
+    else recommendation = 'بيع';
+
+    return {
+      score,
+      recommendation,
+      reasons: [
+        `مكرر الربحية: ${stock.pe}`,
+        `عائد التوزيع: ${stock.dividendYield}%`,
+        `التغير: ${stock.changePercent}%`,
+      ],
+    };
+  } catch (error) {
+    logger.error(`خطأ في حساب التوصيات: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * الحصول على الأخبار
+ */
+exports.getStockNews = async (stockId) => {
+  try {
+    logger.info(`جاري جلب أخبار السهم: ${stockId}`);
+
+    // أخبار وهمية
+    const news = [
+      {
+        id: '1',
+        title: 'أرباح قوية تتجاوز التوقعات',
+        summary: 'أعلنت الشركة عن أرباح قوية تتجاوز توقعات المحللين',
+        date: new Date(),
+        sentiment: 'positive',
+      },
+      {
+        id: '2',
+        title: 'توسع جديد في السوق الإقليمية',
+        summary: 'أعلنت الشركة عن خطط توسع جديدة في دول الخليج',
+        date: new Date(Date.now() - 86400000),
+        sentiment: 'positive',
+      },
+    ];
+
+    return news;
+  } catch (error) {
+    logger.error(`خطأ في جلب الأخبار: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * تحليل متقدم للسهم
+ */
+exports.analyzeStock = async (stockId) => {
+  try {
+    logger.info(`جاري تحليل السهم: ${stockId}`);
+
+    const stock = await this.getStockById(stockId);
+    const recommendations = await this.getRecommendations(stockId);
+    const news = await this.getStockNews(stockId);
+
+    return {
+      ...stock,
+      analysis: {
+        recommendations,
+        news,
+        technicalSignals: {
+          trend: 'صاعد',
+          momentum: 'قوي',
+          support: 17.5,
+          resistance: 19.5,
+        },
+        fundamentals: {
+          pe: stock.pe,
+          eps: stock.eps,
+          dividendYield: stock.dividendYield,
+        },
+      },
+    };
+  } catch (error) {
+    logger.error(`خطأ في التحليل: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * مقارنة عدة أسهم
+ */
+exports.compareStocks = async (stockIds) => {
+  try {
+    logger.info(`جاري مقارنة الأسهم: ${stockIds.join(', ')}`);
+
+    const comparison = await Promise.all(
+      stockIds.map(id => this.getStockById(id))
+    );
+
+    // ترتيب حسب الأداء
+    const sorted = comparison.sort((a, b) => b.changePercent - a.changePercent);
+
+    return sorted.map((stock, index) => ({
+      ...stock,
+      rank: index + 1,
+      performance: 'قوي',
+    }));
+  } catch (error) {
+    logger.error(`خطأ في المقارنة: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * إنشاء سهم جديد
+ */
+exports.createStock = async (stockData) => {
+  try {
+    logger.info(`جاري إنشاء سهم جديد: ${stockData.code}`);
+
+    const newStock = {
+      id: Date.now().toString(),
+      ...stockData,
+      currentPrice: 0,
+      change: 0,
+      changePercent: 0,
+      volume: 0,
+      createdAt: new Date(),
+    };
+
+    return newStock;
+  } catch (error) {
+    logger.error(`خطأ في إنشاء السهم: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * تحديث السهم
+ */
+exports.updateStock = async (stockId, updates) => {
+  try {
+    logger.info(`جاري تحديث السهم: ${stockId}`);
+
+    const stock = mockStocks.find(s => s.id === stockId);
+    if (!stock) throw new Error('السهم غير موجود');
+
+    return { ...stock, ...updates, updatedAt: new Date() };
+  } catch (error) {
+    logger.error(`خطأ في التحديث: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * حذف السهم
+ */
+exports.deleteStock = async (stockId) => {
+  try {
+    logger.info(`جاري حذف السهم: ${stockId}`);
+    // سيتم استبداله بحذف حقيقي من قاعدة البيانات
+    return { success: true, message: 'تم حذف السهم' };
+  } catch (error) {
+    logger.error(`خطأ في الحذف: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * تحديث بيانات السهم من المصدر الخارجي
+ */
+exports.refreshStockData = async (stockId) => {
+  try {
+    logger.info(`جاري تحديث بيانات السهم: ${stockId}`);
+
+    const stock = await this.getStockById(stockId);
+
+    return {
+      ...stock,
+      lastRefreshed: new Date(),
+      status: 'محدّث',
+    };
+  } catch (error) {
+    logger.error(`خطأ في التحديث: ${error.message}`);
+    throw error;
+  }
+};
+
+module.exports = exports;
