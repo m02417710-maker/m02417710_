@@ -1,0 +1,176 @@
+/**
+ * الصفحة الرئيسية
+ * Home Page
+ */
+
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { selectIsAuthenticated } from '../redux/slices/userSlice';
+import StockHighlights from '../components/StockHighlights/StockHighlights';
+import MarketSummary from '../components/MarketSummary/MarketSummary';
+import TopPerformers from '../components/TopPerformers/TopPerformers';
+
+function HomePage() {
+  const navigate = useNavigate();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+
+  return (
+    <div className="home-page">
+      {/* بطل الصفحة */}
+      <section className="hero">
+        <div className="hero-content">
+          <h1>🚀 محلل الأسهم المتقدم</h1>
+          <p>منصة تحليل أسهم احترافية لتحقيق أرباح أفضل</p>
+          <div className="hero-buttons">
+            {!isAuthenticated ? (
+              <>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => navigate('/stocks')}
+                >
+                  🔍 استعرض الأسهم
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => navigate('/login')}
+                >
+                  🔐 تسجيل الدخول
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => navigate('/stocks')}
+                >
+                  📈 الأسهم
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => navigate('/portfolio')}
+                >
+                  💼 محفظتي
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="hero-image">
+          <div className="chart-animation"></div>
+        </div>
+      </section>
+
+      {/* ملخص السوق */}
+      <section className="market-section">
+        <div className="container">
+          <h2>📊 ملخص السوق</h2>
+          <MarketSummary />
+        </div>
+      </section>
+
+      {/* أبرز الأسهم */}
+      <section className="highlights-section">
+        <div className="container">
+          <h2>⭐ أبرز الأسهم</h2>
+          <StockHighlights />
+        </div>
+      </section>
+
+      {/* أفضل الأسهم أداءً */}
+      <section className="performers-section">
+        <div className="container">
+          <h2>🏆 أفضل الأسهم أداءً</h2>
+          <TopPerformers />
+        </div>
+      </section>
+
+      {/* المميزات */}
+      <section className="features-section">
+        <div className="container">
+          <h2>✨ المميزات الرئيسية</h2>
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon">📈</div>
+              <h3>مؤشرات فنية متقدمة</h3>
+              <p>
+                حساب دقيق لـ 15+ مؤشر فني مثل RSI و MACD و Bollinger Bands
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🎯</div>
+              <h3>إشارات تداول ذكية</h3>
+              <p>احصل على إشارات دقيقة للشراء والبيع بناءً على تحليل متقدم</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">💼</div>
+              <h3>إدارة محفظة شاملة</h3>
+              <p>تتبع محفظتك وحساب الأرباح والخسائر تلقائياً</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🔔</div>
+              <h3>تنبيهات فورية</h3>
+              <p>احصل على تنبيهات فورية للأحداث المهمة عبر عدة قنوات</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">📊</div>
+              <h3>تقارير تفصيلية</h3>
+              <p>تقارير يومية وأسبوعية تفصيلية عن أداء المحفظة</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🌐</div>
+              <h3>بيانات حية</h3>
+              <p>أسعار وبيانات حية مع تحديث لحظي عبر WebSocket</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* الإحصائيات */}
+      <section className="stats-section">
+        <div className="container">
+          <h2>📈 الإحصائيات</h2>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-number">50+</div>
+              <div className="stat-label">سهم</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">15+</div>
+              <div className="stat-label">مؤشر فني</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">8</div>
+              <div className="stat-label">قنوات إشعار</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">100%</div>
+              <div className="stat-label">تحديث حي</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* الدعوة للعمل */}
+      <section className="cta-section">
+        <div className="container">
+          <h2>ابدأ الآن مع محلل الأسهم</h2>
+          <p>انضم إلى آلاف المستثمرين الذين يستخدمون منصتنا</p>
+          <button
+            className="btn btn-large"
+            onClick={() => navigate('/stocks')}
+          >
+            🚀 استكشف الأسهم الآن
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default HomePage;
