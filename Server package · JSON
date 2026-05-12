@@ -1,0 +1,66 @@
+{
+  "name": "stock-analyzer-server",
+  "version": "1.0.0",
+  "description": "Advanced Stock Analysis Platform - Backend Server",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:e2e": "jest --testPathPattern=e2e",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "db:reset": "node scripts/reset.js",
+    "backup": "node scripts/backup.js",
+    "health": "node scripts/health-check.js"
+  },
+  "keywords": [
+    "stock",
+    "analysis",
+    "trading",
+    "egypt",
+    "financial"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "dotenv": "^16.3.1",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.0",
+    "pg": "^8.11.3",
+    "sequelize": "^6.35.2",
+    "redis": "^4.6.12",
+    "socket.io": "^4.7.2",
+    "jsonwebtoken": "^9.1.2",
+    "bcryptjs": "^2.4.3",
+    "nodemailer": "^6.9.7",
+    "axios": "^1.6.2",
+    "moment-timezone": "^0.5.45",
+    "lodash": "^4.17.21",
+    "uuid": "^9.0.1",
+    "joi": "^17.11.0",
+    "winston": "^3.11.0",
+    "bull": "^4.11.5",
+    "ta-lib": "^0.4.20"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "babel-jest": "^29.7.0",
+    "@babel/preset-env": "^7.23.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
