@@ -1,0 +1,171 @@
+/**
+ * Redux Slice - المحفظة
+ * Portfolio State Management
+ */
+
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Async Thunks
+export const fetchPortfolio = createAsyncThunk(
+  'portfolio/fetch',
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/portfolio`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const addToPortfolio = createAsyncThunk(
+  'portfolio/add',
+  async (holdingData, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/portfolio`, holdingData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const removeFromPortfolio = createAsyncThunk(
+  'portfolio/remove',
+  async (holdingId, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/portfolio/${holdingId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return holdingId;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Initial State
+const initialState = {
+  holdings: [],
+  totalValue: 0,
+  totalCost: 0,
+  totalGain: 0,
+  totalGainPercent: 0,
+  loading: false,
+  error: null,
+};
+
+// Slice
+const portfolioSlice = createSlice({
+  name: 'portfolio',
+  initialState,
+  reducers: {
+    updateHoldingPrice: (state, action) => {
+      const { id, price } = action.payload;
+      const holding = state.holdings.find(h => h.id === id);
+      if (holding) {
+        holding.currentPrice = price;
+        holding.currentValue = holding.quantity * price;
+        holding.unrealizedGain = holding.currentValue - holding.costBasis;
+
+        // إعادة حساب الإجمالي
+        state.totalValue = state.holdings.reduce(
+          (sum, h) => sum + h.currentValue,
+          0
+        );
+        state.totalGain = state.holdings.reduce(
+          (sum, h) => sum + h.unrealizedGain,
+          0
+        );
+        state.totalGainPercent =
+          state.totalCost > 0 ? (state.totalGain / state.totalCost) * 100 : 0;
+      }
+    },
+  },
+
+  extraReducers: (builder) => {
+    // fetchPortfolio
+    builder
+      .addCase(fetchPortfolio.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPortfolio.fulfilled, (state, action) => {
+        state.loading = false;
+        state.holdings = action.payload.holdings || [];
+
+        // حساب الإجماليات
+        state.totalValue = state.holdings.reduce(
+          (sum, h) => sum + h.currentValue,
+          0
+        );
+        state.totalCost = state.holdings.reduce(
+          (sum, h) => sum + h.costBasis,
+          0
+        );
+        state.totalGain = state.holdings.reduce(
+          (sum, h) => sum + h.unrealizedGain,
+          0
+        );
+        state.totalGainPercent =
+          state.totalCost > 0 ? (state.totalGain / state.totalCost) * 100 : 0;
+      })
+      .addCase(fetchPortfolio.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // addToPortfolio
+    builder
+      .addCase(addToPortfolio.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(addToPortfolio.fulfilled, (state, action) => {
+        state.loading = false;
+        state.holdings.push(action.payload);
+      })
+      .addCase(addToPortfolio.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // removeFromPortfolio
+    builder
+      .addCase(removeFromPortfolio.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(removeFromPortfolio.fulfilled, (state, action) => {
+        state.loading = false;
+        state.holdings = state.holdings.filter(
+          (h) => h.id !== action.payload
+        );
+      })
+      .addCase(removeFromPortfolio.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
+});
+
+export const { updateHoldingPrice } = portfolioSlice.actions;
+
+// Selectors
+export const selectHoldings = (state) => state.portfolio.holdings;
+export const selectPortfolioValue = (state) => state.portfolio.totalValue;
+export const selectPortfolioGain = (state) => state.portfolio.totalGain;
+export const selectPortfolioGainPercent = (state) =>
+  state.portfolio.totalGainPercent;
+export const selectPortfolioLoading = (state) => state.portfolio.loading;
+export const selectPortfolioError = (state) => state.portfolio.error;
+
+export default portfolioSlice.reducer;
