@@ -3,172 +3,168 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 import plotly.graph_objects as go
+import plotly.express as px
 from datetime import datetime
 from sklearn.linear_model import LinearRegression
 from streamlit_autorefresh import st_autorefresh
-import base64
+import requests
 
 # 1. إعدادات المنصة الاحترافية
-st.set_page_config(page_title="المنصة المتكاملة للمستثمر المحترف", layout="wide")
-st_autorefresh(interval=300 * 1000, key="pro_mega_update")
+st.set_page_config(page_title="Terminal EGX Pro 2026", layout="wide", initial_sidebar_state="expanded")
+st_autorefresh(interval=120 * 1000, key="terminal_update") # تحديث كل دقيقتين
 
-# وظيفة التنبيه الصوتي (تنبيه عند وجود فرصة شراء)
-def play_sound():
-    sound_file = "https://www.soundjay.com/buttons/sounds/button-3.mp3" # رابط صوت تنبيه
-    st.markdown(f'<audio src="{sound_file}" autoplay="true" style="display:none;"></audio>', unsafe_allow_value=True)
+# --- وظائف الربط الخارجي ---
+def send_telegram(token, chat_id, text):
+    if token and chat_id:
+        try: requests.get(f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={text}")
+        except: pass
+
+def play_audio_notification():
+    audio_html = """
+        <audio autoplay><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mp3"></audio>
+    """
+    st.components.v1.html(audio_html, height=0)
 
 # ============================================================
-# 2. المحرك الذكي الخارق (فني + مالي + مشاعر + توقعات)
-# ============================================================
-class ProEngine:
+# 2. المحرك المالي والفني المتقدم (Expert System)
+# =============================-==============================
+class ExpertStockEngine:
     def __init__(self, ticker):
-        self.symbol = ticker if ".CA" in ticker or "-" in ticker else f"{ticker}.CA"
+        self.symbol = ticker if ".CA" in ticker else f"{ticker}.CA"
         self.stock = yf.Ticker(self.symbol)
         self.df = self.stock.history(period="1y")
         if isinstance(self.df.columns, pd.MultiIndex):
             self.df.columns = self.df.columns.get_level_values(0)
 
-    def get_full_analysis(self):
+    def analyze(self):
         if self.df.empty: return None
-        
-        # --- التحليل الفني ---
         df = self.df.copy()
-        delta = df['Close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-        rsi = 100 - (100 / (1 + (gain / (loss + 1e-10))))
+        
+        # مؤشرات فنية دقيقة
         curr_p = df['Close'].iloc[-1]
+        df['MA20'] = df['Close'].rolling(window=20).mean()
+        rsi = 100 - (100 / (1 + (df['Close'].diff().where(lambda x: x > 0, 0).rolling(14).mean() / 
+                                  df['Close'].diff().where(lambda x: x < 0, 0).abs().rolling(14).mean())))
         last_rsi = rsi.iloc[-1]
-
-        # --- تحليل مشاعر السوق (AI Sentiment) بناءً على الاتجاه والزخم ---
-        if last_rsi < 40: sentiment = "إيجابي ومتفائل 🚀"
-        elif last_rsi > 60: sentiment = "خوف من تضخم 📉"
-        else: sentiment = "ثبات ومراقبة ⚖️"
-
-        # --- البيانات المالية وتوزيعات الأرباح ---
+        
+        # التقييم المالي (Fundamental Scoring)
         info = self.stock.info
-        fundamentals = {
-            "P/E": info.get('trailingPE', 'N/A'),
-            "توزيعات": f"{info.get('dividendYield', 0)*100:.2f}%",
-            "صافي الدخل": f"{info.get('netIncomeToCommon', 0):,.0f} ج.م",
-            "المشاعر": sentiment
-        }
-
-        # --- التوقع الرياضي لـ 7 أيام ---
+        score = 0
+        pe = info.get('trailingPE', 100)
+        yield_val = info.get('dividendYield', 0)
+        if pe < 12: score += 4
+        if yield_val > 0.05: score += 3
+        if info.get('earningsGrowth', 0) > 0.1: score += 3
+        
+        # التوقع والاتجاه
         X = np.arange(len(df)).reshape(-1, 1)
         y = df['Close'].values
-        model = LinearRegression().fit(X, y)
-        target_p = model.predict([[len(df) + 7]])[0]
+        target = LinearRegression().fit(X, y).predict([[len(df) + 5]])[0]
 
         return {
             "الرمز": self.symbol.replace(".CA", ""),
             "السعر": round(curr_p, 2),
-            "التغير": f"{((curr_p/df['Close'].iloc[-2])-1)*100:+.2f}%",
-            "القرار": "شراء قوي 🟢" if last_rsi < 35 else "بيع 🔴" if last_rsi > 65 else "حياد 🟡",
-            "توزيعات": fundamentals["توزيعات"],
-            "المشاعر": sentiment,
-            "P/E": fundamentals["P/E"],
-            "التوقع": round(target_p, 2),
-            "fundamentals": fundamentals,
-            "history": df
+            "التغير": round(((curr_p/df['Close'].iloc[-2])-1)*100, 2),
+            "RSI": round(last_rsi, 1),
+            "P/E": round(pe, 1) if pe != 100 else "N/A",
+            "التوزيعات": f"{yield_val*100:.1f}%",
+            "جودة الاستثمار": f"{score}/10",
+            "القرار": "🚀 دخول" if last_rsi < 30 else "⚠️ جني" if last_rsi > 70 else "⚖️ مراقبة",
+            "توقع_7ي": round(target, 2),
+            "history": df,
+            "info": info
         }
 
 # ============================================================
-# 3. الواجهة الرسومية الكاملة (The Ultimate UI)
+# 3. واجهة المستخدم الرسومية (UI/UX)
 # ============================================================
 
-st.title("🛡️ منصة الرصد الشاملة وإدارة المخاطر الذكية")
+# --- القائمة الجانبية الذكية ---
+with st.sidebar:
+    st.title("⚙️ الإعدادات الذكية")
+    tg_t = st.text_input("Bot Token:", type="password")
+    tg_c = st.text_input("Chat ID:")
+    st.divider()
+    capital = st.number_input("رأس المال (EGP):", value=200000)
+    risk = st.slider("مخاطرة الصفقة %", 0.5, 5.0, 1.5)
+    st.divider()
+    st.success("النظام متصل بالبورصة المصرية ✅")
 
-# قائمة الأسهم الشاملة (البورصة المصرية + بحث مخصص)
-watchlist = ["COMI", "FWRY", "ABUK", "TMGH", "SWDY", "ETEL", "EKHO", "ORAS", "ESRS", "JUFO"]
-custom_search = st.sidebar.text_input("🔍 ابحث عن أي سهم إضافي (مثلاً: MNHD):").upper()
-if custom_search and custom_search not in watchlist: watchlist.append(custom_search)
+# --- لوحة القيادة الرئيسية ---
+col_t1, col_t2 = st.columns([3, 1])
+with col_t1:
+    st.markdown(f"# 🏛️ مركز إدارة المحفظة | {datetime.now().strftime('%Y-%m-%d')}")
+with col_t2:
+    if st.button("🔄 تحديث يدوي فوري"): st.rerun()
 
-# القائمة الجانبية: ربط تليجرام وإدارة المخاطر العامة
-st.sidebar.divider()
-st.sidebar.subheader("📲 قناة التليجرام")
-if st.sidebar.button("🔗 ربط الحساب بالتليجرام"):
-    st.sidebar.success("تم تفعيل الربط لاستقبال التنبيهات!")
-
-st.sidebar.divider()
-st.sidebar.subheader("⚠️ إدارة مخاطر المحفظة")
-total_cap = st.sidebar.number_input("إجمالي رأس المال ($/ج.م):", value=100000)
-risk_pct = st.sidebar.slider("نسبة المخاطرة للمركز الواحد %", 1, 5, 2)
-
-# --- القسم 1: رادار السوق المباشر وقناة الأسهم ---
-st.header("📺 قناة الأسهم المباشرة ورادار الفحص")
-market_results = []
+# --- جلب البيانات ---
+watchlist = ["COMI", "FWRY", "ABUK", "TMGH", "SWDY", "ETEL", "EKHO", "ORAS", "ESRS", "JUFO", "AMOC"]
+all_data = []
 for t in watchlist:
     try:
-        data = ProEngine(t).get_full_analysis()
-        if data: market_results.append(data)
+        res = ExpertStockEngine(t).analyze()
+        if res: all_data.append(res)
     except: continue
 
-# عرض رادار السوق
-if market_results:
-    df_market = pd.DataFrame(market_results).drop(columns=['fundamentals', 'history'])
-    st.dataframe(df_market, use_container_width=True)
+main_df = pd.DataFrame(all_data)
 
-# --- القسم 2: الفحص المجهري للسهم (الشموع والمشاعر) ---
+# --- عرض خريطة الحرارة (Heatmap) لسرعة اتخاذ القرار ---
+st.subheader("🌡️ خريطة نبض السوق (التغير اللحظي)")
+fig_heat = px.treemap(main_df, path=['الرمز'], values='السعر', color='التغير',
+                     color_continuous_scale='RdYlGn', range_color=[-3, 3])
+st.plotly_chart(fig_heat, use_container_width=True)
+
+# --- الجدول الاحترافي ---
+st.subheader("📊 رادار الفرص الذكي")
+st.dataframe(main_df.drop(columns=['history', 'info']), use_container_width=True)
+
 st.divider()
-st.header("🎯 نافذة الفحص التفصيلي وتحليل المشاعر")
-selected_ticker = st.selectbox("اختر السهم للتحليل العميق:", [r["الرمز"] for r in market_results])
 
-if selected_ticker:
-    s = next(item for item in market_results if item["الرمز"] == selected_ticker)
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        # الشموع اليابانية التفاعلية
-        fig = go.Figure(data=[go.Candlestick(
-            x=s['history'].index, open=s['history']['Open'],
-            high=s['history']['High'], low=s['history']['Low'],
-            close=s['history']['Close']
-        )])
-        fig.update_layout(template="plotly_dark", xaxis_rangeslider_visible=False, title=f"تحليل الشموع لـ {selected_ticker}")
-        st.plotly_chart(fig, use_container_width=True)
-        
-    with col2:
-        st.subheader("💡 ذكاء المشاعر والمال")
-        st.info(f"**حالة مشاعر السوق:** {s['المشاعر']}")
-        st.write(f"📊 **مكرر الربحية (P/E):** {s['P/E']}")
-        st.write(f"💰 **توزيعات الأرباح:** {s['توزيعات']}")
-        st.write(f"🏢 **صافي الدخل السنوي:** {s['fundamentals']['صافي الدخل']}")
-        
-        # حاسبة إدارة المخاطر المتطورة
-        st.divider()
-        st.subheader("🧮 حاسبة المركز الآمن")
-        curr_price = s['السعر']
-        stop_loss = st.number_input("حدد سعر وقف الخسارة الخاص بك:", value=curr_price * 0.95)
-        
-        # حساب الكمية بناءً على نسبة المخاطرة المحددة في القائمة الجانبية
-        risk_per_share = curr_price - stop_loss
-        if risk_per_share > 0:
-            allowed_loss = total_cap * (risk_pct / 100)
-            position_size = int(allowed_loss / risk_per_share)
-            st.success(f"الكمية الموصى بها للشراء: **{position_size} سهم**")
-            st.warning(f"إجمالي قيمة المركز: {position_size * curr_price:,.2f}")
-        
-# --- القسم 3: التنبيهات الصوتية والإشعارات اللحظية ---
-st.divider()
-st.subheader("🔔 التنبيهات اللحظية (تنبيهات صوتية مدمجة)")
+# --- قسم الفحص المجهري المطور ---
+st.header("🔍 غرفة التحليل العميق")
+target = st.selectbox("اختر السهم لتشريح أداءه:", main_df['الرمز'].tolist())
+s = next(item for item in all_data if item["الرمز"] == target)
 
-for r in market_results:
-    if r["القرار"] == "شراء قوي 🟢":
-        st.toast(f"فرصة شراء ذهبية الآن على {r['الرمز']}!")
-        # تفعيل الصوت عند وجود إشارة شراء قوية (لأول سهم في القائمة مثلاً)
-        if r["الرمز"] == selected_ticker:
-            play_sound()
+c1, c2, c3 = st.columns([2, 1, 1])
 
-# قناة "النبض" اللحظي
-st.markdown("""
-<div style="background-color:#1e1e1e; padding:10px; border-radius:5px; border-left: 5px solid #ff4b4b;">
-    <strong>📺 نبض القناة:</strong> 
-    التجاري الدولي يقترب من منطقة دعم قوية | 
-    فوري يظهر زخم شرائي عالي | 
-    أبو قير للأسمدة في منطقة تشبع بيعي تاريخية.
-</div>
+with c1:
+    # الرسم الفني + المتوسطات المتحركة
+    fig_candle = go.Figure()
+    fig_candle.add_trace(go.Candlestick(x=s['history'].index, open=s['history']['Open'], high=s['history']['High'], 
+                                       low=s['history']['Low'], close=s['history']['Close'], name="السعر"))
+    fig_candle.add_trace(go.Scatter(x=s['history'].index, y=s['history']['MA20'], name="متوسط 20", line=dict(color='orange')))
+    fig_candle.update_layout(template="plotly_dark", xaxis_rangeslider_visible=False, height=400)
+    st.plotly_chart(fig_candle, use_container_width=True)
+
+with c2:
+    st.markdown("### 📋 التقرير المالي")
+    st.metric("جودة الاستثمار", s['جودة الاستثمار'])
+    st.write(f"💵 **صافي الدخل:** {s['info'].get('netIncomeToCommon', 0):,.0f}")
+    st.write(f"📉 **أدنى سعر (52 أسبوع):** {s['info'].get('fiftyTwoWeekLow', 0)}")
+    st.write(f"📈 **أعلى سعر (52 أسبوع):** {s['info'].get('fiftyTwoWeekHigh', 0)}")
+    st.progress(int(float(s['جودة الاستثمار'].split('/')[0])*10))
+
+with c3:
+    st.markdown("### 🛡️ إدارة المخاطر")
+    stop_loss = st.number_input("سعر وقف الخسارة:", value=s['السعر']*0.95)
+    shares = int((capital * (risk/100)) / (s['السعر'] - stop_loss)) if s['السعر'] > stop_loss else 0
+    st.metric("الكمية الآمنة", f"{shares} سهم")
+    st.warning(f"المخاطرة المالية: {shares * (s['السعر'] - stop_loss):,.2f} ج.م")
+
+# --- نظام التنبيهات الذكي ---
+if "🚀" in s['القرار']:
+    play_audio_notification()
+    st.toast(f"🚨 فرصة انفجار سعري على {target}!")
+    send_telegram(tg_t, tg_c, f"إشارة شراء ذهبية: {target} بسعر {s['السعر']}")
+
+# --- قناة النبض الحية (Scrolling News Style) ---
+st.markdown(f"""
+    <div style="white-space: nowrap; overflow: hidden; background: #0e1117; color: #00ff00; padding: 10px; border: 1px solid #333;">
+        <marquee scrollamount="5"> 
+            📢 <b>نبض السوق:</b> {target} يستهدف {s['توقع_7ي']} ج.م | 
+            RSI الحالي {s['RSI']} | 
+            أفضل الأسهم استثمارياً اليوم: {main_df.sort_values(by='جودة الاستثمار', ascending=False).iloc[0]['الرمز']} | 
+            سيولة داخلة قوية في قطاع العقارات...
+        </marquee>
+    </div>
 """, unsafe_allow_html=True)
-
-st.caption(f"🕒 تم تحديث كامل البيانات الفنية والمالية والمشاعر في: {datetime.now().strftime('%H:%M:%S')}")
