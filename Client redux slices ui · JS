@@ -1,0 +1,122 @@
+/**
+ * Redux Slice - الواجهة
+ * UI State Management
+ */
+
+import { createSlice } from '@reduxjs/toolkit';
+
+// Initial State
+const initialState = {
+  socket: null,
+  theme: localStorage.getItem('theme') || 'light',
+  language: localStorage.getItem('language') || 'ar',
+  sidebarOpen: true,
+  notificationCenter: false,
+  modal: null,
+  loading: false,
+  notification: null,
+  filters: {
+    dateRange: 'month',
+    viewType: 'table',
+  },
+};
+
+// Slice
+const uiSlice = createSlice({
+  name: 'ui',
+  initialState,
+  reducers: {
+    // تعيين Socket
+    setSocket: (state, action) => {
+      state.socket = action.payload;
+    },
+
+    // تغيير الموضوع
+    setTheme: (state, action) => {
+      state.theme = action.payload;
+      localStorage.setItem('theme', action.payload);
+    },
+
+    // تغيير اللغة
+    setLanguage: (state, action) => {
+      state.language = action.payload;
+      localStorage.setItem('language', action.payload);
+    },
+
+    // تبديل الشريط الجانبي
+    toggleSidebar: (state) => {
+      state.sidebarOpen = !state.sidebarOpen;
+    },
+
+    // تبديل مركز الإشعارات
+    toggleNotificationCenter: (state) => {
+      state.notificationCenter = !state.notificationCenter;
+    },
+
+    // فتح modal
+    openModal: (state, action) => {
+      state.modal = {
+        type: action.payload.type,
+        data: action.payload.data,
+        isOpen: true,
+      };
+    },
+
+    // إغلاق modal
+    closeModal: (state) => {
+      state.modal = null;
+    },
+
+    // عرض إشعار
+    showNotification: (state, action) => {
+      state.notification = {
+        id: Date.now(),
+        type: action.payload.type || 'info',
+        message: action.payload.message,
+        duration: action.payload.duration || 3000,
+      };
+    },
+
+    // إزالة الإشعار
+    clearNotification: (state) => {
+      state.notification = null;
+    },
+
+    // تعيين الفلاترة
+    setFilters: (state, action) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+
+    // تعيين الحالة loading
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    },
+  },
+});
+
+export const {
+  setSocket,
+  setTheme,
+  setLanguage,
+  toggleSidebar,
+  toggleNotificationCenter,
+  openModal,
+  closeModal,
+  showNotification,
+  clearNotification,
+  setFilters,
+  setLoading,
+} = uiSlice.actions;
+
+// Selectors
+export const selectSocket = (state) => state.ui.socket;
+export const selectTheme = (state) => state.ui.theme;
+export const selectLanguage = (state) => state.ui.language;
+export const selectSidebarOpen = (state) => state.ui.sidebarOpen;
+export const selectNotificationCenter = (state) => state.ui.notificationCenter;
+export const selectModal = (state) => state.ui.modal;
+export const selectNotification = (state) => state.ui.notification;
+export const selectLoading = (state) => state.ui.loading;
+export const selectFilters = (state) => state.ui.filters;
+
+export default uiSlice.reducer;
