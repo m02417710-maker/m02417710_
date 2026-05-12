@@ -142,7 +142,6 @@ if 'portfolio' not in st.session_state:
     ]
 
 # ==================== DATA ====================
-# EGX Stock Data (Simulated Real-time)
 stocks_data = [
     {"symbol": "COMI", "name": "البنك التجاري الدولي - CIB", "sector": "بنوك", "price": 50.25, "change": 1.85, "change_pct": 3.82, "volume": 12500000, "high": 51.00, "low": 49.10},
     {"symbol": "FWRY", "name": "فوري لتكنولوجيا البنوك", "sector": "تكنولوجيا مالية", "price": 28.40, "change": 0.92, "change_pct": 3.35, "volume": 8900000, "high": 29.10, "low": 27.80},
@@ -150,13 +149,12 @@ stocks_data = [
     {"symbol": "ABUK", "name": "أبو قير للأسمدة", "sector": "صناعة", "price": 32.15, "change": -0.45, "change_pct": -1.38, "volume": 5400000, "high": 33.00, "low": 31.80},
     {"symbol": "SWDY", "name": "السويدي إلكتريك", "sector": "صناعة", "price": 12.80, "change": 0.45, "change_pct": 3.64, "volume": 6700000, "high": 13.15, "low": 12.40},
     {"symbol": "EKHO", "name": "العربية للخزف", "sector": "صناعة", "price": 5.65, "change": -0.15, "change_pct": -2.59, "volume": 3400000, "high": 5.90, "low": 5.50},
-    {"symbol": "ETEL", "name": " Telecom Egypt", "sector": "اتصالات", "price": 22.30, "change": 0.55, "change_pct": 2.53, "volume": 7800000, "high": 22.85, "low": 21.90},
+    {"symbol": "ETEL", "name": "Telecom Egypt", "sector": "اتصالات", "price": 22.30, "change": 0.55, "change_pct": 2.53, "volume": 7800000, "high": 22.85, "low": 21.90},
     {"symbol": "ORAS", "name": "أوراسكوم للإنشاءات", "sector": "مقاولات", "price": 9.75, "change": 0.22, "change_pct": 2.31, "volume": 7800000, "high": 10.00, "low": 9.50},
     {"symbol": "AMOC", "name": "Alexandria Oil", "sector": "بترول", "price": 18.90, "change": 0.68, "change_pct": 3.73, "volume": 4500000, "high": 19.40, "low": 18.30},
     {"symbol": "PHDC", "name": "القاهرة للاستثمار", "sector": "عقارات", "price": 8.25, "change": 0.12, "change_pct": 1.48, "volume": 3200000, "high": 8.50, "low": 8.10},
 ]
 
-# News Data
 news_data = [
     {"time": "14:30", "title": "EGX30 يتجاوز 24800 نقطة للمرة الأولى منذ 2022", "type": "positive"},
     {"time": "14:15", "title": "CIB يعلن عن توزيع أرباح نقدية 2.5 جنيه للسهم", "type": "positive"},
@@ -361,17 +359,26 @@ with tab1:
     if sector_filter != "الكل":
         filtered_df = filtered_df[filtered_df['sector'] == sector_filter]
     
-    # Styled table
-    def color_change(val):
-        color = '#10b981' if val >= 0 else '#ef4444'
-        return f'color: {color}; font-weight: bold;'
+    # Styled table - FIXED: using Styler.apply instead of applymap
+    def make_styler(df):
+        def color_change(val):
+            if isinstance(val, (int, float)):
+                color = '#10b981' if val >= 0 else '#ef4444'
+                return f'color: {color}; font-weight: bold;'
+            return ''
+        
+        styled = df.style
+        for col in ['التغير', 'التغير %']:
+            if col in df.columns:
+                styled = styled.map(color_change, subset=[col])
+        return styled
     
-    styled_df = filtered_df[['symbol', 'name', 'sector', 'price', 'change', 'change_pct', 'volume']].copy()
-    styled_df.columns = ['الرمز', 'الشركة', 'القطاع', 'السعر', 'التغير', 'التغير %', 'الحجم']
-    styled_df['الحجم'] = (styled_df['الحجم'] / 1000000).round(2).astype(str) + 'M'
+    display_df = filtered_df[['symbol', 'name', 'sector', 'price', 'change', 'change_pct', 'volume']].copy()
+    display_df.columns = ['الرمز', 'الشركة', 'القطاع', 'السعر', 'التغير', 'التغير %', 'الحجم']
+    display_df['الحجم'] = (display_df['الحجم'] / 1000000).round(2).astype(str) + 'M'
     
     st.dataframe(
-        styled_df.style.applymap(color_change, subset=['التغير', 'التغير %']),
+        make_styler(display_df),
         use_container_width=True,
         hide_index=True,
         column_config={
@@ -420,12 +427,11 @@ with tab2:
     
     with bt_col2:
         if run_bt:
-            with st.spinner("⏳ جاري تحليل البيانات التاريخية وتنفيذ الاستراتيجية..."):
+            with st.spinner("⏳ جاري تحليل البيانات التاريخية..."):
                 strategy_key = strategy.split(" - ")[0]
                 result = run_advanced_backtest(bt_ticker, strategy_key, period, "EGX" if is_egypt else "GLOBAL")
                 
                 if result:
-                    # Metrics
                     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
                     m1, m2, m3, m4, m5 = st.columns(5)
                     
@@ -452,7 +458,6 @@ with tab2:
                         fillcolor='rgba(99, 102, 241, 0.1)'
                     ))
                     
-                    # Add Buy & Hold line
                     bh_curve = 100000 * (1 + result['Data']['Returns']).cumprod()
                     fig_equity.add_trace(go.Scatter(
                         x=bh_curve.index,
@@ -503,9 +508,19 @@ with tab2:
                     
                     if comparison_results:
                         comp_df = pd.DataFrame(comparison_results)
-                        st.dataframe(comp_df.style.highlight_max(subset=['العائد %', 'Sharpe', 'Win Rate %'], color='green')
-                                                .highlight_min(subset=['Max DD %'], color='green'),
-                                   use_container_width=True, hide_index=True)
+                        
+                        def highlight_best(val, col):
+                            if col in ['العائد %', 'Sharpe', 'Win Rate %']:
+                                return 'background-color: rgba(16, 185, 129, 0.3)' if val == comp_df[col].max() else ''
+                            elif col == 'Max DD %':
+                                return 'background-color: rgba(16, 185, 129, 0.3)' if val == comp_df[col].min() else ''
+                            return ''
+                        
+                        styled_comp = comp_df.style
+                        for col in ['العائد %', 'Sharpe', 'Win Rate %', 'Max DD %']:
+                            styled_comp = styled_comp.apply(lambda x, c=col: [highlight_best(v, c) for v in x], subset=[col])
+                        
+                        st.dataframe(styled_comp, use_container_width=True, hide_index=True)
                 else:
                     st.error("❌ تعذر جلب البيانات. تأكد من الرمز واتصال الإنترنت.")
         else:
@@ -565,8 +580,12 @@ with tab3:
                 return f'color: {color}; font-weight: bold;'
             return ''
         
+        styled_port = display_df.style
+        for col in ['الربح/خسارة', 'العائد %']:
+            styled_port = styled_port.map(highlight_profit, subset=[col])
+        
         st.dataframe(
-            display_df.style.applymap(highlight_profit, subset=['الربح/خسارة', 'العائد %']),
+            styled_port,
             use_container_width=True,
             hide_index=True,
             column_config={
@@ -669,7 +688,7 @@ with tab4:
         <div class="task-item {priority_class}" style="{status_style}">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 20px; cursor: pointer;" onclick="window.parent.document.querySelector('button[kind=secondary]').click()">{status_icon}</span>
+                    <span style="font-size: 20px;">{status_icon}</span>
                     <div>
                         <p style="margin: 0; font-weight: 600; font-size: 15px;">{task['title']}</p>
                         <div style="display: flex; gap: 8px; margin-top: 4px;">
@@ -681,8 +700,6 @@ with tab4:
                         </div>
                     </div>
                 </div>
-                <button style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;" 
-                        onclick="alert('Delete functionality would be implemented here')">🗑️</button>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -726,10 +743,9 @@ with tab5:
     ta_col1, ta_col2 = st.columns([1, 2])
     with ta_col1:
         ta_stock = st.selectbox("السهم للتحليل", [s["symbol"] for s in stocks_data])
-        ta_period = st.selectbox("الفترة", ["1mo", "3mo", "6mo", "1y"], index=2)
+        ta_period = st.selectbox("الفترة التحليلية", ["1mo", "3mo", "6mo", "1y"], index=2)
     
     with ta_col2:
-        # Simulated Technical Indicators
         st.markdown("""
         <div class="glass-card">
             <h4>مؤشرات الزخم</h4>
@@ -763,7 +779,7 @@ with tab5:
     
     sr_col1.metric("الدعم 1", f"{support_levels[0]:.2f}")
     sr_col2.metric("الدعم 2", f"{support_levels[1]:.2f}")
-    sr_col3.metric("السعر الحالي", f"{current_price:.2f}", delta_color="off")
+    sr_col3.metric("السعر الحالي", f"{current_price:.2f}")
     sr_col4.metric("المقاومة 1", f"{resistance_levels[0]:.2f}")
     sr_col5.metric("المقاومة 2", f"{resistance_levels[1]:.2f}")
 
