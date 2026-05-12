@@ -1,0 +1,122 @@
+/**
+ * صفحة الأسهم
+ * Stocks Page
+ */
+
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchStocks, setFilters, setPage } from '../redux/slices/stockSlice';
+import {
+  selectAllStocks,
+  selectStocksLoading,
+  selectStocksError,
+  selectFilters,
+  selectPagination,
+} from '../redux/slices/stockSlice';
+import StockList from '../components/StockList/StockList';
+import StockFilters from '../components/StockFilters/StockFilters';
+
+function StocksPage() {
+  const dispatch = useDispatch();
+  const stocks = useSelector(selectAllStocks);
+  const loading = useSelector(selectStocksLoading);
+  const error = useSelector(selectStocksError);
+  const filters = useSelector(selectFilters);
+  const pagination = useSelector(selectPagination);
+
+  const [localError, setLocalError] = useState(null);
+
+  useEffect(() => {
+    // جلب الأسهم عند تحميل الصفحة
+    dispatch(
+      fetchStocks({
+        page: pagination.page,
+        limit: pagination.limit,
+        ...filters,
+      })
+    );
+  }, [dispatch, filters, pagination.page]);
+
+  const handleFilterChange = (newFilters) => {
+    dispatch(setFilters(newFilters));
+    dispatch(setPage(1)); // إعادة تعيين الصفحة
+  };
+
+  const handlePageChange = (newPage) => {
+    dispatch(setPage(newPage));
+    // التمرير إلى أعلى الصفحة
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (error) {
+    setLocalError(error.message || 'حدث خطأ في تحميل الأسهم');
+  }
+
+  return (
+    <div className="stocks-page">
+      <div className="container">
+        {/* رأس الصفحة */}
+        <div className="page-header">
+          <h1>📊 الأسهم</h1>
+          <p>استعرض وحلل جميع الأسهم المتاحة</p>
+        </div>
+
+        {/* الفلاترة */}
+        <StockFilters
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          loading={loading}
+        />
+
+        {/* رسالة الخطأ */}
+        {localError && (
+          <div className="error-message">
+            <p>❌ {localError}</p>
+          </div>
+        )}
+
+        {/* قائمة الأسهم */}
+        {loading ? (
+          <div className="loading-spinner">
+            <p>جاري التحميل...</p>
+          </div>
+        ) : stocks && stocks.length > 0 ? (
+          <>
+            <StockList stocks={stocks} />
+
+            {/* التقسيم إلى صفحات */}
+            {pagination.total > pagination.limit && (
+              <div className="pagination">
+                <button
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                >
+                  السابق
+                </button>
+                <span>
+                  الصفحة {pagination.page} من{' '}
+                  {Math.ceil(pagination.total / pagination.limit)}
+                </span>
+                <button
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={
+                    pagination.page >=
+                    Math.ceil(pagination.total / pagination.limit)
+                  }
+                >
+                  التالي
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="no-data">
+            <p>لا توجد أسهم تطابق معايير البحث</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default StocksPage;
