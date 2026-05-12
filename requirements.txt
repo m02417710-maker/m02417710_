@@ -3,3 +3,5 @@ pandas
 numpy
 yfinance
 streamlit-autorefresh
+scikit-learn
+plotly
