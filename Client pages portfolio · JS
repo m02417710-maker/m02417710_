@@ -1,0 +1,179 @@
+/**
+ * صفحة المحفظة
+ * Portfolio Page
+ */
+
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchPortfolio,
+  selectHoldings,
+  selectPortfolioValue,
+  selectPortfolioGain,
+  selectPortfolioGainPercent,
+  selectPortfolioLoading,
+} from '../redux/slices/portfolioSlice';
+import { selectIsAuthenticated } from '../redux/slices/userSlice';
+import { useNavigate } from 'react-router-dom';
+
+function PortfolioPage() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+
+  const holdings = useSelector(selectHoldings);
+  const totalValue = useSelector(selectPortfolioValue);
+  const totalGain = useSelector(selectPortfolioGain);
+  const totalGainPercent = useSelector(selectPortfolioGainPercent);
+  const loading = useSelector(selectPortfolioLoading);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    dispatch(fetchPortfolio());
+  }, [dispatch, isAuthenticated, navigate]);
+
+  if (loading) {
+    return (
+      <div className="portfolio-page">
+        <div className="loading-spinner">جاري التحميل...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="portfolio-page">
+      <div className="container">
+        {/* رأس الصفحة */}
+        <div className="page-header">
+          <h1>💼 محفظتي</h1>
+          <p>إدارة ومراقبة استثماراتك</p>
+        </div>
+
+        {/* ملخص المحفظة */}
+        <div className="portfolio-summary">
+          <div className="summary-card">
+            <div className="card-label">إجمالي القيمة</div>
+            <div className="card-value">{totalValue?.toFixed(2)} جنيه</div>
+          </div>
+
+          <div className="summary-card">
+            <div className="card-label">الأرباح/الخسائر</div>
+            <div className={`card-value ${totalGain >= 0 ? 'positive' : 'negative'}`}>
+              {totalGain >= 0 ? '+' : ''}{totalGain?.toFixed(2)} جنيه
+            </div>
+          </div>
+
+          <div className="summary-card">
+            <div className="card-label">نسبة العائد</div>
+            <div className={`card-value ${totalGainPercent >= 0 ? 'positive' : 'negative'}`}>
+              {totalGainPercent >= 0 ? '+' : ''}{totalGainPercent?.toFixed(2)}%
+            </div>
+          </div>
+
+          <div className="summary-card">
+            <div className="card-label">عدد الأسهم</div>
+            <div className="card-value">{holdings?.length || 0}</div>
+          </div>
+        </div>
+
+        {/* قائمة المقتنيات */}
+        <div className="holdings-section">
+          <div className="section-header">
+            <h2>📊 مقتنياتي</h2>
+            <button className="btn btn-small">➕ إضافة سهم</button>
+          </div>
+
+          {holdings && holdings.length > 0 ? (
+            <div className="holdings-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>السهم</th>
+                    <th>الكمية</th>
+                    <th>سعر الشراء</th>
+                    <th>السعر الحالي</th>
+                    <th>القيمة الحالية</th>
+                    <th>الأرباح/الخسائر</th>
+                    <th>النسبة %</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {holdings.map((holding) => (
+                    <tr key={holding.id}>
+                      <td className="stock-name">
+                        <strong>{holding.stockCode}</strong>
+                      </td>
+                      <td>{holding.quantity}</td>
+                      <td>{holding.purchasePrice?.toFixed(2)}</td>
+                      <td>{holding.currentPrice?.toFixed(2)}</td>
+                      <td>{holding.currentValue?.toFixed(2)}</td>
+                      <td
+                        className={
+                          holding.unrealizedGain >= 0 ? 'positive' : 'negative'
+                        }
+                      >
+                        {holding.unrealizedGain >= 0 ? '+' : ''}
+                        {holding.unrealizedGain?.toFixed(2)}
+                      </td>
+                      <td
+                        className={
+                          holding.unrealizedGainPercent >= 0 ? 'positive' : 'negative'
+                        }
+                      >
+                        {holding.unrealizedGainPercent?.toFixed(2)}%
+                      </td>
+                      <td>
+                        <button className="btn-link">⋯</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>📭 لا توجد أسهم في محفظتك بعد</p>
+              <button className="btn btn-primary">
+                ➕ إضافة سهمك الأول
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* الإحصائيات */}
+        <div className="portfolio-stats">
+          <div className="stat-card">
+            <h3>📈 أفضل أداء</h3>
+            <p className="stat-value">TELECOM</p>
+            <p className="stat-subtitle">+15.2%</p>
+          </div>
+
+          <div className="stat-card">
+            <h3>📉 أسوأ أداء</h3>
+            <p className="stat-value">PALM</p>
+            <p className="stat-subtitle">-8.5%</p>
+          </div>
+
+          <div className="stat-card">
+            <h3>💰 إجمالي الاستثمار</h3>
+            <p className="stat-value">100,000</p>
+            <p className="stat-subtitle">جنيه</p>
+          </div>
+
+          <div className="stat-card">
+            <h3>📊 متوسط العائد</h3>
+            <p className="stat-value positive">12.5%</p>
+            <p className="stat-subtitle">سنوياً</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default PortfolioPage;
