@@ -1,0 +1,205 @@
+/**
+ * Redux Slice - الأسهم
+ * Stock State Management
+ */
+
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Async Thunks
+export const fetchStocks = createAsyncThunk(
+  'stocks/fetchStocks',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/stocks`, { params });
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchStockById = createAsyncThunk(
+  'stocks/fetchStockById',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/stocks/${id}`);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchTechnicalIndicators = createAsyncThunk(
+  'stocks/fetchTechnicalIndicators',
+  async ({ id, period = 30 }, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/stocks/${id}/technicals`, {
+        params: { period },
+      });
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const analyzeStock = createAsyncThunk(
+  'stocks/analyzeStock',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${API_URL}/stocks/${id}/analyze`);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Initial State
+const initialState = {
+  list: [],
+  selectedStock: null,
+  indicators: null,
+  analysis: null,
+  loading: false,
+  error: null,
+  filters: {
+    sector: null,
+    minPrice: null,
+    maxPrice: null,
+    sort: 'price',
+  },
+  pagination: {
+    page: 1,
+    limit: 20,
+    total: 0,
+  },
+};
+
+// Slice
+const stockSlice = createSlice({
+  name: 'stocks',
+  initialState,
+  reducers: {
+    // تعيين الفلاترة
+    setFilters: (state, action) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+
+    // تعيين الصفحة
+    setPage: (state, action) => {
+      state.pagination.page = action.payload;
+    },
+
+    // مسح الخطأ
+    clearError: (state) => {
+      state.error = null;
+    },
+
+    // تعيين السهم المختار
+    selectStock: (state, action) => {
+      state.selectedStock = action.payload;
+    },
+
+    // تحديث السعر في الوقت الفعلي
+    updateStockPrice: (state, action) => {
+      const { id, price, change, changePercent } = action.payload;
+      const stock = state.list.find(s => s.id === id);
+      if (stock) {
+        stock.currentPrice = price;
+        stock.change = change;
+        stock.changePercent = changePercent;
+      }
+
+      if (state.selectedStock?.id === id) {
+        state.selectedStock.currentPrice = price;
+        state.selectedStock.change = change;
+        state.selectedStock.changePercent = changePercent;
+      }
+    },
+  },
+
+  extraReducers: (builder) => {
+    // fetchStocks
+    builder
+      .addCase(fetchStocks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchStocks.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list = action.payload;
+      })
+      .addCase(fetchStocks.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // fetchStockById
+    builder
+      .addCase(fetchStockById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchStockById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedStock = action.payload;
+      })
+      .addCase(fetchStockById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // fetchTechnicalIndicators
+    builder
+      .addCase(fetchTechnicalIndicators.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchTechnicalIndicators.fulfilled, (state, action) => {
+        state.loading = false;
+        state.indicators = action.payload;
+      })
+      .addCase(fetchTechnicalIndicators.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // analyzeStock
+    builder
+      .addCase(analyzeStock.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(analyzeStock.fulfilled, (state, action) => {
+        state.loading = false;
+        state.analysis = action.payload;
+      })
+      .addCase(analyzeStock.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
+});
+
+export const {
+  setFilters,
+  setPage,
+  clearError,
+  selectStock,
+  updateStockPrice,
+} = stockSlice.actions;
+
+// Selectors
+export const selectAllStocks = (state) => state.stocks.list;
+export const selectSelectedStock = (state) => state.stocks.selectedStock;
+export const selectIndicators = (state) => state.stocks.indicators;
+export const selectAnalysis = (state) => state.stocks.analysis;
+export const selectStocksLoading = (state) => state.stocks.loading;
+export const selectStocksError = (state) => state.stocks.error;
+export const selectFilters = (state) => state.stocks.filters;
+export const selectPagination = (state) => state.stocks.pagination;
+
+export default stockSlice.reducer;
