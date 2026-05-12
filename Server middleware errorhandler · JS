@@ -1,0 +1,117 @@
+/**
+ * معالج الأخطاء
+ * Error Handler Middleware
+ */
+
+const logger = require('../utils/logger');
+
+/**
+ * فئة الخطأ المخصص
+ */
+class AppError extends Error {
+  constructor(message, statusCode = 500) {
+    super(message);
+    this.statusCode = statusCode;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+/**
+ * معالج الأخطاء الرئيسي
+ */
+const errorHandler = (err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || 'حدث خطأ في الخادم';
+
+  // تسجيل الخطأ
+  logger.error(`[${req.method} ${req.path}] ${message}`, {
+    statusCode,
+    stack: err.stack,
+  });
+
+  // الرد على العميل
+  res.status(statusCode).json({
+    success: false,
+    message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+};
+
+/**
+ * دالة helper لرفع خطأ
+ */
+const catchAsync = (fn) => {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch((err) => {
+      const error = new AppError(
+        err.message || 'حدث خطأ',
+        err.statusCode || 500
+      );
+      next(error);
+    });
+  };
+};
+
+/**
+ * معالج الأخطاء المخصصة
+ */
+const handleErrors = (err, req, res, next) => {
+  let error = { ...err };
+  error.message = err.message;
+
+  // Mongoose Bad ObjectId
+  if (err.name === 'CastError') {
+    const message = 'معرف غير صحيح';
+    error = new AppError(message, 400);
+  }
+
+  // Mongoose Duplicate Key
+  if (err.code === 11000) {
+    const message = 'القيمة مكررة، استخدم قيمة مختلفة';
+    error = new AppError(message, 400);
+  }
+
+  // Mongoose Validation Error
+  if (err.name === 'ValidationError') {
+    const message = Object.values(err.errors)
+      .map((val) => val.message)
+      .join(', ');
+    error = new AppError(message, 400);
+  }
+
+  // JWT Errors
+  if (err.name === 'JsonWebTokenError') {
+    const message = 'التوكن غير صحيح';
+    error = new AppError(message, 401);
+  }
+
+  if (err.name === 'TokenExpiredError') {
+    const message = 'انتهت صلاحية التوكن';
+    error = new AppError(message, 401);
+  }
+
+  res.status(error.statusCode || 500).json({
+    success: false,
+    message: error.message || 'حدث خطأ في الخادم',
+  });
+};
+
+/**
+ * معالج 404
+ */
+const notFoundHandler = (req, res) => {
+  logger.warn(`محاولة الوصول إلى مسار غير موجود: ${req.originalUrl}`);
+
+  res.status(404).json({
+    success: false,
+    message: `المسار ${req.originalUrl} غير موجود`,
+  });
+};
+
+module.exports = {
+  AppError,
+  errorHandler,
+  handleErrors,
+  notFoundHandler,
+  catchAsync,
+};
