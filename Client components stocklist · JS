@@ -1,0 +1,154 @@
+/**
+ * قائمة الأسهم
+ * Stock List Component
+ */
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import './StockList.css';
+
+function StockList({ stocks }) {
+  if (!stocks || stocks.length === 0) {
+    return <div className="no-stocks">لا توجد أسهم</div>;
+  }
+
+  return (
+    <div className="stock-list">
+      <div className="table-responsive">
+        <table className="stocks-table">
+          <thead>
+            <tr>
+              <th>الرمز</th>
+              <th>الاسم</th>
+              <th>السعر</th>
+              <th>التغير</th>
+              <th>النسبة %</th>
+              <th>الحجم</th>
+              <th>P/E</th>
+              <th>العائد</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {stocks.map((stock) => (
+              <tr key={stock.id} className="stock-row">
+                <td className="code">
+                  <span className="code-badge">{stock.code}</span>
+                </td>
+                <td className="name">{stock.name}</td>
+                <td className="price">
+                  <strong>{stock.currentPrice?.toFixed(2)}</strong>
+                </td>
+                <td className={`change ${stock.change >= 0 ? 'positive' : 'negative'}`}>
+                  {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}
+                </td>
+                <td
+                  className={`percent ${
+                    stock.changePercent >= 0 ? 'positive' : 'negative'
+                  }`}
+                >
+                  {stock.changePercent >= 0 ? '📈' : '📉'}{' '}
+                  {stock.changePercent?.toFixed(2)}%
+                </td>
+                <td className="volume">
+                  {stock.volume
+                    ? (stock.volume / 1000000).toFixed(2) + 'M'
+                    : '-'}
+                </td>
+                <td className="pe">
+                  <span className={stock.pe < 15 ? 'low' : stock.pe > 20 ? 'high' : ''}>
+                    {stock.pe?.toFixed(2)}
+                  </span>
+                </td>
+                <td className="dividend">
+                  {stock.dividendYield?.toFixed(2)}%
+                </td>
+                <td className="actions">
+                  <Link
+                    to={`/stocks/${stock.id}`}
+                    className="btn-link"
+                    title="عرض التفاصيل"
+                  >
+                    📊
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* شبكة البطاقات للهاتف */}
+      <div className="stock-cards">
+        {stocks.map((stock) => (
+          <div key={stock.id} className="stock-card">
+            <div className="card-header">
+              <div>
+                <h3>{stock.code}</h3>
+                <p>{stock.name}</p>
+              </div>
+              <div
+                className={`change-indicator ${
+                  stock.change >= 0 ? 'positive' : 'negative'
+                }`}
+              >
+                {stock.change >= 0 ? '📈' : '📉'}
+              </div>
+            </div>
+
+            <div className="card-body">
+              <div className="price-section">
+                <span className="label">السعر</span>
+                <span className="value">{stock.currentPrice?.toFixed(2)}</span>
+              </div>
+
+              <div className="change-section">
+                <span className="label">التغير</span>
+                <span
+                  className={`value ${
+                    stock.change >= 0 ? 'positive' : 'negative'
+                  }`}
+                >
+                  {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="percent-section">
+                <span className="label">النسبة</span>
+                <span
+                  className={`value ${
+                    stock.changePercent >= 0 ? 'positive' : 'negative'
+                  }`}
+                >
+                  {stock.changePercent?.toFixed(2)}%
+                </span>
+              </div>
+
+              <div className="metrics">
+                <div className="metric">
+                  <span className="label">P/E</span>
+                  <span className="value">{stock.pe?.toFixed(2)}</span>
+                </div>
+                <div className="metric">
+                  <span className="label">العائد</span>
+                  <span className="value">{stock.dividendYield?.toFixed(2)}%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card-footer">
+              <Link
+                to={`/stocks/${stock.id}`}
+                className="btn btn-small"
+              >
+                عرض التفاصيل
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default StockList;
