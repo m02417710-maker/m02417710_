@@ -1,0 +1,145 @@
+/**
+ * شريط التنقل
+ * Navigation Bar Component
+ */
+
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout, selectUser, selectIsAuthenticated } from '../../redux/slices/userSlice';
+import { toggleSidebar, setTheme, selectTheme } from '../../redux/slices/uiSlice';
+import './NavBar.css';
+
+function NavBar() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const theme = useSelector(selectTheme);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/');
+  };
+
+  const handleThemeToggle = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    dispatch(setTheme(newTheme));
+    document.documentElement.setAttribute('data-theme', newTheme);
+  };
+
+  return (
+    <nav className="navbar">
+      <div className="navbar-container">
+        {/* الشعار */}
+        <Link to="/" className="navbar-logo">
+          <span className="logo-icon">📊</span>
+          <span className="logo-text">محلل الأسهم</span>
+        </Link>
+
+        {/* القائمة الرئيسية */}
+        <div className="navbar-menu">
+          <Link to="/" className="nav-link">
+            🏠 الرئيسية
+          </Link>
+          <Link to="/stocks" className="nav-link">
+            📈 الأسهم
+          </Link>
+
+          {isAuthenticated && (
+            <>
+              <Link to="/portfolio" className="nav-link">
+                💼 المحفظة
+              </Link>
+              <Link to="/alerts" className="nav-link">
+                🔔 التنبيهات
+              </Link>
+              <Link to="/reports" className="nav-link">
+                📊 التقارير
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* أيقونات اليمين */}
+        <div className="navbar-icons">
+          {/* تبديل الموضوع */}
+          <button
+            className="icon-btn"
+            onClick={handleThemeToggle}
+            title="تغيير الموضوع"
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+
+          {/* البحث */}
+          <button className="icon-btn" title="بحث">
+            🔍
+          </button>
+
+          {/* الإشعارات */}
+          <button className="icon-btn" title="الإشعارات">
+            📬
+          </button>
+
+          {/* قائمة المستخدم */}
+          {isAuthenticated ? (
+            <div className="user-menu">
+              <button
+                className="user-avatar"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                title={user?.name || 'المستخدم'}
+              >
+                {user?.name ? user.name.charAt(0) : '👤'}
+              </button>
+
+              {dropdownOpen && (
+                <div className="user-dropdown">
+                  <div className="dropdown-header">
+                    <p>{user?.name}</p>
+                    <p className="user-email">{user?.email}</p>
+                  </div>
+
+                  <hr />
+
+                  <Link to="/profile" className="dropdown-item">
+                    ⚙️ الملف الشخصي
+                  </Link>
+                  <Link to="/settings" className="dropdown-item">
+                    🔧 الإعدادات
+                  </Link>
+                  <Link to="/help" className="dropdown-item">
+                    ❓ المساعدة
+                  </Link>
+
+                  <hr />
+
+                  <button
+                    className="dropdown-item logout"
+                    onClick={handleLogout}
+                  >
+                    🚪 تسجيل الخروج
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link to="/login" className="btn btn-small">
+              🔐 تسجيل الدخول
+            </Link>
+          )}
+        </div>
+
+        {/* زر القائمة للهاتف */}
+        <button className="hamburger" onClick={() => dispatch(toggleSidebar())}>
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+export default NavBar;
