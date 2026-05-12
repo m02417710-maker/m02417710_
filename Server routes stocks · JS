@@ -1,1 +1,181 @@
+/**
+ * مسارات الأسهم
+ * Stock Routes
+ */
 
+const express = require('express');
+const router = express.Router();
+const { param, query, validationResult } = require('express-validator');
+const stockController = require('../controllers/stockController');
+const authMiddleware = require('../middleware/auth');
+
+// ============================================================
+// الأسهم العامة (بدون مصادقة)
+// ============================================================
+
+/**
+ * GET /api/stocks
+ * الحصول على قائمة الأسهم مع الفلترة
+ */
+router.get(
+  '/',
+  [
+    query('page').optional().isInt({ min: 1 }).toInt(),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('sector').optional().isString(),
+    query('minPrice').optional().isFloat({ min: 0 }).toFloat(),
+    query('maxPrice').optional().isFloat({ min: 0 }).toFloat(),
+    query('sort').optional().isIn(['price', 'change', 'volume', 'pe']),
+  ],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+    next();
+  },
+  stockController.getStocks
+);
+
+/**
+ * GET /api/stocks/:id
+ * الحصول على تفاصيل سهم محدد
+ */
+router.get(
+  '/:id',
+  [param('id').isUUID().withMessage('معرف السهم غير صحيح')],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+    next();
+  },
+  stockController.getStockById
+);
+
+/**
+ * GET /api/stocks/:id/technicals
+ * الحصول على المؤشرات الفنية لسهم
+ */
+router.get(
+  '/:id/technicals',
+  [
+    param('id').isUUID(),
+    query('period').optional().isInt({ min: 1, max: 365 }).toInt(),
+  ],
+  stockController.getTechnicalIndicators
+);
+
+/**
+ * GET /api/stocks/:id/history
+ * الحصول على البيانات التاريخية لسهم
+ */
+router.get(
+  '/:id/history',
+  [
+    param('id').isUUID(),
+    query('startDate').optional().isISO8601(),
+    query('endDate').optional().isISO8601(),
+    query('interval').optional().isIn(['daily', 'weekly', 'monthly']),
+  ],
+  stockController.getStockHistory
+);
+
+/**
+ * GET /api/stocks/:id/recommendations
+ * الحصول على التوصيات للسهم
+ */
+router.get(
+  '/:id/recommendations',
+  [param('id').isUUID()],
+  stockController.getRecommendations
+);
+
+/**
+ * GET /api/stocks/:id/news
+ * الحصول على الأخبار المتعلقة بالسهم
+ */
+router.get(
+  '/:id/news',
+  [param('id').isUUID()],
+  stockController.getStockNews
+);
+
+// ============================================================
+// العمليات المحمية (تتطلب مصادقة)
+// ============================================================
+
+/**
+ * POST /api/stocks/compare
+ * مقارنة عدة أسهم
+ */
+router.post(
+  '/compare',
+  authMiddleware,
+  stockController.compareStocks
+);
+
+/**
+ * POST /api/stocks/:id/analyze
+ * تحليل متقدم لسهم
+ */
+router.post(
+  '/:id/analyze',
+  authMiddleware,
+  [param('id').isUUID()],
+  stockController.analyzeStock
+);
+
+// ============================================================
+// عمليات الإدارة (مسؤول فقط)
+// ============================================================
+
+/**
+ * POST /api/stocks
+ * إنشاء سهم جديد
+ */
+router.post(
+  '/',
+  authMiddleware,
+  // checkRole('admin'),
+  stockController.createStock
+);
+
+/**
+ * PUT /api/stocks/:id
+ * تحديث بيانات السهم
+ */
+router.put(
+  '/:id',
+  authMiddleware,
+  // checkRole('admin'),
+  [param('id').isUUID()],
+  stockController.updateStock
+);
+
+/**
+ * DELETE /api/stocks/:id
+ * حذف سهم
+ */
+router.delete(
+  '/:id',
+  authMiddleware,
+  // checkRole('admin'),
+  [param('id').isUUID()],
+  stockController.deleteStock
+);
+
+/**
+ * POST /api/stocks/:id/refresh
+ * تحديث بيانات السهم من المصدر الخارجي
+ */
+router.post(
+  '/:id/refresh',
+  authMiddleware,
+  // checkRole('admin'),
+  [param('id').isUUID()],
+  stockController.refreshStockData
+);
+
+module.exports = router;
