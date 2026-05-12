@@ -1,112 +1,180 @@
 import streamlit as st
 import pandas as pd
-from market_engine import get_stock_intelligence
-from visual_tools import create_market_heatmap, create_candle_chart
-from news_feed import show_news_feed
-
-st.set_page_config(page_title="EGX Ultimate Terminal", layout="wide")
-
-# قائمة الأسهم الشاملة
-tickers = ["COMI", "FWRY", "TMGH", "ABUK", "SWDY", "EKHO", "ETEL", "ORAS", "AMOC", "PHDC", "JUFO"]
-
-# جلب البيانات
-market_results = []
-for t in tickers:
-    res = get_stock_intelligence(t)
-    if res: market_results.append(res)
-
-df_main = pd.DataFrame(market_results).drop(columns=['history', 'info'])
-
-# عرض الواجهة
-st.title("🏛️ منصة البورصة المصرية الكاملة")
-
-col_a, col_b = st.columns([2, 1])
-with col_a:
-    st.subheader("🌡️ خريطة نبض السوق")
-    st.plotly_chart(create_market_heatmap(df_main), use_container_width=True)
-
-with col_b:
-    st.subheader("📋 رادار التوزيعات")
-    st.table(df_main[['الرمز', 'السعر', 'توزيعات', 'القرار']].head(6))
-
-st.divider()
-show_news_feed(market_results)
-
-# شريط النبض السفلي
-st.markdown(f"""
-    <div style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #000; color: #0f0; padding: 5px; text-align: center; z-index: 100;">
-        <marquee scrollamount="5">🚀 نبض السوق: أفضل جودة استثمار حالياً في سهم {df_main.iloc[0]['الرمز']} | تم تحديث البيانات بنجاح</marquee>
-    </div>
-""", unsafe_allow_html=True)
-import streamlit as st
-
-def show_news_feed(all_stocks):
-    st.subheader("🗞️ نبض أخبار الشركات")
-    for stock in all_stocks[:10]:
-        # تم استخدام مفتاح 'القرار' الموحد لتجنب KeyError
-        st.write(f"📢 **{stock['الرمز']}**: يسجل RSI {stock['RSI']} وحالته الآن **{stock['القرار']}**. توزيعات الأرباح المتوقعة: {stock['توزيعات']}")
-        st.divider()
-        def calculate_position_size(capital, risk_pct, current_price, stop_loss):
-    risk_amount = capital * (risk_pct / 100)
-    price_diff = current_price - stop_loss
-    
-    if price_diff <= 0:
-        return 0, "سعر الوقف يجب أن يكون أقل من السعر الحالي"
-    
-    quantity = int(risk_amount / price_diff)
-    total_value = quantity * current_price
-    
-    return quantity, total_value
-    
+import numpy as np
+import yfinance as yf
 import plotly.graph_objects as go
 import plotly.express as px
+from datetime import datetime, timedelta
 
-def create_market_heatmap(df):
-    # إنشاء خريطة الحرارة بناءً على السعر والتغير
-    fig = px.treemap(df, path=['الرمز'], values='السعر', color='التغير',
-                     color_continuous_scale='RdYlGn', range_color=[-3, 3])
-    fig.update_layout(margin=dict(t=0, l=0, r=0, b=0), height=400)
-    return fig
+st.set_page_config(page_title="EGX Master Terminal", layout="wide", page_icon="🏛️")
 
-def create_candle_chart(df, ticker_name):
-    # رسم الشموع اليابانية
-    fig = go.Figure(data=[go.Candlestick(x=df.index, open=df['Open'], 
-                    high=df['High'], low=df['Low'], close=df['Close'])])
-    fig.update_layout(template="plotly_dark", xaxis_rangeslider_visible=False, title=f"تحليل سهم {ticker_name}")
-    return fig
-import yfinance as yf
-import pandas as pd
-import numpy as np
+# ============================================================
+# إعدادات وثوابت
+# ============================================================
+EGX_TICKERS = ["COMI", "FWRY", "TMGH", "ABUK", "SWDY", "EKHO", "ETEL", "ORAS", "AMOC", "PHDC", "JUFO", "HELI"]
 
-def get_stock_intelligence(ticker):
-    symbol = f"{ticker}.CA"
-    stock = yf.Ticker(symbol)
-    df = stock.history(period="1y")
+# ============================================================
+# طبقة البيانات (Backend)
+# ============================================================
+@st.cache_data(ttl=180, show_spinner=False)
+def fetch_market_intelligence():
+    results = []
+    for ticker in EGX_TICKERS:
+        try:
+            symbol = f"{ticker}.CA"
+            stock = yf.Ticker(symbol)
+            
+            # جلب البيانات بطريقة أكثر موثوقية
+            df = stock.history(period="1y", interval="1d")
+            if df.empty or len(df) < 20:
+                continue
+
+            # تنظيف الأعمدة
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+
+            close = df['Close']
+            
+            # === RSI محسن ===
+            delta = close.diff()
+            gain = delta.where(delta > 0, 0).rolling(window=14).mean()
+            loss = -delta.where(delta < 0, 0).rolling(window=14).mean()
+            rs = gain / loss.replace(0, np.nan)
+            rsi = 100 - (100 / (1 + rs))
+            rsi_val = rsi.iloc[-1]
+
+            info = stock.info
+            current_price = close.iloc[-1]
+            prev_price = close.iloc[-2]
+            change_pct = ((current_price / prev_price) - 1) * 100
+
+            # نظام التقييم
+            pe = info.get('trailingPE', np.nan)
+            div_yield = info.get('dividendYield', 0) or 0
+            score = 0
+            if 0 < pe < 16: score += 5
+            if div_yield > 0.04: score += 5
+
+            decision = "دخول ذهبي 🟢" if rsi_val < 35 else \
+                       "جني أرباح 🔴" if rsi_val > 65 else "مراقبة 🟡"
+
+            results.append({
+                "الرمز": ticker,
+                "السعر": round(current_price, 2),
+                "التغير%": round(change_pct, 2),
+                "RSI": round(rsi_val, 1),
+                "P/E": round(pe, 1) if not np.isnan(pe) else "N/A",
+                "توزيعات": f"{div_yield*100:.2f}%",
+                "الجودة": f"{score}/10",
+                "القرار": decision,
+                "history": df,
+                "info": info
+            })
+        except Exception as e:
+            st.warning(f"خطأ في جلب {ticker}: {str(e)}")
+            continue
+    return results
+
+
+# ============================================================
+# الواجهة
+# ============================================================
+data_pool = fetch_market_intelligence()
+
+if not data_pool:
+    st.error("تعذر جلب البيانات. تحقق من الاتصال بالإنترنت.")
+    st.stop()
+
+df_main = pd.DataFrame(data_pool).drop(columns=['history', 'info'])
+
+st.title("🏛️ EGX Master Terminal")
+st.caption("منصة تحليل البورصة المصرية | مبنية وفق أفضل ممارسات Full-Stack 2026")
+
+tab_r, tab_d, tab_n, tab_s = st.tabs(["📈 رادار السوق", "🔍 تحليل معمق", "🗞️ نبض الأخبار", "🛡️ إدارة المخاطر"])
+
+# ==================== تبويب الرادار ====================
+with tab_r:
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.subheader("🌡️ خريطة سيولة السوق")
+        fig = px.treemap(df_main, path=['الرمز'], values='السعر',
+                        color='التغير%', color_continuous_scale='RdYlGn',
+                        range_color=[-4, 4])
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.subheader("⭐ أفضل 5 أسهم جودة")
+        top5 = df_main.sort_values('الجودة', ascending=False).head(5)
+        st.dataframe(top5[['الرمز', 'الجودة', 'القرار', 'RSI']], use_container_width=True, hide_index=True)
+
+    st.subheader("📋 جميع الأسهم")
+    st.dataframe(df_main, use_container_width=True, hide_index=True)
+
+# ==================== تبويب التحليل المعمق ====================
+with tab_d:
+    target = st.selectbox("اختر السهم:", df_main['الرمز'].tolist(), key="stock_select")
     
-    if df.empty: return None
-    
-    # معالجة مشكلة Multi-Index لضمان استقرار الجداول
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
-    
-    # حساب مؤشر القوة النسبية RSI
-    delta = df['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-    rs = gain / (loss.replace(0, np.nan))
-    rsi = 100 - (100 / (1 + rs.fillna(0)))
-    
-    info = stock.info
-    curr_p = df['Close'].iloc[-1]
-    
-    # تجميع البيانات المالية والفنية
-    return {
-        "الرمز": ticker,
-        "السعر": round(curr_p, 2),
-        "التغير": round(((curr_p / df['Close'].iloc[-2]) - 1) * 100, 2),
-        "RSI": round(rsi.iloc[-1], 1),
-        "توزيعات": f"{info.get('dividendYield', 0)*100:.2f}%",
-        "القرار": "دخول ذهبي 🟢" if rsi.iloc[-1] < 35 else "جني أرباح 🔴" if rsi.iloc[-1] > 65 else "مراقبة 🟡",
-        "history": df,
-        "info": info
-    }
+    # البحث عن السهم المختار
+    selected_stock = next((item for item in data_pool if item["الرمز"] == target), None)
+    if selected_stock:
+        df_hist = selected_stock['history']
+        
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            fig = go.Figure(data=[go.Candlestick(
+                x=df_hist.index,
+                open=df_hist['Open'],
+                high=df_hist['High'],
+                low=df_hist['Low'],
+                close=df_hist['Close']
+            )])
+            fig.update_layout(template="plotly_dark", xaxis_rangeslider_visible=False, height=600)
+            st.plotly_chart(fig, use_container_width=True)
+
+        with c2:
+            st.subheader("📊 التقرير المالي")
+            st.metric("السعر الحالي", f"{selected_stock['السعر']} ج.م", f"{selected_stock['التغير%']}%")
+            st.metric("جودة الاستثمار", selected_stock['الجودة'])
+            st.metric("مكرر الربح", selected_stock['P/E'])
+            st.metric("RSI (14)", selected_stock['RSI'])
+            
+            quality = int(selected_stock['الجودة'].split('/')[0])
+            st.progress(quality * 10, text=f"مستوى الجودة: {quality}/10")
+
+# ==================== تبويب الأخبار ====================
+with tab_n:
+    st.subheader("📰 نبض السوق اللحظي")
+    for stock in data_pool:
+        st.info(f"**{stock['الرمز']}** — {stock['القرار']} | RSI: {stock['RSI']} | توزيعات: {stock['توزيعات']}")
+        st.divider()
+
+# ==================== تبويب إدارة المخاطر ====================
+with tab_s:
+    st.sidebar.header("⚙️ إعدادات المحفظة")
+    capital = st.sidebar.number_input("رأس المال (ج.م)", value=500_000, min_value=10_000)
+    risk_pct = st.sidebar.slider("نسبة المخاطرة لكل صفقة (%)", 0.5, 5.0, 1.0)
+
+    if 'stock_select' in st.session_state:
+        target = st.session_state.stock_select
+        s = next((item for item in data_pool if item["الرمز"] == target), None)
+        
+        if s:
+            st.subheader(f"🛡️ حاسبة المخاطر - {target}")
+            sl_price = st.number_input("سعر وقف الخسارة", value=float(s['السعر'] * 0.93))
+            diff = s['السعر'] - sl_price
+            
+            if diff > 0:
+                shares = int((capital * (risk_pct / 100)) / diff)
+                position_value = shares * s['السعر']
+                st.success(f"**الكمية الموصى بها: {shares:,} سهم**")
+                st.info(f"قيمة المركز: {position_value:,.0f} ج.م")
+                st.warning(f"الخسارة المحتملة إذا تم الوقف: {capital * (risk_pct/100):,.0f} ج.م")
+
+# ==================== Footer ذكي ====================
+st.markdown("---")
+st.markdown(f"""
+<div style="text-align: center; color: #0f0; padding: 10px;">
+    🔴 نبض السوق الآن • أفضل سهم جودة: <b>{df_main.sort_values('الجودة', ascending=False).iloc[0]['الرمز']}</b> 
+    • آخر تحديث: {datetime.now().strftime('%H:%M:%S')}
+</div>
+""", unsafe_allow_html=True)
