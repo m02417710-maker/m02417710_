@@ -101,17 +101,6 @@ if not st.session_state.logged_in:
     st.title("🏛️ EGX Master Terminal v12.0")
     st.subheader("المنصة الشاملة الذكية للبورصة المصرية")
     col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        username = st.text_input("اسم المستخدم")
-        password = st.text_input("كلمة المرور", type="password")
-        if st.button("دخول", type="primary", use_container_width=True):
-            if username in USERS and USERS[username] == password:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.success("✅ تم تسجيل الدخول")
-                st.rerun()
-    st.stop()
-
 # ====================== Sidebar ======================
 with st.sidebar:
     st.success(f"👋 مرحباً {st.session_state.username}")
