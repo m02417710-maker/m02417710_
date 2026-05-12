@@ -993,15 +993,175 @@ upcoming_dividends = [
     {"date": "2026-06-10", "symbol": "ABUK", "company": "أبو قير", "type": "نقدي", "amount": 4.50, "status": "بعد 25 يوم"},
 ]
 
+
+# ==================== AUTOMATED ANALYSIS & ALERTS ENGINE ====================
+def analyze_all_stocks(stocks_list, market_type="EGX"):
+    """Analyze all stocks and generate buy/sell alerts"""
+    alerts = []
+
+    for stock in stocks_list:
+        try:
+            suffix = ".CA" if market_type == "EGX" else ""
+            df = yf.Ticker(f"{stock['symbol']}{suffix}").history(period="3mo")
+
+            if df.empty or len(df) < 30:
+                continue
+
+            # Calculate indicators
+            df = calculate_technical_indicators(df)
+            latest = df.iloc[-1]
+
+            # Skip if RSI or MACD is NaN
+            if pd.isna(latest['RSI']) or pd.isna(latest['MACD']):
+                continue
+
+            # Generate signals
+            signals = generate_trading_signals(df)
+            overall_signal, score, signal_text = calculate_overall_signal(signals)
+
+            # Calculate risk levels
+            atr = latest['ATR'] if not pd.isna(latest['ATR']) else 0
+            current_price = latest['Close']
+
+            # Risk management levels
+            stop_loss = current_price - (atr * 2) if atr > 0 else current_price * 0.95
+            take_profit_1 = current_price + (atr * 2) if atr > 0 else current_price * 1.05
+            take_profit_2 = current_price + (atr * 3.5) if atr > 0 else current_price * 1.10
+
+            # Risk/Reward ratio
+            risk = current_price - stop_loss
+            reward = take_profit_1 - current_price
+            rr_ratio = reward / risk if risk > 0 else 0
+
+            # Calculate trend strength
+            trend_strength = 0
+            if latest['Close'] > latest['SMA_20']:
+                trend_strength += 1
+            if latest['Close'] > latest['SMA_50']:
+                trend_strength += 1
+            if latest['SMA_20'] > latest['SMA_50']:
+                trend_strength += 1
+
+            # Volume confirmation
+            volume_confirm = latest['Volume_Ratio'] > 1.2 if not pd.isna(latest['Volume_Ratio']) else False
+
+            # Calculate opportunity score (0-100)
+            opportunity_score = 0
+
+            # RSI factor (oversold = good for buying)
+            if latest['RSI'] < 30:
+                opportunity_score += 25
+            elif latest['RSI'] < 40:
+                opportunity_score += 15
+            elif latest['RSI'] > 70:
+                opportunity_score -= 20
+
+            # MACD factor
+            if latest['MACD'] > latest['MACD_Signal']:
+                opportunity_score += 20
+                if latest['MACD_Histogram'] > 0:
+                    opportunity_score += 10
+
+            # Bollinger factor
+            if latest['BB_Position'] < 0.2:
+                opportunity_score += 15
+            elif latest['BB_Position'] > 0.8:
+                opportunity_score -= 15
+
+            # Trend factor
+            opportunity_score += trend_strength * 10
+
+            # Volume factor
+            if volume_confirm:
+                opportunity_score += 10
+
+            # Risk/Reward factor
+            if rr_ratio > 2:
+                opportunity_score += 15
+            elif rr_ratio > 1.5:
+                opportunity_score += 10
+
+            # Stochastic factor
+            if latest['Stoch_K'] < 20:
+                opportunity_score += 10
+
+            # Clamp score to 0-100
+            opportunity_score = max(0, min(100, opportunity_score))
+
+            # Determine alert level
+            if opportunity_score >= 75 and overall_signal in ["STRONG_BUY", "BUY"]:
+                alert_level = "🔥 فرصة شراء قوية"
+                alert_color = "#10b981"
+                priority = 1
+            elif opportunity_score >= 60 and overall_signal in ["STRONG_BUY", "BUY", "HOLD"]:
+                alert_level = "🟢 فرصة شراء جيدة"
+                alert_color = "#34d399"
+                priority = 2
+            elif opportunity_score >= 45 and overall_signal == "HOLD":
+                alert_level = "🟡 مراقبة"
+                alert_color = "#fbbf24"
+                priority = 3
+            elif opportunity_score < 30 and overall_signal in ["SELL", "STRONG_SELL"]:
+                alert_level = "🔴 إشارة بيع"
+                alert_color = "#ef4444"
+                priority = 4
+            else:
+                alert_level = "⚪ محايد"
+                alert_color = "#94a3b8"
+                priority = 5
+
+            alerts.append({
+                "symbol": stock['symbol'],
+                "name": stock['name'],
+                "sector": stock['sector'],
+                "price": round(current_price, 2),
+                "change_pct": stock.get('change_pct', 0),
+                "signal": overall_signal,
+                "signal_text": signal_text,
+                "score": round(opportunity_score, 1),
+                "alert_level": alert_level,
+                "alert_color": alert_color,
+                "priority": priority,
+                "rsi": round(latest['RSI'], 1) if not pd.isna(latest['RSI']) else 50,
+                "macd": round(latest['MACD'], 2) if not pd.isna(latest['MACD']) else 0,
+                "bb_position": round(latest['BB_Position'], 2) if not pd.isna(latest['BB_Position']) else 0.5,
+                "volume_ratio": round(latest['Volume_Ratio'], 1) if not pd.isna(latest['Volume_Ratio']) else 1.0,
+                "trend_strength": trend_strength,
+                "rr_ratio": round(rr_ratio, 2),
+                "stop_loss": round(stop_loss, 2),
+                "take_profit_1": round(take_profit_1, 2),
+                "take_profit_2": round(take_profit_2, 2),
+                "risk_pct": round((current_price - stop_loss) / current_price * 100, 2),
+                "reward_pct": round((take_profit_1 - current_price) / current_price * 100, 2),
+            })
+
+        except Exception as e:
+            continue
+
+    # Sort by priority and score
+    alerts.sort(key=lambda x: (x['priority'], -x['score']))
+    return alerts
+
+def get_buy_opportunities(alerts, min_score=60):
+    """Filter for strong buy opportunities"""
+    buy_alerts = [a for a in alerts if a['score'] >= min_score and a['signal'] in ['BUY', 'STRONG_BUY']]
+    return sorted(buy_alerts, key=lambda x: -x['score'])
+
+def get_risk_alerts(alerts):
+    """Get stocks approaching stop loss or with high risk"""
+    risk_alerts = [a for a in alerts if a['signal'] in ['SELL', 'STRONG_SELL'] or a['score'] < 30]
+    return risk_alerts
+
 # ==================== MAIN TABS ====================
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "📈 رادار السوق", 
     "🔮 التحليل الذكي والتوقعات", 
     "📊 Backtesting متقدم", 
     "💼 محفظتي", 
     "✅ المهام الذكية", 
     "📰 الأخبار والتحليل",
-    "💰 التوزيعات والكوبونات"
+    "💰 التوزيعات والكوبونات",
+    "🤖 التحليل الآلي والتنبيهات"
 ])
 
 # ==================== TAB 1: MARKET RADAR ====================
@@ -2140,6 +2300,329 @@ with tab7:
                     total_amount = latest_div["amount"] * calc_qty
                     st.success(f"💰 إجمالي التوزيع المتوقع: {total_amount:,.2f} ج.م")
                     st.info(f"📊 العائد السنوي: {calc_comp['yield']:.2f}% | التوزيع القادم: {calc_comp['next_expected']}")
+
+
+# ==================== TAB 8: AUTOMATED ANALYSIS & ALERTS ====================
+with tab8:
+    st.title("🤖 التحليل الآلي والتنبيهات اللحظية")
+
+    # Warning
+    st.markdown("""
+    <div class="warning-box">
+        <p style="color: #f87171; font-weight: bold; margin: 0;">⚠️ تنبيه هام</p>
+        <p style="color: #fca5a5; font-size: 13px; margin-top: 8px;">
+        التحليل الآلي يعتمد على المؤشرات الفنية التاريخية فقط. هذه الأدوات تساعد في اتخاذ القرار 
+        لكنها لا تحل محل الحكم البشري. السوق يتأثر بعوامل لا يمكن التنبؤ بها. 
+        استخدم حدود المخاطرة (Stop Loss) لحماية رأس مالك.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Analysis Settings
+    st.subheader("⚙️ إعدادات التحليل")
+
+    settings_col1, settings_col2, settings_col3 = st.columns(3)
+    with settings_col1:
+        min_score_threshold = st.slider("📊 الحد الأدنى لدرجة الفرصة", 0, 100, 60, 
+                                       help="الحد الأدنى لدرجة الفرصة لظهور تنبيه شراء")
+    with settings_col2:
+        max_risk_pct = st.slider("🛡️ الحد الأقصى للمخاطرة %", 1, 10, 5,
+                                help="النسبة المئوية القصوى للمخاطرة في صفقة واحدة")
+    with settings_col3:
+        min_rr_ratio = st.slider("📈 الحد الأدنى للمكافأة/المخاطرة", 1.0, 5.0, 1.5, 0.5,
+                                  help="الحد الأدنى لنسبة المكافأة إلى المخاطرة")
+
+    # Run Analysis Button
+    if st.button("🚀 تشغيل التحليل الآلي لجميع الأسهم", type="primary", use_container_width=True):
+        with st.spinner("⏳ جاري تحليل 114 سهم... قد يستغرق بضع ثوانٍ"):
+            progress_bar = st.progress(0)
+
+            # Analyze all stocks
+            all_alerts = analyze_all_stocks(stocks_data, "EGX" if is_egypt else "GLOBAL")
+
+            progress_bar.progress(100)
+            progress_bar.empty()
+
+            if not all_alerts:
+                st.error("❌ تعذر جلب البيانات. تأكد من اتصال الإنترنت.")
+            else:
+                # Filter opportunities
+                buy_opportunities = get_buy_opportunities(all_alerts, min_score_threshold)
+                risk_alerts = get_risk_alerts(all_alerts)
+
+                # ==================== SUMMARY CARDS ====================
+                st.subheader("📊 ملخص التحليل")
+
+                summary_col1, summary_col2, summary_col3, summary_col4, summary_col5 = st.columns(5)
+
+                with summary_col1:
+                    st.markdown(f"""
+                    <div class="glass-card" style="text-align: center;">
+                        <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">الأسهم المحللة</p>
+                        <h2 style="font-size: 28px; margin: 0; color: #6366f1;">{len(all_alerts)}</h2>
+                        <p style="color: #94a3b8; font-size: 12px;">سهم</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with summary_col2:
+                    st.markdown(f"""
+                    <div class="glass-card" style="text-align: center; border: 2px solid #10b981;">
+                        <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">فرص شراء قوية</p>
+                        <h2 style="font-size: 28px; margin: 0; color: #10b981;">{len([a for a in buy_opportunities if a['score'] >= 75])}</h2>
+                        <p style="color: #10b981; font-size: 12px;">درجة ≥ 75</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with summary_col3:
+                    st.markdown(f"""
+                    <div class="glass-card" style="text-align: center; border: 2px solid #34d399;">
+                        <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">فرص شراء جيدة</p>
+                        <h2 style="font-size: 28px; margin: 0; color: #34d399;">{len([a for a in buy_opportunities if 60 <= a['score'] < 75])}</h2>
+                        <p style="color: #34d399; font-size: 12px;">درجة 60-74</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with summary_col4:
+                    st.markdown(f"""
+                    <div class="glass-card" style="text-align: center; border: 2px solid #ef4444;">
+                        <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">إشارات بيع/خطر</p>
+                        <h2 style="font-size: 28px; margin: 0; color: #ef4444;">{len(risk_alerts)}</h2>
+                        <p style="color: #ef4444; font-size: 12px;">تحذير</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with summary_col5:
+                    avg_score = sum(a['score'] for a in all_alerts) / len(all_alerts) if all_alerts else 0
+                    st.markdown(f"""
+                    <div class="glass-card" style="text-align: center;">
+                        <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">متوسط الدرجة</p>
+                        <h2 style="font-size: 28px; margin: 0; color: #fbbf24;">{avg_score:.1f}</h2>
+                        <p style="color: #fbbf24; font-size: 12px;">من 100</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                # ==================== STRONG BUY OPPORTUNITIES ====================
+                if buy_opportunities:
+                    st.subheader("🔥 أفضل فرص الشراء (مرتبة حسب الدرجة)")
+
+                    # Filter by risk settings
+                    filtered_buys = [a for a in buy_opportunities 
+                                   if a['risk_pct'] <= max_risk_pct * 100 
+                                   and a['rr_ratio'] >= min_rr_ratio]
+
+                    if not filtered_buys:
+                        st.warning("⚠️ لا توجد فرص تتوافق مع إعدادات المخاطرة الحالية. حاول تخفيف الإعدادات.")
+                    else:
+                        # Display top 10
+                        for i, alert in enumerate(filtered_buys[:10]):
+                            with st.expander(f"{i+1}. {alert['name']} ({alert['symbol']}) - درجة: {alert['score']}", expanded=i < 3):
+
+                                # Alert header with signal
+                                signal_emoji = "🟢" if alert['signal'] == "BUY" else "🔥"
+
+                                alert_cols = st.columns([2, 1, 1, 1])
+
+                                with alert_cols[0]:
+                                    st.markdown(f"""
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <div style="background: {alert['alert_color']}20; border: 2px solid {alert['alert_color']}; 
+                                                    border-radius: 12px; padding: 12px 16px; text-align: center;">
+                                            <p style="margin: 0; color: {alert['alert_color']}; font-size: 24px; font-weight: bold;">
+                                                {signal_emoji} {alert['score']}
+                                            </p>
+                                            <p style="margin: 0; color: {alert['alert_color']}; font-size: 11px;">درجة الفرصة</p>
+                                        </div>
+                                        <div>
+                                            <p style="margin: 0; font-weight: bold; font-size: 16px;">{alert['name']}</p>
+                                            <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px;">
+                                                {alert['sector']} | السعر: {alert['price']} ج.م
+                                            </p>
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                with alert_cols[1]:
+                                    st.metric("RSI", f"{alert['rsi']}", 
+                                             delta="ذروة بيع" if alert['rsi'] < 30 else "محايد",
+                                             delta_color="normal" if alert['rsi'] < 30 else "off")
+
+                                with alert_cols[2]:
+                                    st.metric("MACD", f"{alert['macd']}",
+                                             delta="إيجابي" if alert['macd'] > 0 else "سلبي",
+                                             delta_color="normal" if alert['macd'] > 0 else "inverse")
+
+                                with alert_cols[3]:
+                                    st.metric("حجم التداول", f"{alert['volume_ratio']}x",
+                                             delta="نشط" if alert['volume_ratio'] > 1.2 else "طبيعي",
+                                             delta_color="normal" if alert['volume_ratio'] > 1.2 else "off")
+
+                                # Risk Management Levels
+                                st.subheader("🛡️ مستويات إدارة المخاطرة")
+
+                                risk_cols = st.columns(4)
+                                with risk_cols[0]:
+                                    st.markdown(f"""
+                                    <div class="indicator-box" style="border-color: #ef4444;">
+                                        <p style="color: #94a3b8; font-size: 11px; margin-bottom: 4px;">🛑 Stop Loss</p>
+                                        <p style="font-size: 20px; font-weight: bold; color: #ef4444; margin: 4px 0;">{alert['stop_loss']}</p>
+                                        <p style="font-size: 10px; color: #ef4444;">خسارة {alert['risk_pct']}%</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                with risk_cols[1]:
+                                    st.markdown(f"""
+                                    <div class="indicator-box" style="border-color: #10b981;">
+                                        <p style="color: #94a3b8; font-size: 11px; margin-bottom: 4px;">🎯 هدف 1</p>
+                                        <p style="font-size: 20px; font-weight: bold; color: #10b981; margin: 4px 0;">{alert['take_profit_1']}</p>
+                                        <p style="font-size: 10px; color: #10b981;">ربح {alert['reward_pct']}%</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                with risk_cols[2]:
+                                    st.markdown(f"""
+                                    <div class="indicator-box" style="border-color: #6366f1;">
+                                        <p style="color: #94a3b8; font-size: 11px; margin-bottom: 4px;">🎯🎯 هدف 2</p>
+                                        <p style="font-size: 20px; font-weight: bold; color: #6366f1; margin: 4px 0;">{alert['take_profit_2']}</p>
+                                        <p style="font-size: 10px; color: #6366f1;">ربح ممتد</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                with risk_cols[3]:
+                                    st.markdown(f"""
+                                    <div class="indicator-box" style="border-color: #fbbf24;">
+                                        <p style="color: #94a3b8; font-size: 11px; margin-bottom: 4px;">⚖️ R/R Ratio</p>
+                                        <p style="font-size: 20px; font-weight: bold; color: #fbbf24; margin: 4px 0;">{alert['rr_ratio']}:1</p>
+                                        <p style="font-size: 10px; color: #fbbf24;">المكافأة/المخاطرة</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                # Quick Action
+                                action_cols = st.columns([3, 1])
+                                with action_cols[1]:
+                                    if st.button(f"➕ إضافة للمحفظة", key=f"add_alert_{alert['symbol']}", use_container_width=True):
+                                        # Add to portfolio with stop loss
+                                        st.session_state.portfolio.append({
+                                            "symbol": alert['symbol'],
+                                            "name": alert['name'],
+                                            "quantity": 100,
+                                            "buy_price": alert['price'],
+                                            "current_price": alert['price'],
+                                            "stop_loss": alert['stop_loss'],
+                                            "take_profit": alert['take_profit_1']
+                                        })
+                                        st.success(f"✅ تمت إضافة {alert['symbol']} للمحفظة مع Stop Loss عند {alert['stop_loss']}")
+
+                                # Divider
+                                st.divider()
+
+                else:
+                    st.info("📊 لا توجد فرص شراء قوية حالياً بناءً على الإعدادات المحددة.")
+
+                # ==================== RISK ALERTS ====================
+                if risk_alerts:
+                    st.subheader("🔴 إشارات الخطر والبيع")
+
+                    for alert in risk_alerts[:5]:
+                        st.markdown(f"""
+                        <div class="glass-card" style="border-right: 4px solid #ef4444; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <p style="margin: 0; font-weight: bold; color: #ef4444;">
+                                        🔴 {alert['name']} ({alert['symbol']})
+                                    </p>
+                                    <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">
+                                        {alert['signal_text']} | السعر: {alert['price']} | الدرجة: {alert['score']}
+                                    </p>
+                                </div>
+                                <div style="text-align: center;">
+                                    <p style="color: #ef4444; font-size: 24px; font-weight: bold; margin: 0;">{alert['score']}</p>
+                                    <p style="color: #94a3b8; font-size: 11px;">درجة الخطر</p>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                # ==================== FULL ANALYSIS TABLE ====================
+                st.subheader("📋 جدول التحليل الكامل")
+
+                # Prepare data for table
+                table_data = []
+                for alert in all_alerts:
+                    table_data.append({
+                        "الرمز": alert['symbol'],
+                        "الشركة": alert['name'],
+                        "القطاع": alert['sector'],
+                        "السعر": alert['price'],
+                        "الإشارة": alert['signal_text'],
+                        "الدرجة": alert['score'],
+                        "RSI": alert['rsi'],
+                        "MACD": alert['macd'],
+                        "المخاطرة %": alert['risk_pct'],
+                        "R/R": alert['rr_ratio'],
+                        "Stop Loss": alert['stop_loss'],
+                        "الهدف": alert['take_profit_1']
+                    })
+
+                df_alerts = pd.DataFrame(table_data)
+
+                # Color styling
+                def score_color(val):
+                    if isinstance(val, (int, float)):
+                        if val >= 75:
+                            return 'background-color: rgba(16, 185, 129, 0.3); color: #10b981; font-weight: bold;'
+                        elif val >= 60:
+                            return 'background-color: rgba(52, 211, 153, 0.2); color: #34d399;'
+                        elif val < 30:
+                            return 'background-color: rgba(239, 68, 68, 0.2); color: #ef4444;'
+                    return ''
+
+                def signal_color(val):
+                    if "شراء" in str(val):
+                        return 'color: #10b981; font-weight: bold;'
+                    elif "بيع" in str(val):
+                        return 'color: #ef4444; font-weight: bold;'
+                    return 'color: #fbbf24;'
+
+                styled_alerts = df_alerts.style                    .map(score_color, subset=['الدرجة'])                    .map(signal_color, subset=['الإشارة'])
+
+                st.dataframe(styled_alerts, use_container_width=True, hide_index=True,
+                           column_config={
+                               "السعر": st.column_config.NumberColumn(format="%.2f"),
+                               "الدرجة": st.column_config.NumberColumn(format="%.1f"),
+                               "RSI": st.column_config.NumberColumn(format="%.1f"),
+                               "MACD": st.column_config.NumberColumn(format="%.2f"),
+                               "المخاطرة %": st.column_config.NumberColumn(format="%.2f%%"),
+                               "R/R": st.column_config.NumberColumn(format="%.2f"),
+                               "Stop Loss": st.column_config.NumberColumn(format="%.2f"),
+                               "الهدف": st.column_config.NumberColumn(format="%.2f"),
+                           })
+
+                # Export option
+                st.download_button(
+                    label="📥 تصدير التحليل إلى Excel",
+                    data=df_alerts.to_csv(index=False).encode('utf-8-sig'),
+                    file_name=f"analysis_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+    else:
+        # Show instructions when not running
+        st.info("""
+        👈 **اضغط "تشغيل التحليل الآلي" لبدء المسح**
+
+        **ما يفعله التحليل:**
+        - 📊 مسح جميع الأسهم المصرية (114 سهم)
+        - 🔍 حساب المؤشرات الفنية لكل سهم
+        - 🎯 تقييم فرص الشراء والبيع
+        - 🛡️ حساب مستويات Stop Loss و Take Profit
+        - ⚖️ تقييم نسبة المكافأة/المخاطرة
+        - 📈 ترتيب الفرص من الأفضل للأسوأ
+
+        **إعدادات المخاطرة:**
+        - حدد الحد الأدنى لدرجة الفرصة (60-100)
+        - حدد الحد الأقصى للمخاطرة (% من السعر)
+        - حدد الحد الأدنى لنسبة المكافأة/المخاطرة
+        """)
 
 # ==================== FOOTER ====================
 best_stock = max(stocks_data, key=lambda x: x["change_pct"])
