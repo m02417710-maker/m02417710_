@@ -7,119 +7,127 @@ from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="رادار البورصة المصرية الشامل", layout="wide")
-st_autorefresh(interval=300 * 1000, key="comprehensive_update")
+st.set_page_config(page_title="منصة التحليل الفني والمالي المتكاملة", layout="wide")
+st_autorefresh(interval=300 * 1000, key="full_analysis_update")
 
 # ============================================================
-# 2. محرك التحليل الذكي
+# 2. محرك التحليل (فني + مالي)
 # ============================================================
-class StockEngine:
+class ComprehensiveEngine:
     def __init__(self, ticker):
-        self.ticker = ticker if ".CA" in ticker or "-" in ticker else f"{ticker}.CA"
-        self.data = yf.download(self.ticker, period="1y", interval="1d", progress=False).reset_index()
-        if isinstance(self.data.columns, pd.MultiIndex):
-            self.data.columns = self.data.columns.get_level_values(0)
+        self.symbol = ticker if ".CA" in ticker or "-" in ticker else f"{ticker}.CA"
+        self.stock = yf.Ticker(self.symbol)
+        self.data = self.stock.history(period="1y")
+        
+    def get_fundamental_data(self):
+        """جلب البيانات المالية الأساسية"""
+        info = self.stock.info
+        return {
+            "مكرر الربحية (P/E)": info.get('trailingPE', 'N/A'),
+            "ريع السهم (Yield)": f"{info.get('dividendYield', 0)*100:.2f}%" if info.get('dividendYield') else "لا يوجد",
+            "القيمة الدفترية": info.get('bookValue', 'N/A'),
+            "مضاعف القيمة الدفترية": info.get('priceToBook', 'N/A'),
+            "صافي الدخل": f"{info.get('netIncomeToCommon', 0):,.0f}" if info.get('netIncomeToCommon') else "N/A",
+            "العملة": info.get('currency', 'EGP')
+        }
 
-    def analyze(self):
+    def analyze_technical(self):
         if self.data.empty: return None
         df = self.data.copy()
         
         # حساب RSI
         delta = df['Close'].diff()
-        gain = delta.where(delta > 0, 0).rolling(window=14).mean()
-        loss = -delta.where(delta < 0, 0).rolling(window=14).mean()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
         rsi = 100 - (100 / (1 + (gain / (loss + 1e-10))))
         
         current_price = df['Close'].iloc[-1]
-        prev_price = df['Close'].iloc[-2]
-        change = ((current_price - prev_price) / prev_price) * 100
-        
-        # قرار فني
         last_rsi = rsi.iloc[-1]
-        if last_rsi < 30: decision = "شراء قوي 🟢"
-        elif last_rsi < 45: decision = "منطقة تجميع 🔵"
-        elif last_rsi > 70: decision = "بيع / جني أرباح 🔴"
-        elif last_rsi > 60: decision = "منطقة تصريف 🟠"
-        else: decision = "انتظار 🟡"
+        
+        # قرار دمج الفني مع المالي
+        if last_rsi < 35: decision = "فرصة شراء (تشبع بيعي) 🟢"
+        elif last_rsi > 65: decision = "جني أرباح (تشبع شرائي) 🔴"
+        else: decision = "منطقة استقرار 🟡"
 
         return {
-            "الرمز": self.ticker.replace(".CA", ""),
-            "السعر": round(current_price, 2),
-            "التغير": f"{change:+.2f}%",
-            "القرار": decision,
+            "الرمز": self.symbol.replace(".CA", ""),
+            "السعر الحالي": round(current_price, 2),
+            "القرار الفني": decision,
             "RSI": round(last_rsi, 2),
-            "data": df
+            "history": df
         }
 
 # ============================================================
 # 3. واجهة المستخدم
 # ============================================================
 
-st.title("🇪🇬 منصة الرصد الشاملة للبورصة المصرية")
+st.title("🏛️ الرادار المتكامل: تحليل فني + صحة مالية")
 
-# --- لوحة التحكم الجانبية لإضافة أي سهم ---
-st.sidebar.header("🔍 إضافة أسهم مخصصة")
-custom_ticker = st.sidebar.text_input("أدخل رمز السهم (مثلاً: EKHO, ORAS, ESRS):").upper()
-if custom_ticker:
-    st.sidebar.write(f"سيتم إضافة {custom_ticker} للقائمة")
+# قائمة الأسهم
+watchlist = ["COMI", "FWRY", "ABUK", "TMGH", "SWDY", "ETEL", "EKHO", "ORAS", "ESRS"]
 
-# قائمة الأسهم الافتراضية (تغطي معظم القطاعات النشطة)
-default_list = [
-    "COMI", "FWRY", "ABUK", "TMGH", "SWDY", "ETEL", "HELI", "MFOT", 
-    "EKHO", "ESRS", "ORAS", "JUFO", "PHDC", "AMOC", "SKPC", "BTEL",
-    "CIRA", "MNHD", "EAST", "ALCN", "ISPH", "PORT", "CCAP"
-]
+# --- الجزء الأول: المسح السريع ---
+st.header("📊 نظرة عامة على السوق")
+summary = []
+for t in watchlist:
+    try:
+        engine = ComprehensiveEngine(t)
+        tech = engine.analyze_technical()
+        if tech:
+            summary.append(tech)
+    except: continue
 
-# دمج البحث مع القائمة الافتراضية
-final_list = list(set(default_list + ([custom_ticker] if custom_ticker else [])))
+st.table(pd.DataFrame(summary).drop(columns=['history']))
 
-# --- القسم الأول: جدول الرصد الشامل ---
-st.header("📊 رادار القرارات اللحظي")
-all_results = []
-cols = st.columns(len(final_list) // 5 + 1) # تقسيم التحميل بصرياً
-
-progress_bar = st.progress(0)
-for i, ticker in enumerate(final_list):
-    res = StockEngine(ticker).analyze()
-    if res:
-        all_results.append(res)
-    progress_bar.progress((i + 1) / len(final_list))
-
-if all_results:
-    df_main = pd.DataFrame(all_results).drop(columns=['data'])
-    st.dataframe(df_main, use_container_width=True)
-
-# --- القسم الثاني: التحليل الفني العميق ---
 st.divider()
-st.header("🎯 نافذة الفحص التفصيلي")
-target = st.selectbox("اختر السهم لعرض المخطط وحسابات الربح:", [r["الرمز"] for r in all_results])
 
-# استخراج بيانات السهم المختار
-selected_res = next(item for item in all_results if item["الرمز"] == target)
-df_chart = selected_res["data"]
+# --- الجزء الثاني: الفحص المجهري (فني + مالي) ---
+st.header("🔍 الفحص المجهري للسهم")
+target = st.selectbox("اختر السهم للتحليل المالي والفني المفصل:", watchlist)
 
-c1, c2 = st.columns([2, 1])
+if target:
+    engine = ComprehensiveEngine(target)
+    tech_res = engine.analyze_technical()
+    fund_res = engine.get_fundamental_data()
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📈 التحليل الفني (الشموع)")
+        df_chart = tech_res['history']
+        fig = go.Figure(data=[go.Candlestick(
+            x=df_chart.index, open=df_chart['Open'],
+            high=df_chart['High'], low=df_chart['Low'],
+            close=df_chart['Close']
+        )])
+        fig.update_layout(template="plotly_dark", xaxis_rangeslider_visible=False)
+        st.plotly_chart(fig, use_container_width=True)
+        
+    with col2:
+        st.subheader("📋 التحليل المالي (Fundamentals)")
+        # عرض البيانات المالية في بطاقات أو جدول صغير
+        for key, value in fund_res.items():
+            st.write(f"**{key}:** {value}")
+        
+        st.divider()
+        # تقييم سريع
+        pe = fund_res["مكرر الربحية (P/E)"]
+        if pe != 'N/A':
+            if pe < 10: st.success("💎 السهم يعتبر 'رخيص' مالياً (P/E منخفض)")
+            elif pe > 25: st.warning("⚠️ السهم قد يكون 'مبالغ في سعره' (P/E مرتفع)")
+
+# --- الجزء الثالث: حاسبة الاستثمار المتطورة ---
+st.divider()
+st.header("💰 حاسبة العائد وإدارة المحفظة")
+c1, c2, c3 = st.columns(3)
 
 with c1:
-    fig = go.Figure(data=[go.Candlestick(
-        x=df_chart['Date'], open=df_chart['Open'],
-        high=df_chart['High'], low=df_chart['Low'],
-        close=df_chart['Close']
-    )])
-    fig.update_layout(template="plotly_dark", xaxis_rangeslider_visible=False, title=f"حركة سعر {target}")
-    st.plotly_chart(fig, use_container_width=True)
-
+    qty = st.number_input("كمية الأسهم", value=100)
 with c2:
-    st.subheader("💰 حاسبة الاستثمار")
-    price = selected_res["السعر"]
-    quantity = st.number_input("كمية الأسهم:", value=100, step=10)
-    
-    total_value = price * quantity
-    st.write(f"إجمالي قيمة المركز: **{total_value:,.2f} ج.م**")
-    
-    st.divider()
-    gain_target = st.slider("نسبة الربح المستهدفة %", 1, 20, 5)
-    target_val = total_value * (gain_target/100)
-    st.success(f"الربح المتوقع عند صعود {gain_target}%: **{target_val:,.2f} ج.م**")
+    price = tech_res['السعر الحالي']
+    st.metric("إجمالي التكلفة", f"{price * qty:,.2f} ج.م")
+with c3:
+    target_gain = st.slider("الهدف الربحي %", 1, 50, 10)
+    st.metric("الربح الصافي المستهدف", f"{(price * qty) * (target_gain/100):,.2f} ج.م")
 
-st.info(f"💡 نصيحة: يمكنك إضافة أي سهم غير موجود في القائمة عبر كتابة رمزه في القائمة الجانبية.")
+st.info(f"آخر تحديث للبيانات المالية والفنية: {datetime.now().strftime('%H:%M:%S')}")
