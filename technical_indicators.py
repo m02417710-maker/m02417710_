@@ -194,17 +194,123 @@ if 'portfolio' not in st.session_state:
 
 # ==================== DATA ====================
 stocks_data = [
-    {"symbol": "COMI", "name": "البنك التجاري الدولي - CIB", "sector": "بنوك", "price": 50.25, "change": 1.85, "change_pct": 3.82, "volume": 12500000, "high": 51.00, "low": 49.10},
-    {"symbol": "FWRY", "name": "فوري لتكنولوجيا البنوك", "sector": "تكنولوجيا مالية", "price": 28.40, "change": 0.92, "change_pct": 3.35, "volume": 8900000, "high": 29.10, "low": 27.80},
-    {"symbol": "TMGH", "name": "طلعت مصطفى", "sector": "عقارات", "price": 15.80, "change": 0.35, "change_pct": 2.26, "volume": 6700000, "high": 16.20, "low": 15.40},
-    {"symbol": "ABUK", "name": "أبو قير للأسمدة", "sector": "صناعة", "price": 32.15, "change": -0.45, "change_pct": -1.38, "volume": 5400000, "high": 33.00, "low": 31.80},
-    {"symbol": "SWDY", "name": "السويدي إلكتريك", "sector": "صناعة", "price": 12.80, "change": 0.45, "change_pct": 3.64, "volume": 6700000, "high": 13.15, "low": 12.40},
-    {"symbol": "EKHO", "name": "العربية للخزف", "sector": "صناعة", "price": 5.65, "change": -0.15, "change_pct": -2.59, "volume": 3400000, "high": 5.90, "low": 5.50},
-    {"symbol": "ETEL", "name": "Telecom Egypt", "sector": "اتصالات", "price": 22.30, "change": 0.55, "change_pct": 2.53, "volume": 7800000, "high": 22.85, "low": 21.90},
-    {"symbol": "ORAS", "name": "أوراسكوم للإنشاءات", "sector": "مقاولات", "price": 9.75, "change": 0.22, "change_pct": 2.31, "volume": 7800000, "high": 10.00, "low": 9.50},
-    {"symbol": "AMOC", "name": "Alexandria Oil", "sector": "بترول", "price": 18.90, "change": 0.68, "change_pct": 3.73, "volume": 4500000, "high": 19.40, "low": 18.30},
-    {"symbol": "PHDC", "name": "القاهرة للاستثمار", "sector": "عقارات", "price": 8.25, "change": 0.12, "change_pct": 1.48, "volume": 3200000, "high": 8.50, "low": 8.10},
+    {"symbol": "COMI", "name": "البنك التجاري الدولي - CIB", "sector": "بنوك", "price": 140.01, "change": -2.09, "change_pct": -1.47, "volume": 13263000000, "high": 142.81, "low": 137.21},
+    {"symbol": "QNBE", "name": "QNB مصر", "sector": "بنوك", "price": 58.14, "change": -0.95, "change_pct": -1.61, "volume": 5550000000, "high": 59.3, "low": 56.98},
+    {"symbol": "ADIB", "name": "أبوظبي الإسلامي - مصر", "sector": "بنوك", "price": 47.49, "change": -1.47, "change_pct": -3.0, "volume": 2413000000, "high": 48.44, "low": 46.54},
+    {"symbol": "HDBK", "name": "بنك الإسكان والتعمير", "sector": "بنوك", "price": 147.26, "change": 0.03, "change_pct": 0.02, "volume": 3048000000, "high": 150.21, "low": 144.31},
+    {"symbol": "CANA", "name": "بنك قناة السويس", "sector": "بنوك", "price": 33.88, "change": 1.86, "change_pct": 5.81, "volume": 1320000000, "high": 34.56, "low": 33.2},
+    {"symbol": "CIEB", "name": "كريدي أجريكول مصر", "sector": "بنوك", "price": 23.73, "change": -0.29, "change_pct": -1.21, "volume": 1267000000, "high": 24.2, "low": 23.26},
+    {"symbol": "FAIT", "name": "بنك فيصل الإسلامي", "sector": "بنوك", "price": 34.11, "change": 0.32, "change_pct": 0.95, "volume": 1202000000, "high": 34.79, "low": 33.43},
+    {"symbol": "SAUD", "name": "البركة بنك مصر", "sector": "بنوك", "price": 24.7, "change": -0.36, "change_pct": -1.44, "volume": 809000000, "high": 25.19, "low": 24.21},
+    {"symbol": "UBEE", "name": "المصرف المتحد", "sector": "بنوك", "price": 13.98, "change": 1.53, "change_pct": 12.29, "volume": 619000000, "high": 14.26, "low": 13.7},
+    {"symbol": "EXPA", "name": "بنك التنمية الصادرات", "sector": "بنوك", "price": 18.68, "change": -0.05, "change_pct": -0.27, "volume": 1255000000, "high": 19.05, "low": 18.31},
+    {"symbol": "EGBE", "name": "البنك المصري الخليجي", "sector": "بنوك", "price": 0.412, "change": -0.72, "change_pct": -63.6, "volume": 1076000000, "high": 0.42, "low": 0.4},
+    {"symbol": "EFIH", "name": "e-Finance للاستثمارات الرقمية", "sector": "تكنولوجيا مالية", "price": 22.32, "change": -1.59, "change_pct": -6.65, "volume": 677000000, "high": 22.77, "low": 21.87},
+    {"symbol": "FWRY", "name": "فوري لتكنولوجيا البنوك", "sector": "تكنولوجيا مالية", "price": 20.88, "change": -0.95, "change_pct": -4.35, "volume": 865000000, "high": 21.3, "low": 20.46},
+    {"symbol": "SCTS", "name": "قناة السويس لتكنولوجيا المقاصة", "sector": "تكنولوجيا مالية", "price": 652.11, "change": -1.49, "change_pct": -0.23, "volume": 305000000, "high": 665.15, "low": 639.07},
+    {"symbol": "VALU", "name": "U للتمويل الاستهلاكي", "sector": "تكنولوجيا مالية", "price": 12.6, "change": -2.25, "change_pct": -15.15, "volume": 115000000, "high": 12.85, "low": 12.35},
+    {"symbol": "TMGH", "name": "طلعت مصطفى القابضة", "sector": "عقارات", "price": 98.25, "change": -1.75, "change_pct": -1.75, "volume": 6250000000, "high": 100.22, "low": 96.28},
+    {"symbol": "EMFD", "name": "إعمار مصر للتنمية", "sector": "عقارات", "price": 11.1, "change": 0.64, "change_pct": 6.12, "volume": 1981000000, "high": 11.32, "low": 10.88},
+    {"symbol": "PHDC", "name": "بالم هيلز للتطوير", "sector": "عقارات", "price": 14.0, "change": -2.44, "change_pct": -14.84, "volume": 3617000000, "high": 14.28, "low": 13.72},
+    {"symbol": "ORHD", "name": "أوراسكوم للتنمية مصر", "sector": "عقارات", "price": 33.35, "change": -0.83, "change_pct": -2.43, "volume": 2495000000, "high": 34.02, "low": 32.68},
+    {"symbol": "OCDI", "name": "سوديك", "sector": "عقارات", "price": 22.98, "change": 0.0, "change_pct": 0.0, "volume": 2126000000, "high": 23.44, "low": 22.52},
+    {"symbol": "HELI", "name": "حلوان للإسكان", "sector": "عقارات", "price": 7.06, "change": -0.28, "change_pct": -3.81, "volume": 314000000, "high": 7.2, "low": 6.92},
+    {"symbol": "MASR", "name": "مدينة نصر للإسكان", "sector": "عقارات", "price": 7.4, "change": 1.51, "change_pct": 25.64, "volume": 1171000000, "high": 7.55, "low": 7.25},
+    {"symbol": "GPPL", "name": "الأهرام للاستثمارات", "sector": "عقارات", "price": 1.4, "change": 0.0, "change_pct": 0.0, "volume": 479000000, "high": 1.43, "low": 1.37},
+    {"symbol": "SWDY", "name": "السويدي إلكتريك", "sector": "صناعة", "price": 89.51, "change": -0.77, "change_pct": -0.85, "volume": 28105000000, "high": 91.3, "low": 87.72},
+    {"symbol": "EGAL", "name": "مصر للألومنيوم", "sector": "صناعة", "price": 317.0, "change": 4.6, "change_pct": 1.47, "volume": 4588000000, "high": 323.34, "low": 310.66},
+    {"symbol": "ABUK", "name": "أبو قير للأسمدة", "sector": "صناعة", "price": 87.19, "change": 1.38, "change_pct": 1.61, "volume": 2580000000, "high": 88.93, "low": 85.45},
+    {"symbol": "MFPC", "name": "موبكو للأسمدة", "sector": "صناعة", "price": 45.15, "change": 3.15, "change_pct": 7.5, "volume": 2684000000, "high": 46.05, "low": 44.25},
+    {"symbol": "ARCC", "name": "الأسمنت العربية", "sector": "صناعة", "price": 58.0, "change": 2.02, "change_pct": 3.61, "volume": 1245000000, "high": 59.16, "low": 56.84},
+    {"symbol": "MCQE", "name": "مصر أسمنت قنا", "sector": "صناعة", "price": 196.0, "change": 1.6, "change_pct": 0.82, "volume": 955000000, "high": 199.92, "low": 192.08},
+    {"symbol": "MBSC", "name": "مصر بني سويف للأسمنت", "sector": "صناعة", "price": 266.0, "change": 1.56, "change_pct": 0.59, "volume": 570000000, "high": 271.32, "low": 260.68},
+    {"symbol": "SCEM", "name": "أسمنت سيناء", "sector": "صناعة", "price": 63.3, "change": 0.64, "change_pct": 1.02, "volume": 909000000, "high": 64.57, "low": 62.03},
+    {"symbol": "SVCE", "name": "جنوب الوادي للأسمنت", "sector": "صناعة", "price": 8.44, "change": -2.32, "change_pct": -21.56, "volume": 276000000, "high": 8.61, "low": 8.27},
+    {"symbol": "EGCH", "name": "الصناعات الكيماوية المصرية", "sector": "صناعة", "price": 13.55, "change": 5.86, "change_pct": 76.2, "volume": 831000000, "high": 13.82, "low": 13.28},
+    {"symbol": "FERC", "name": "فيركيم مصر للأسمدة", "sector": "صناعة", "price": 80.77, "change": 0.47, "change_pct": 0.59, "volume": 1003000000, "high": 82.39, "low": 79.15},
+    {"symbol": "MICH", "name": "الصناعات الكيماوية Misr", "sector": "صناعة", "price": 35.34, "change": 0.51, "change_pct": 1.46, "volume": 108000000, "high": 36.05, "low": 34.63},
+    {"symbol": "ATQA", "name": "حديد عتاقة", "sector": "صناعة", "price": 9.93, "change": 1.22, "change_pct": 14.01, "volume": 633000000, "high": 10.13, "low": 9.73},
+    {"symbol": "ISMQ", "name": "الحديد والصلب للمناجم", "sector": "صناعة", "price": 7.78, "change": 2.77, "change_pct": 55.29, "volume": 133000000, "high": 7.94, "low": 7.62},
+    {"symbol": "IRON", "name": "الحديد والصلب المصرية", "sector": "صناعة", "price": 33.5, "change": 2.17, "change_pct": 6.93, "volume": 224000000, "high": 34.17, "low": 32.83},
+    {"symbol": "ASCM", "name": "أسكوم", "sector": "صناعة", "price": 49.75, "change": 7.82, "change_pct": 18.65, "volume": 397000000, "high": 50.74, "low": 48.76},
+    {"symbol": "ALCN", "name": "الإسكندرية للحاويات", "sector": "صناعة", "price": 30.09, "change": 1.15, "change_pct": 3.97, "volume": 820000000, "high": 30.69, "low": 29.49},
+    {"symbol": "ALUM", "name": "الألومنيوم العربي", "sector": "صناعة", "price": 22.74, "change": 0.4, "change_pct": 1.79, "volume": 579000000, "high": 23.19, "low": 22.29},
+    {"symbol": "ELEC", "name": "الكابلات الكهربائية", "sector": "صناعة", "price": 2.19, "change": -0.91, "change_pct": -29.35, "volume": 1082000000, "high": 2.23, "low": 2.15},
+    {"symbol": "ENGC", "name": "ICON للهندسة", "sector": "صناعة", "price": 34.9, "change": -1.66, "change_pct": -4.54, "volume": 735000000, "high": 35.6, "low": 34.2},
+    {"symbol": "ETEL", "name": "المصرية للاتصالات", "sector": "اتصالات", "price": 98.49, "change": -0.4, "change_pct": -0.4, "volume": 10667000000, "high": 100.46, "low": 96.52},
+    {"symbol": "EGSA", "name": "النايل سات", "sector": "اتصالات", "price": 9.09, "change": 0.0, "change_pct": 0.0, "volume": 470000000, "high": 9.27, "low": 8.91},
+    {"symbol": "OIH", "name": "أوراسكوم للاستثمار", "sector": "اتصالات", "price": 1.54, "change": 1.32, "change_pct": 600.0, "volume": 708000000, "high": 1.57, "low": 1.51},
+    {"symbol": "EAST", "name": "الشرقية للدخان", "sector": "سلع استهلاكية", "price": 40.31, "change": 0.83, "change_pct": 2.1, "volume": 3989000000, "high": 41.12, "low": 39.5},
+    {"symbol": "EFID", "name": "إيديتا للصناعات الغذائية", "sector": "سلع استهلاكية", "price": 28.6, "change": 1.65, "change_pct": 6.12, "volume": 2092000000, "high": 29.17, "low": 28.03},
+    {"symbol": "JUFO", "name": "جهينة للصناعات الغذائية", "sector": "سلع استهلاكية", "price": 28.9, "change": 0.0, "change_pct": 0.0, "volume": 2998000000, "high": 29.48, "low": 28.32},
+    {"symbol": "DOMT", "name": "دومتي للصناعات الغذائية", "sector": "سلع استهلاكية", "price": 26.0, "change": 2.93, "change_pct": 12.7, "volume": 939000000, "high": 26.52, "low": 25.48},
+    {"symbol": "SUGR", "name": "دلتا للسكر", "sector": "سلع استهلاكية", "price": 48.81, "change": -0.35, "change_pct": -0.71, "volume": 883000000, "high": 49.79, "low": 47.83},
+    {"symbol": "POUL", "name": "القاهرة للدواجن", "sector": "سلع استهلاكية", "price": 34.8, "change": -0.6, "change_pct": -1.69, "volume": 1582000000, "high": 35.5, "low": 34.1},
+    {"symbol": "OLFI", "name": "أرض Obour للصناعات الغذائية", "sector": "سلع استهلاكية", "price": 22.72, "change": 1.43, "change_pct": 6.72, "volume": 1112000000, "high": 23.17, "low": 22.27},
+    {"symbol": "GBCO", "name": "GB Corp", "sector": "سلع استهلاكية", "price": 29.3, "change": 2.09, "change_pct": 7.68, "volume": 8023000000, "high": 29.89, "low": 28.71},
+    {"symbol": "ORWE", "name": "النساجون الشرقيون", "sector": "سلع استهلاكية", "price": 23.56, "change": -0.38, "change_pct": -1.59, "volume": 2662000000, "high": 24.03, "low": 23.09},
+    {"symbol": "DSCW", "name": "دايس للملابس", "sector": "سلع استهلاكية", "price": 1.94, "change": -1.52, "change_pct": -43.93, "volume": 685000000, "high": 1.98, "low": 1.9},
+    {"symbol": "AJWA", "name": "أجوا للصناعات الغذائية", "sector": "سلع استهلاكية", "price": 132.26, "change": -1.0, "change_pct": -0.75, "volume": 180000000, "high": 134.91, "low": 129.61},
+    {"symbol": "COSG", "name": "القاهرة للزيوت والصابون", "sector": "سلع استهلاكية", "price": 1.45, "change": -0.69, "change_pct": -32.24, "volume": 769000000, "high": 1.48, "low": 1.42},
+    {"symbol": "MOSC", "name": "مصر للزيوت والصابون", "sector": "سلع استهلاكية", "price": 312.34, "change": -0.43, "change_pct": -0.14, "volume": 327000000, "high": 318.59, "low": 306.09},
+    {"symbol": "IFAP", "name": "المنتجات الزراعية", "sector": "سلع استهلاكية", "price": 21.42, "change": -1.34, "change_pct": -5.89, "volume": 244000000, "high": 21.85, "low": 20.99},
+    {"symbol": "KABO", "name": "النصر للملابس والمنسوجات", "sector": "سلع استهلاكية", "price": 6.13, "change": -0.81, "change_pct": -11.67, "volume": 112000000, "high": 6.25, "low": 6.01},
+    {"symbol": "GTWL", "name": "الذهبية للمنسوجات", "sector": "سلع استهلاكية", "price": 55.94, "change": 0.36, "change_pct": 0.65, "volume": 877000000, "high": 57.06, "low": 54.82},
+    {"symbol": "ACGC", "name": "الأقطان", "sector": "سلع استهلاكية", "price": 8.71, "change": -1.58, "change_pct": -15.35, "volume": 263000000, "high": 8.88, "low": 8.54},
+    {"symbol": "SPIN", "name": "الإسكندرية للغزل والنسيج", "sector": "سلع استهلاكية", "price": 14.44, "change": 0.21, "change_pct": 1.48, "volume": 714000000, "high": 14.73, "low": 14.15},
+    {"symbol": "MFSC", "name": "مصر للأسواق الحرة", "sector": "سلع استهلاكية", "price": 48.14, "change": 19.99, "change_pct": 71.01, "volume": 135000000, "high": 49.1, "low": 47.18},
+    {"symbol": "ZEOT", "name": "المستخلصات الزيتية", "sector": "سلع استهلاكية", "price": 9.5, "change": 1.93, "change_pct": 25.5, "volume": 416000000, "high": 9.69, "low": 9.31},
+    {"symbol": "CLHO", "name": "مستشفيات كليوباترا", "sector": "صحة", "price": 14.94, "change": 0.74, "change_pct": 5.21, "volume": 723000000, "high": 15.24, "low": 14.64},
+    {"symbol": "PHAR", "name": "أمون للصناعات الدوائية", "sector": "صحة", "price": 89.49, "change": -0.12, "change_pct": -0.13, "volume": 944000000, "high": 91.28, "low": 87.7},
+    {"symbol": "ISPH", "name": "ابن سينا فارما", "sector": "صحة", "price": 11.96, "change": 0.25, "change_pct": 2.13, "volume": 7660000000, "high": 12.2, "low": 11.72},
+    {"symbol": "MIPH", "name": "مينافارم", "sector": "صحة", "price": 687.72, "change": 0.37, "change_pct": 0.05, "volume": 692000000, "high": 701.47, "low": 673.97},
+    {"symbol": "NIPH", "name": "النيل للأدوية", "sector": "صحة", "price": 173.2, "change": -1.59, "change_pct": -0.91, "volume": 197000000, "high": 176.66, "low": 169.74},
+    {"symbol": "ADCI", "name": "العربية للأدوية", "sector": "صحة", "price": 216.63, "change": 1.77, "change_pct": 0.82, "volume": 123000000, "high": 220.96, "low": 212.3},
+    {"symbol": "AXPH", "name": "الإسكندرية للأدوية", "sector": "صحة", "price": 1166.22, "change": 7.1, "change_pct": 0.61, "volume": 302000000, "high": 1189.54, "low": 1142.9},
+    {"symbol": "CPCI", "name": "القاهرة للأدوية", "sector": "صحة", "price": 357.04, "change": 1.47, "change_pct": 0.41, "volume": 228000000, "high": 364.18, "low": 349.9},
+    {"symbol": "RMDA", "name": "راميدا", "sector": "صحة", "price": 5.13, "change": 1.58, "change_pct": 44.51, "volume": 410000000, "high": 5.23, "low": 5.03},
+    {"symbol": "OCPH", "name": "أكتوبر فارما", "sector": "صحة", "price": 394.0, "change": 1.77, "change_pct": 0.45, "volume": 146000000, "high": 401.88, "low": 386.12},
+    {"symbol": "HRHO", "name": "EFG هيرمس", "sector": "استثمار", "price": 29.5, "change": -1.47, "change_pct": -4.75, "volume": 2657000000, "high": 30.09, "low": 28.91},
+    {"symbol": "BTFH", "name": "بلتون القابضة", "sector": "استثمار", "price": 3.19, "change": 2.9, "change_pct": 1000.0, "volume": 696000000, "high": 3.25, "low": 3.13},
+    {"symbol": "CCAP", "name": "قلعة للاستثمارات", "sector": "استثمار", "price": 4.67, "change": -1.06, "change_pct": -18.5, "volume": 13617000000, "high": 4.76, "low": 4.58},
+    {"symbol": "CICH", "name": "سي آي كابيتال", "sector": "استثمار", "price": 12.9, "change": 5.31, "change_pct": 69.96, "volume": 451000000, "high": 13.16, "low": 12.64},
+    {"symbol": "RAYA", "name": "راية القابضة", "sector": "استثمار", "price": 7.1, "change": -2.47, "change_pct": -25.81, "volume": 6383000000, "high": 7.24, "low": 6.96},
+    {"symbol": "CNFN", "name": "كونتكت للتمويل", "sector": "استثمار", "price": 4.74, "change": 3.04, "change_pct": 178.82, "volume": 541000000, "high": 4.83, "low": 4.65},
+    {"symbol": "BONY", "name": "بنيان للتنمية", "sector": "استثمار", "price": 4.37, "change": -0.68, "change_pct": -13.47, "volume": 758000000, "high": 4.46, "low": 4.28},
+    {"symbol": "BINV", "name": "B للاستثمارات", "sector": "استثمار", "price": 41.19, "change": 0.39, "change_pct": 0.96, "volume": 948000000, "high": 42.01, "low": 40.37},
+    {"symbol": "AMIA", "name": "الملتقى العربي للاستثمار", "sector": "استثمار", "price": 9.25, "change": -0.75, "change_pct": -7.5, "volume": 244000000, "high": 9.44, "low": 9.06},
+    {"symbol": "ACAP", "name": "A كابيتال القابضة", "sector": "استثمار", "price": 7.61, "change": 0.13, "change_pct": 1.74, "volume": 315000000, "high": 7.76, "low": 7.46},
+    {"symbol": "AMER", "name": "أمير القابضة", "sector": "استثمار", "price": 2.41, "change": 2.99, "change_pct": -515.52, "volume": 162000000, "high": 2.46, "low": 2.36},
+    {"symbol": "ARAB", "name": "العربية للتطوير", "sector": "استثمار", "price": 0.204, "change": 0.49, "change_pct": -171.33, "volume": 142000000, "high": 0.21, "low": 0.2},
+    {"symbol": "AIHC", "name": "عربية للاستثمارات", "sector": "استثمار", "price": 0.353, "change": -1.4, "change_pct": -79.86, "volume": 788000000, "high": 0.36, "low": 0.35},
+    {"symbol": "ASPI", "name": "أسباير كابيتال", "sector": "استثمار", "price": 0.309, "change": 1.98, "change_pct": -118.49, "volume": 388000000, "high": 0.32, "low": 0.3},
+    {"symbol": "PRMH", "name": "برايم القابضة", "sector": "استثمار", "price": 2.18, "change": 0.0, "change_pct": 0.0, "volume": 253000000, "high": 2.22, "low": 2.14},
+    {"symbol": "GRCA", "name": "جراند كابيتال", "sector": "استثمار", "price": 54.09, "change": -0.63, "change_pct": -1.15, "volume": 62500000, "high": 55.17, "low": 53.01},
+    {"symbol": "ATLC", "name": "التوفيق للتأجير", "sector": "استثمار", "price": 5.33, "change": 0.76, "change_pct": 16.63, "volume": 207000000, "high": 5.44, "low": 5.22},
+    {"symbol": "DEIN", "name": "دلتا للتأمين", "sector": "استثمار", "price": 11.38, "change": 0.0, "change_pct": 0.0, "volume": 299000000, "high": 11.61, "low": 11.15},
+    {"symbol": "MOIN", "name": "مهندس للتأمين", "sector": "استثمار", "price": 24.57, "change": 0.49, "change_pct": 2.03, "volume": 141000000, "high": 25.06, "low": 24.08},
+    {"symbol": "ODIN", "name": "أودين للاستثمارات", "sector": "استثمار", "price": 2.01, "change": 2.55, "change_pct": -472.22, "volume": 214000000, "high": 2.05, "low": 1.97},
+    {"symbol": "CRST", "name": "كريست مارك", "sector": "استثمار", "price": 0.832, "change": 2.09, "change_pct": -166.14, "volume": 281000000, "high": 0.85, "low": 0.82},
+    {"symbol": "AALR", "name": "العربية لاستصلاح الأراضي", "sector": "استثمار", "price": 217.93, "change": -0.83, "change_pct": -0.38, "volume": 155000000, "high": 222.29, "low": 213.57},
+    {"symbol": "TANM", "name": "تنمية للاستثمار العقاري", "sector": "استثمار", "price": 5.48, "change": 6.82, "change_pct": -508.96, "volume": 0, "high": 5.59, "low": 5.37},
+    {"symbol": "PRDC", "name": "بايونيرز للتطوير", "sector": "استثمار", "price": 5.9, "change": 2.25, "change_pct": 61.64, "volume": 641000000, "high": 6.02, "low": 5.78},
+    {"symbol": "ELSH", "name": "الشمس للإسكان", "sector": "استثمار", "price": 8.16, "change": 3.03, "change_pct": 59.06, "volume": 172000000, "high": 8.32, "low": 8.0},
+    {"symbol": "EHDR", "name": "المصريين للإسكان", "sector": "استثمار", "price": 2.31, "change": 0.0, "change_pct": 0.0, "volume": 242000000, "high": 2.36, "low": 2.26},
+    {"symbol": "OBRI", "name": "العبور للاستثمار العقاري", "sector": "استثمار", "price": 39.5, "change": -0.13, "change_pct": -0.33, "volume": 129000000, "high": 40.29, "low": 38.71},
+    {"symbol": "GIHD", "name": "الغربية الإسلامية للإسكان", "sector": "استثمار", "price": 42.54, "change": 1.46, "change_pct": 3.55, "volume": 622000000, "high": 43.39, "low": 41.69},
+    {"symbol": "ELKA", "name": "القاهرة للإسكان", "sector": "استثمار", "price": 1.2, "change": 3.45, "change_pct": -153.33, "volume": 554000000, "high": 1.22, "low": 1.18},
+    {"symbol": "AMOC", "name": "Alexandria Mineral Oils", "sector": "طاقة", "price": 8.59, "change": 0.35, "change_pct": 4.25, "volume": 4011000000, "high": 8.76, "low": 8.42},
+    {"symbol": "EGAS", "name": "مصر للغاز", "sector": "طاقة", "price": 49.12, "change": -0.41, "change_pct": -0.83, "volume": 900000000, "high": 50.1, "low": 48.14},
+    {"symbol": "MOIL", "name": "ماري ديف للخدمات البترولية", "sector": "طاقة", "price": 0.458, "change": 2.46, "change_pct": -122.88, "volume": 1154000000, "high": 0.47, "low": 0.45},
+    {"symbol": "NDRL", "name": "الحفر الوطنية", "sector": "طاقة", "price": 4.69, "change": 0.0, "change_pct": 0.0, "volume": 119000000, "high": 4.78, "low": 4.6},
+    {"symbol": "MTIE", "name": "MM Group", "sector": "تعليم", "price": 9.42, "change": 1.29, "change_pct": 15.87, "volume": 2116000000, "high": 9.61, "low": 9.23},
+    {"symbol": "MPRC", "name": "مدينة الإنتاج الإعلامي", "sector": "إعلام", "price": 31.75, "change": 0.16, "change_pct": 0.51, "volume": 127000000, "high": 32.38, "low": 31.11},
+    {"symbol": "ETRS", "name": "النقل والخدمات التجارية", "sector": "نقل", "price": 7.78, "change": 0.26, "change_pct": 3.46, "volume": 1230000000, "high": 7.94, "low": 7.62},
+    {"symbol": "SCFM", "name": "مطاحن جنوب القاهرة", "sector": "غذاء", "price": 282.14, "change": -0.96, "change_pct": -0.34, "volume": 304000000, "high": 287.78, "low": 276.5},
+    {"symbol": "CEFM", "name": "مطاحن مصر الوسطى", "sector": "غذاء", "price": 109.44, "change": -1.56, "change_pct": -1.41, "volume": 912000000, "high": 111.63, "low": 107.25}
 ]
+
+tickers_egypt = ['COMI', 'QNBE', 'ADIB', 'HDBK', 'CANA', 'CIEB', 'FAIT', 'SAUD', 'UBEE', 'EXPA', 'EGBE', 'EFIH', 'FWRY', 'SCTS', 'VALU', 'TMGH', 'EMFD', 'PHDC', 'ORHD', 'OCDI', 'HELI', 'MASR', 'GPPL', 'SWDY', 'EGAL', 'ABUK', 'MFPC', 'ARCC', 'MCQE', 'MBSC', 'SCEM', 'SVCE', 'EGCH', 'FERC', 'MICH', 'ATQA', 'ISMQ', 'IRON', 'ASCM', 'ALCN', 'ALUM', 'ELEC', 'ENGC', 'ETEL', 'EGSA', 'OIH', 'EAST', 'EFID', 'JUFO', 'DOMT', 'SUGR', 'POUL', 'OLFI', 'GBCO', 'ORWE', 'DSCW', 'AJWA', 'COSG', 'MOSC', 'IFAP', 'KABO', 'GTWL', 'ACGC', 'SPIN', 'MFSC', 'ZEOT', 'CLHO', 'PHAR', 'ISPH', 'MIPH', 'NIPH', 'ADCI', 'AXPH', 'CPCI', 'RMDA', 'OCPH', 'HRHO', 'BTFH', 'CCAP', 'CICH', 'RAYA', 'CNFN', 'BONY', 'BINV', 'AMIA', 'ACAP', 'AMER', 'ARAB', 'AIHC', 'ASPI', 'PRMH', 'GRCA', 'ATLC', 'DEIN', 'MOIN', 'ODIN', 'CRST', 'AALR', 'TANM', 'PRDC', 'ELSH', 'EHDR', 'OBRI', 'GIHD', 'ELKA', 'AMOC', 'EGAS', 'MOIL', 'NDRL', 'MTIE', 'MPRC', 'ETRS', 'SCFM', 'CEFM']
 
 news_data = [
     {"time": "14:30", "title": "EGX30 يتجاوز 24800 نقطة للمرة الأولى منذ 2022", "type": "positive"},
@@ -574,14 +680,328 @@ st.markdown("""
 </div>
 """.format(datetime.now().strftime("%H:%M:%S")), unsafe_allow_html=True)
 
+
+# ==================== DIVIDENDS & COUPONS DATABASE ====================
+dividends_data = [
+    # CIB - Commercial International Bank
+    {"symbol": "COMI", "company": "البنك التجاري الدولي - CIB", 
+     "dividends": [
+         {"date": "2026-04-15", "type": "نقدي", "amount": 2.50, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-10-20", "type": "نقدي", "amount": 2.30, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-04-18", "type": "نقدي", "amount": 2.10, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2024-10-22", "type": "نقدي", "amount": 1.90, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-15", "yield": 3.57},
+
+    # QNB Egypt
+    {"symbol": "QNBE", "company": "QNB مصر",
+     "dividends": [
+         {"date": "2026-03-25", "type": "نقدي", "amount": 3.20, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-09-28", "type": "نقدي", "amount": 3.00, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-09-25", "yield": 5.50},
+
+    # Abu Dhabi Islamic Bank
+    {"symbol": "ADIB", "company": "أبوظبي الإسلامي - مصر",
+     "dividends": [
+         {"date": "2026-03-10", "type": "نقدي", "amount": 1.80, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-09-15", "type": "نقدي", "amount": 1.60, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-09-10", "yield": 3.79},
+
+    # Housing & Development Bank
+    {"symbol": "HDBK", "company": "بنك الإسكان والتعمير",
+     "dividends": [
+         {"date": "2026-04-05", "type": "نقدي", "amount": 5.50, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-10-10", "type": "نقدي", "amount": 5.00, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-05", "yield": 3.73},
+
+    # Suez Canal Bank
+    {"symbol": "CANA", "company": "بنك قناة السويس",
+     "dividends": [
+         {"date": "2026-03-20", "type": "نقدي", "amount": 1.20, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-09-25", "type": "نقدي", "amount": 1.10, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-09-20", "yield": 3.54},
+
+    # Credit Agricole Egypt
+    {"symbol": "CIEB", "company": "كريدي أجريكول مصر",
+     "dividends": [
+         {"date": "2026-04-12", "type": "نقدي", "amount": 1.50, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-12", "yield": 6.32},
+
+    # Faisal Islamic Bank
+    {"symbol": "FAIT", "company": "بنك فيصل الإسلامي",
+     "dividends": [
+         {"date": "2026-03-18", "type": "نقدي", "amount": 1.30, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-09-18", "yield": 3.81},
+
+    # Al Baraka Bank
+    {"symbol": "SAUD", "company": "البركة بنك مصر",
+     "dividends": [
+         {"date": "2026-03-22", "type": "نقدي", "amount": 1.00, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-09-22", "yield": 4.05},
+
+    # e-Finance
+    {"symbol": "EFIH", "company": "e-Finance للاستثمارات الرقمية",
+     "dividends": [
+         {"date": "2026-05-01", "type": "نقدي", "amount": 0.85, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-01", "yield": 3.81},
+
+    # Fawry
+    {"symbol": "FWRY", "company": "فوري لتكنولوجيا البنوك",
+     "dividends": [
+         {"date": "2026-04-20", "type": "نقدي", "amount": 0.65, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-20", "yield": 3.11},
+
+    # Talaat Moustafa
+    {"symbol": "TMGH", "company": "طلعت مصطفى القابضة",
+     "dividends": [
+         {"date": "2026-04-08", "type": "نقدي", "amount": 2.80, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-10-12", "type": "نقدي", "amount": 2.50, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-04-10", "type": "أسهم مجانية", "amount": 1, "currency": "سهم/10", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-08", "yield": 2.85},
+
+    # Palm Hills
+    {"symbol": "PHDC", "company": "بالم هيلز للتطوير",
+     "dividends": [
+         {"date": "2026-05-10", "type": "نقدي", "amount": 0.45, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-10", "yield": 3.21},
+
+    # Emaar Misr
+    {"symbol": "EMFD", "company": "إعمار مصر للتنمية",
+     "dividends": [
+         {"date": "2026-04-25", "type": "نقدي", "amount": 0.35, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-25", "yield": 3.15},
+
+    # Orascom Development
+    {"symbol": "ORHD", "company": "أوراسكوم للتنمية مصر",
+     "dividends": [
+         {"date": "2026-05-15", "type": "نقدي", "amount": 1.20, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-15", "yield": 3.60},
+
+    # SODIC
+    {"symbol": "OCDI", "company": "سوديك",
+     "dividends": [
+         {"date": "2026-04-18", "type": "نقدي", "amount": 0.90, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-18", "yield": 3.92},
+
+    # El Sewedy Electric
+    {"symbol": "SWDY", "company": "السويدي إلكتريك",
+     "dividends": [
+         {"date": "2026-05-05", "type": "نقدي", "amount": 3.50, "currency": "ج.م", "status": "معلن"},
+         {"date": "2025-11-08", "type": "نقدي", "amount": 3.20, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-05-10", "type": "أسهم مجانية", "amount": 1, "currency": "سهم/5", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-11-05", "yield": 3.91},
+
+    # Egypt Aluminum
+    {"symbol": "EGAL", "company": "مصر للألومنيوم",
+     "dividends": [
+         {"date": "2026-04-22", "type": "نقدي", "amount": 12.00, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-22", "yield": 3.79},
+
+    # Abu Qir Fertilizers
+    {"symbol": "ABUK", "company": "أبو قير للأسمدة",
+     "dividends": [
+         {"date": "2026-05-12", "type": "نقدي", "amount": 4.50, "currency": "ج.م", "status": "معلن"},
+         {"date": "2025-11-15", "type": "نقدي", "amount": 4.00, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-11-12", "yield": 5.16},
+
+    # MOPCO
+    {"symbol": "MFPC", "company": "موبكو للأسمدة",
+     "dividends": [
+         {"date": "2026-05-08", "type": "نقدي", "amount": 2.80, "currency": "ج.م", "status": "معلن"},
+         {"date": "2025-11-10", "type": "نقدي", "amount": 2.50, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-11-08", "yield": 6.20},
+
+    # Telecom Egypt
+    {"symbol": "ETEL", "company": "المصرية للاتصالات",
+     "dividends": [
+         {"date": "2026-04-30", "type": "نقدي", "amount": 3.00, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-10-25", "type": "نقدي", "amount": 2.80, "currency": "ج.م", "status": "تم التوزيع"},
+         {"date": "2025-04-28", "type": "أسهم مجانية", "amount": 1, "currency": "سهم/10", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-30", "yield": 3.05},
+
+    # Eastern Tobacco
+    {"symbol": "EAST", "company": "الشرقية للدخان",
+     "dividends": [
+         {"date": "2026-05-20", "type": "نقدي", "amount": 3.20, "currency": "ج.م", "status": "معلن"},
+         {"date": "2025-11-22", "type": "نقدي", "amount": 3.00, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-11-20", "yield": 7.94},
+
+    # Edita
+    {"symbol": "EFID", "company": "إيديتا للصناعات الغذائية",
+     "dividends": [
+         {"date": "2026-05-18", "type": "نقدي", "amount": 1.10, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-18", "yield": 3.85},
+
+    # Juhayna
+    {"symbol": "JUFO", "company": "جهينة للصناعات الغذائية",
+     "dividends": [
+         {"date": "2026-05-22", "type": "نقدي", "amount": 1.00, "currency": "ج.م", "status": "معلن"},
+         {"date": "2025-11-25", "type": "نقدي", "amount": 0.90, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-11-22", "yield": 3.46},
+
+    # Delta Sugar
+    {"symbol": "SUGR", "company": "دلتا للسكر",
+     "dividends": [
+         {"date": "2026-05-25", "type": "نقدي", "amount": 2.00, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-25", "yield": 4.10},
+
+    # Cairo Poultry
+    {"symbol": "POUL", "company": "القاهرة للدواجن",
+     "dividends": [
+         {"date": "2026-05-15", "type": "نقدي", "amount": 1.50, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-15", "yield": 4.31},
+
+    # GB Corp
+    {"symbol": "GBCO", "company": "GB Corp",
+     "dividends": [
+         {"date": "2026-04-28", "type": "نقدي", "amount": 1.00, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-28", "yield": 3.41},
+
+    # Oriental Weavers
+    {"symbol": "ORWE", "company": "النساجون الشرقيون",
+     "dividends": [
+         {"date": "2026-05-02", "type": "نقدي", "amount": 1.20, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-02", "yield": 5.09},
+
+    # Cleopatra Hospitals
+    {"symbol": "CLHO", "company": "مستشفيات كليوباترا",
+     "dividends": [
+         {"date": "2026-05-12", "type": "نقدي", "amount": 0.50, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-12", "yield": 3.35},
+
+    # Amoun Pharma
+    {"symbol": "PHAR", "company": "أمون للصناعات الدوائية",
+     "dividends": [
+         {"date": "2026-04-15", "type": "نقدي", "amount": 4.00, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-15", "yield": 4.47},
+
+    # Ibnsina Pharma
+    {"symbol": "ISPH", "company": "ابن سينا فارما",
+     "dividends": [
+         {"date": "2026-05-08", "type": "نقدي", "amount": 0.45, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-08", "yield": 3.76},
+
+    # Minapharm
+    {"symbol": "MIPH", "company": "مينافارم",
+     "dividends": [
+         {"date": "2026-04-20", "type": "نقدي", "amount": 15.00, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-20", "yield": 2.18},
+
+    # EFG Hermes
+    {"symbol": "HRHO", "company": "EFG هيرمس",
+     "dividends": [
+         {"date": "2026-04-25", "type": "نقدي", "amount": 1.20, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-25", "yield": 4.07},
+
+    # Beltone
+    {"symbol": "BTFH", "company": "بلتون القابضة",
+     "dividends": [
+         {"date": "2026-05-05", "type": "نقدي", "amount": 0.15, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-05", "yield": 4.70},
+
+    # Qalaa Holdings
+    {"symbol": "CCAP", "company": "قلعة للاستثمارات",
+     "dividends": [
+         {"date": "2026-04-18", "type": "نقدي", "amount": 0.20, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-18", "yield": 4.28},
+
+    # Raya
+    {"symbol": "RAYA", "company": "راية القابضة",
+     "dividends": [
+         {"date": "2026-05-10", "type": "نقدي", "amount": 0.35, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-10", "yield": 4.93},
+
+    # Alexandria Container
+    {"symbol": "ALCN", "company": "الإسكندرية للحاويات",
+     "dividends": [
+         {"date": "2026-05-15", "type": "نقدي", "amount": 1.80, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-15", "yield": 5.98},
+
+    # TAQA Arabia
+    {"symbol": "TAQA", "company": "طاقة عربية",
+     "dividends": [
+         {"date": "2026-05-20", "type": "نقدي", "amount": 0.70, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-20", "yield": 5.08},
+
+    # Sidi Kerir Petrochemicals
+    {"symbol": "SKPC", "company": "سيدي كرير للبتروكيماويات",
+     "dividends": [
+         {"date": "2026-05-18", "type": "نقدي", "amount": 1.20, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-18", "yield": 6.72},
+
+    # Egypt Gas
+    {"symbol": "EGAS", "company": "مصر للغاز",
+     "dividends": [
+         {"date": "2026-05-12", "type": "نقدي", "amount": 2.50, "currency": "ج.م", "status": "معلن"},
+     ],
+     "next_expected": "2026-11-12", "yield": 5.09},
+
+    # Maridive Oil
+    {"symbol": "MOIL", "company": "ماري ديف للخدمات البترولية",
+     "dividends": [
+         {"date": "2026-04-30", "type": "نقدي", "amount": 0.03, "currency": "ج.م", "status": "تم التوزيع"},
+     ],
+     "next_expected": "2026-10-30", "yield": 6.55},
+]
+
+# ==================== UPCOMING DIVIDENDS CALENDAR ====================
+upcoming_dividends = [
+    {"date": "2026-05-15", "symbol": "COMI", "company": "CIB", "type": "نقدي", "amount": 2.50, "status": "غداً"},
+    {"date": "2026-05-18", "symbol": "EFID", "company": "إيديتا", "type": "نقدي", "amount": 1.10, "status": "بعد 3 أيام"},
+    {"date": "2026-05-20", "symbol": "EAST", "company": "الشرقية للدخان", "type": "نقدي", "amount": 3.20, "status": "بعد 5 أيام"},
+    {"date": "2026-05-22", "symbol": "JUFO", "company": "جهينة", "type": "نقدي", "amount": 1.00, "status": "بعد 7 أيام"},
+    {"date": "2026-05-25", "symbol": "SUGR", "company": "دلتا للسكر", "type": "نقدي", "amount": 2.00, "status": "بعد 10 أيام"},
+    {"date": "2026-06-01", "symbol": "TMGH", "company": "طلعت مصطفى", "type": "نقدي", "amount": 2.80, "status": "بعد 16 يوم"},
+    {"date": "2026-06-05", "symbol": "SWDY", "company": "السويدي", "type": "نقدي", "amount": 3.50, "status": "بعد 20 يوم"},
+    {"date": "2026-06-10", "symbol": "ABUK", "company": "أبو قير", "type": "نقدي", "amount": 4.50, "status": "بعد 25 يوم"},
+]
+
 # ==================== MAIN TABS ====================
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📈 رادار السوق", 
     "🔮 التحليل الذكي والتوقعات", 
     "📊 Backtesting متقدم", 
     "💼 محفظتي", 
     "✅ المهام الذكية", 
-    "📰 الأخبار والتحليل"
+    "📰 الأخبار والتحليل",
+    "💰 التوزيعات والكوبونات"
 ])
 
 # ==================== TAB 1: MARKET RADAR ====================
@@ -1474,6 +1894,252 @@ with tab6:
     sr_col3.metric("السعر الحالي", f"{current_price:.2f}")
     sr_col4.metric("المقاومة 1", f"{resistance_levels[0]:.2f}")
     sr_col5.metric("المقاومة 2", f"{resistance_levels[1]:.2f}")
+
+
+# ==================== TAB 7: DIVIDENDS & COUPONS ====================
+with tab7:
+    st.title("💰 توزيعات الشركات والكوبونات")
+
+    # Warning
+    st.markdown("""
+    <div class="warning-box">
+        <p style="color: #f87171; font-weight: bold; margin: 0;">⚠️ تنبيه</p>
+        <p style="color: #fca5a5; font-size: 13px; margin-top: 8px;">
+        البيانات المعروضة هي بيانات توضيحية للتجربة. التواريخ والمبالغ قد لا تكون دقيقة. 
+        يرجى التحقق من البورصة المصرية الرسمية للحصول على أحدث البيانات.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Summary Cards
+    st.subheader("📊 ملخص التوزيعات")
+
+    total_companies = len(dividends_data)
+    total_distributed = sum(sum(d["amount"] for d in comp["dividends"] if d["type"] == "نقدي" and d["status"] == "تم التوزيع") for comp in dividends_data)
+    upcoming_count = len([d for d in upcoming_dividends if d["status"] in ["غداً", "بعد 3 أيام", "بعد 5 أيام"]])
+    avg_yield = sum(comp["yield"] for comp in dividends_data) / len(dividends_data) if dividends_data else 0
+
+    div_col1, div_col2, div_col3, div_col4 = st.columns(4)
+
+    with div_col1:
+        st.markdown(f"""
+        <div class="glass-card" style="text-align: center;">
+            <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">الشركات الموزعة</p>
+            <h2 style="font-size: 32px; margin: 0; color: #10b981;">{total_companies}</h2>
+            <p style="color: #10b981; font-size: 14px; margin-top: 8px;">شركة</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with div_col2:
+        st.markdown(f"""
+        <div class="glass-card" style="text-align: center;">
+            <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">إجمالي التوزيعات</p>
+            <h2 style="font-size: 32px; margin: 0; color: #fbbf24;">{total_distributed:.1f}</h2>
+            <p style="color: #fbbf24; font-size: 14px; margin-top: 8px;">ج.م للسهم الواحد</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with div_col3:
+        st.markdown(f"""
+        <div class="glass-card" style="text-align: center;">
+            <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">القادمة قريباً</p>
+            <h2 style="font-size: 32px; margin: 0; color: #6366f1;">{upcoming_count}</h2>
+            <p style="color: #6366f1; font-size: 14px; margin-top: 8px;">توزيع</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with div_col4:
+        st.markdown(f"""
+        <div class="glass-card" style="text-align: center;">
+            <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">متوسط العائد</p>
+            <h2 style="font-size: 32px; margin: 0; color: #8b5cf6;">{avg_yield:.2f}%</h2>
+            <p style="color: #8b5cf6; font-size: 14px; margin-top: 8px;">سنوياً</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Upcoming Dividends Calendar
+    st.subheader("📅 التوزيعات القادمة")
+
+    for div in upcoming_dividends:
+        status_color = "#ef4444" if div["status"] == "غداً" else "#f59e0b" if "3" in div["status"] or "5" in div["status"] else "#10b981"
+
+        st.markdown(f"""
+        <div class="glass-card" style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;">💰</div>
+                    <div>
+                        <p style="margin: 0; font-weight: 600; font-size: 16px;">{div["company"]} ({div["symbol"]})</p>
+                        <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">
+                            📅 {div["date"]} | 🏷️ {div["type"]} | 💵 {div["amount"]} ج.م للسهم
+                        </p>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <span style="background: {status_color}20; color: {status_color}; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                        {div["status"]}
+                    </span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Dividends by Company
+    st.subheader("📋 سجل التوزيعات حسب الشركة")
+
+    # Filter by company
+    div_company = st.selectbox("🔍 اختر الشركة", [d["company"] + " - " + d["symbol"] for d in dividends_data], key="div_company")
+
+    selected_symbol = div_company.split(" - ")[1]
+    selected_company = next((d for d in dividends_data if d["symbol"] == selected_symbol), None)
+
+    if selected_company:
+        # Company dividend summary
+        st.markdown(f"""
+        <div class="prediction-card" style="margin: 16px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin: 0; color: #fbbf24;">{selected_company["company"]}</h3>
+                    <p style="color: #94a3b8; margin: 4px 0 0 0;">الرمز: {selected_company["symbol"]} | العائد السنوي: {selected_company["yield"]:.2f}%</p>
+                </div>
+                <div style="text-align: center;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">التوزيع القادم المتوقع</p>
+                    <p style="color: #10b981; font-size: 18px; font-weight: bold; margin: 4px 0;">{selected_company["next_expected"]}</p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Dividends history table
+        div_history = selected_company["dividends"]
+        div_df = pd.DataFrame(div_history)
+        div_df['التاريخ'] = div_df['date']
+        div_df['النوع'] = div_df['type']
+        div_df['المبلغ'] = div_df['amount'].astype(str) + " " + div_df['currency']
+        div_df['الحالة'] = div_df['status']
+
+        display_div = div_df[['التاريخ', 'النوع', 'المبلغ', 'الحالة']].copy()
+
+        def status_color(val):
+            if "تم" in str(val):
+                return 'color: #10b981; font-weight: bold;'
+            elif "معلن" in str(val):
+                return 'color: #fbbf24; font-weight: bold;'
+            return 'color: #94a3b8;'
+
+        styled_div = display_div.style.map(status_color, subset=['الحالة'])
+        st.dataframe(styled_div, use_container_width=True, hide_index=True)
+
+        # Dividend yield chart
+        st.subheader("📈 تاريخ العائد السنوي")
+
+        # Calculate cumulative dividends
+        cash_divs = [d for d in div_history if d["type"] == "نقدي"]
+        if cash_divs:
+            years = sorted(set([d["date"][:4] for d in cash_divs]))
+            yearly_totals = []
+            for year in years:
+                year_divs = [d["amount"] for d in cash_divs if d["date"].startswith(year)]
+                yearly_totals.append(sum(year_divs))
+
+            fig_yield = go.Figure()
+            fig_yield.add_trace(go.Bar(
+                x=years,
+                y=yearly_totals,
+                marker_color=['#6366f1', '#8b5cf6', '#06b6d4'],
+                text=[f"{t:.2f}" for t in yearly_totals],
+                textposition='outside',
+                textfont=dict(color='white', size=14)
+            ))
+
+            fig_yield.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(family="Cairo", color="white"),
+                xaxis=dict(gridcolor='rgba(255,255,255,0.1)', title="السنة"),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.1)', title="إجمالي التوزيع (ج.م)"),
+                height=350
+            )
+
+            st.plotly_chart(fig_yield, use_container_width=True)
+
+    # All Dividends Table
+    st.subheader("📊 جدول شامل للتوزيعات")
+
+    all_divs = []
+    for comp in dividends_data:
+        for div in comp["dividends"]:
+            all_divs.append({
+                "الشركة": comp["company"],
+                "الرمز": comp["symbol"],
+                "التاريخ": div["date"],
+                "النوع": div["type"],
+                "المبلغ": f"{div['amount']} {div['currency']}",
+                "الحالة": div["status"],
+                "العائد %": comp["yield"]
+            })
+
+    all_divs_df = pd.DataFrame(all_divs)
+
+    # Filter options
+    div_filter_col1, div_filter_col2 = st.columns([2, 1])
+    with div_filter_col1:
+        div_type_filter = st.selectbox("نوع التوزيع", ["الكل", "نقدي", "أسهم مجانية"], key="div_type")
+    with div_filter_col2:
+        div_status_filter = st.selectbox("الحالة", ["الكل", "تم التوزيع", "معلن"], key="div_status")
+
+    filtered_divs = all_divs_df.copy()
+    if div_type_filter != "الكل":
+        filtered_divs = filtered_divs[filtered_divs["النوع"] == div_type_filter]
+    if div_status_filter != "الكل":
+        filtered_divs = filtered_divs[filtered_divs["الحالة"] == div_status_filter]
+
+    def div_status_color(val):
+        if "تم" in str(val):
+            return 'color: #10b981; font-weight: bold;'
+        elif "معلن" in str(val):
+            return 'color: #fbbf24; font-weight: bold;'
+        return 'color: #94a3b8;'
+
+    styled_all_divs = filtered_divs.style.map(div_status_color, subset=["الحالة"])
+    st.dataframe(styled_all_divs, use_container_width=True, hide_index=True)
+
+    # Top Dividend Yielders
+    st.subheader("🏆 أعلى الشركات عائداً")
+
+    top_yielders = sorted(dividends_data, key=lambda x: x["yield"], reverse=True)[:10]
+
+    yield_cols = st.columns(5)
+    for i, comp in enumerate(top_yielders):
+        with yield_cols[i % 5]:
+            st.markdown(f"""
+            <div class="glass-card" style="text-align: center; margin-bottom: 12px;">
+                <p style="color: #fbbf24; font-weight: bold; font-size: 14px;">{comp["symbol"]}</p>
+                <p style="font-size: 16px; font-weight: bold; margin: 4px 0; color: #10b981;">{comp["yield"]:.2f}%</p>
+                <p style="color: #94a3b8; font-size: 11px;">{comp["company"][:15]}...</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Dividend Calculator
+    st.subheader("🧮 حاسبة التوزيعات")
+
+    calc_col1, calc_col2, calc_col3 = st.columns([2, 1, 1])
+    with calc_col1:
+        calc_stock = st.selectbox("السهم", [d["company"] + " - " + d["symbol"] for d in dividends_data], key="calc_stock")
+    with calc_col2:
+        calc_qty = st.number_input("الكمية", min_value=1, value=1000, step=100, key="calc_qty")
+    with calc_col3:
+        st.write("")
+        st.write("")
+        if st.button("🧮 احسب", use_container_width=True, key="calc_btn"):
+            calc_symbol = calc_stock.split(" - ")[1]
+            calc_comp = next((d for d in dividends_data if d["symbol"] == calc_symbol), None)
+            if calc_comp:
+                latest_div = calc_comp["dividends"][0] if calc_comp["dividends"] else None
+                if latest_div and latest_div["type"] == "نقدي":
+                    total_amount = latest_div["amount"] * calc_qty
+                    st.success(f"💰 إجمالي التوزيع المتوقع: {total_amount:,.2f} ج.م")
+                    st.info(f"📊 العائد السنوي: {calc_comp['yield']:.2f}% | التوزيع القادم: {calc_comp['next_expected']}")
 
 # ==================== FOOTER ====================
 best_stock = max(stocks_data, key=lambda x: x["change_pct"])
