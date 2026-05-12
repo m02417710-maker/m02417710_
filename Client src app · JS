@@ -1,0 +1,101 @@
+/**
+ * المكون الرئيسي للتطبيق
+ * Main App Component
+ */
+
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import io from 'socket.io-client';
+
+// استيراد الصفحات
+import HomePage from './pages/HomePage';
+import StocksPage from './pages/StocksPage';
+import StockDetailPage from './pages/StockDetailPage';
+import PortfolioPage from './pages/PortfolioPage';
+import AlertsPage from './pages/AlertsPage';
+import ReportsPage from './pages/ReportsPage';
+import LoginPage from './pages/LoginPage';
+import NotFoundPage from './pages/NotFoundPage';
+
+// استيراد المكونات
+import NavBar from './components/NavBar/NavBar';
+import Footer from './components/Footer/Footer';
+
+// استيراد Redux
+import { setSocket } from './redux/slices/uiSlice';
+import { loadUser } from './redux/slices/userSlice';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const WS_URL = process.env.REACT_APP_WS_URL || 'http://localhost:5000';
+
+function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // الاتصال بـ WebSocket
+    const socket = io(WS_URL, {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+    });
+
+    socket.on('connect', () => {
+      console.log('✓ تم الاتصال بـ WebSocket');
+      dispatch(setSocket(socket));
+    });
+
+    socket.on('disconnect', () => {
+      console.log('✗ تم قطع الاتصال بـ WebSocket');
+    });
+
+    socket.on('error', (error) => {
+      console.error('خطأ في WebSocket:', error);
+    });
+
+    // محاولة تحميل بيانات المستخدم من localStorage
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        dispatch(loadUser(JSON.parse(savedUser)));
+      } catch (error) {
+        console.error('خطأ في تحميل بيانات المستخدم:', error);
+        localStorage.removeItem('user');
+      }
+    }
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [dispatch]);
+
+  return (
+    <div className="app">
+      <NavBar />
+      
+      <main className="app-content">
+        <Routes>
+          {/* الصفحات العامة */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/stocks" element={<StocksPage />} />
+          <Route path="/stocks/:id" element={<StockDetailPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          
+          {/* الصفحات المحمية */}
+          <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/alerts" element={<AlertsPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          
+          {/* صفحة 404 */}
+          <Route path="/not-found" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/not-found" replace />} />
+        </Routes>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+export default App;
