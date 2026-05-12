@@ -1,0 +1,346 @@
+/**
+ * متحكم الأسهم
+ * Stock Controller
+ */
+
+const logger = require('../utils/logger');
+const stockService = require('../services/stockService');
+const technicalService = require('../services/technicalIndicators');
+
+// ============================================================
+// GET - الحصول على البيانات
+// ============================================================
+
+/**
+ * الحصول على قائمة الأسهم
+ */
+exports.getStocks = async (req, res, next) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      sector,
+      minPrice,
+      maxPrice,
+      sort = 'price',
+    } = req.query;
+
+    logger.info(`جاري جلب الأسهم - الصفحة ${page}, الحد ${limit}`);
+
+    const stocks = await stockService.getStocks({
+      page,
+      limit,
+      sector,
+      minPrice,
+      maxPrice,
+      sort,
+    });
+
+    res.json({
+      success: true,
+      data: stocks.data,
+      pagination: {
+        page,
+        limit,
+        total: stocks.total,
+        totalPages: Math.ceil(stocks.total / limit),
+      },
+    });
+  } catch (error) {
+    logger.error(`خطأ في جلب الأسهم: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * الحصول على تفاصيل سهم محدد
+ */
+exports.getStockById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    logger.info(`جاري جلب تفاصيل السهم: ${id}`);
+
+    const stock = await stockService.getStockById(id);
+
+    if (!stock) {
+      return res.status(404).json({
+        success: false,
+        message: 'السهم غير موجود',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: stock,
+    });
+  } catch (error) {
+    logger.error(`خطأ في جلب السهم: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * الحصول على المؤشرات الفنية
+ */
+exports.getTechnicalIndicators = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { period = 30 } = req.query;
+
+    logger.info(`جاري جلب المؤشرات الفنية للسهم ${id} - الفترة ${period}`);
+
+    const indicators = await technicalService.calculateIndicators(id, period);
+
+    res.json({
+      success: true,
+      data: indicators,
+    });
+  } catch (error) {
+    logger.error(`خطأ في حساب المؤشرات: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * الحصول على البيانات التاريخية
+ */
+exports.getStockHistory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      startDate,
+      endDate,
+      interval = 'daily',
+    } = req.query;
+
+    logger.info(`جاري جلب السجل التاريخي للسهم ${id}`);
+
+    const history = await stockService.getStockHistory(id, {
+      startDate,
+      endDate,
+      interval,
+    });
+
+    res.json({
+      success: true,
+      data: history,
+    });
+  } catch (error) {
+    logger.error(`خطأ في جلب السجل: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * الحصول على التوصيات
+ */
+exports.getRecommendations = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    logger.info(`جاري حساب التوصيات للسهم ${id}`);
+
+    const recommendations = await stockService.getRecommendations(id);
+
+    res.json({
+      success: true,
+      data: recommendations,
+    });
+  } catch (error) {
+    logger.error(`خطأ في حساب التوصيات: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * الحصول على الأخبار
+ */
+exports.getStockNews = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    logger.info(`جاري جلب أخبار السهم ${id}`);
+
+    const news = await stockService.getStockNews(id);
+
+    res.json({
+      success: true,
+      data: news,
+    });
+  } catch (error) {
+    logger.error(`خطأ في جلب الأخبار: ${error.message}`);
+    next(error);
+  }
+};
+
+// ============================================================
+// POST - عمليات التحليل
+// ============================================================
+
+/**
+ * تحليل متقدم لسهم
+ */
+exports.analyzeStock = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    logger.info(`جاري تحليل السهم ${id}`);
+
+    const analysis = await stockService.analyzeStock(id);
+
+    // بث النتائج عبر WebSocket
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(`stock-${analysis.code}`).emit('analysis-complete', analysis);
+    }
+
+    res.json({
+      success: true,
+      data: analysis,
+    });
+  } catch (error) {
+    logger.error(`خطأ في تحليل السهم: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * مقارنة عدة أسهم
+ */
+exports.compareStocks = async (req, res, next) => {
+  try {
+    const { stockIds } = req.body;
+
+    if (!Array.isArray(stockIds) || stockIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'يجب تحديد قائمة الأسهم',
+      });
+    }
+
+    logger.info(`جاري مقارنة الأسهم: ${stockIds.join(', ')}`);
+
+    const comparison = await stockService.compareStocks(stockIds);
+
+    res.json({
+      success: true,
+      data: comparison,
+    });
+  } catch (error) {
+    logger.error(`خطأ في مقارنة الأسهم: ${error.message}`);
+    next(error);
+  }
+};
+
+// ============================================================
+// POST/PUT/DELETE - العمليات الإدارية
+// ============================================================
+
+/**
+ * إنشاء سهم جديد
+ */
+exports.createStock = async (req, res, next) => {
+  try {
+    const { code, name, sector, subSector } = req.body;
+
+    if (!code || !name) {
+      return res.status(400).json({
+        success: false,
+        message: 'الكود والاسم مطلوبان',
+      });
+    }
+
+    logger.info(`جاري إنشاء سهم جديد: ${code}`);
+
+    const stock = await stockService.createStock({
+      code,
+      name,
+      sector,
+      subSector,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'تم إنشاء السهم بنجاح',
+      data: stock,
+    });
+  } catch (error) {
+    logger.error(`خطأ في إنشاء السهم: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * تحديث بيانات السهم
+ */
+exports.updateStock = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    logger.info(`جاري تحديث السهم ${id}`);
+
+    const stock = await stockService.updateStock(id, updates);
+
+    res.json({
+      success: true,
+      message: 'تم تحديث السهم بنجاح',
+      data: stock,
+    });
+  } catch (error) {
+    logger.error(`خطأ في تحديث السهم: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * حذف سهم
+ */
+exports.deleteStock = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    logger.info(`جاري حذف السهم ${id}`);
+
+    await stockService.deleteStock(id);
+
+    res.json({
+      success: true,
+      message: 'تم حذف السهم بنجاح',
+    });
+  } catch (error) {
+    logger.error(`خطأ في حذف السهم: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * تحديث بيانات السهم من المصدر الخارجي
+ */
+exports.refreshStockData = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    logger.info(`جاري تحديث بيانات السهم ${id}`);
+
+    const stock = await stockService.refreshStockData(id);
+
+    // بث التحديث عبر WebSocket
+    const io = req.app.locals.io;
+    if (io) {
+      io.emit('stock-updated', stock);
+    }
+
+    res.json({
+      success: true,
+      message: 'تم تحديث البيانات بنجاح',
+      data: stock,
+    });
+  } catch (error) {
+    logger.error(`خطأ في تحديث البيانات: ${error.message}`);
+    next(error);
+  }
+};
+
+module.exports = exports;
