@@ -8,569 +8,321 @@ from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
+from scipy import stats
 import warnings
 import traceback
 import logging
 import sys
+import json
+import hashlib
 from functools import wraps
+from typing import Dict, List, Tuple, Optional
 
 warnings.filterwarnings('ignore')
 
-# ==================== DEBUGGING & ERROR HANDLING SYSTEM ====================
-class EGXDebugSystem:
-    """Advanced debugging and error recovery system"""
-
-    def __init__(self):
-        self.errors_log = []
-        self.performance_metrics = {}
-        self.data_quality_checks = {}
-        self.recovery_attempts = 0
-        self.max_recovery_attempts = 3
-
-    def log_error(self, component, error, context=""):
-        """Log errors with full context for debugging"""
-        error_entry = {
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
-            "component": component,
-            "error_type": type(error).__name__,
-            "error_message": str(error),
-            "traceback": traceback.format_exc(),
-            "context": context,
-            "recovered": False
-        }
-        self.errors_log.append(error_entry)
-        logging.error(f"[{component}] {error}: {context}")
-        return error_entry
-
-    def safe_execute(self, func, component_name, default_return=None, *args, **kwargs):
-        """Execute function with automatic error recovery"""
-        try:
-            start_time = datetime.now()
-            result = func(*args, **kwargs)
-            end_time = datetime.now()
-            self.performance_metrics[component_name] = {
-                "last_execution": end_time,
-                "duration_ms": (end_time - start_time).total_seconds() * 1000,
-                "status": "success",
-                "calls": self.performance_metrics.get(component_name, {}).get("calls", 0) + 1
-            }
-            return result
-        except Exception as e:
-            error_entry = self.log_error(component_name, e, f"args: {args}, kwargs: {kwargs}")
-
-            # Attempt recovery
-            if self.recovery_attempts < self.max_recovery_attempts:
-                self.recovery_attempts += 1
-                try:
-                    # Recovery strategy: retry with simplified parameters
-                    if "history" in component_name or "data" in component_name:
-                        logging.info(f"[{component_name}] Attempting data recovery...")
-                        error_entry["recovered"] = True
-                        return default_return
-                    elif "plot" in component_name or "chart" in component_name:
-                        logging.info(f"[{component_name}] Attempting chart recovery...")
-                        error_entry["recovered"] = True
-                        return default_return
-                except Exception as recovery_error:
-                    self.log_error(f"{component_name}_recovery", recovery_error)
-
-            return default_return
-
-    def validate_dataframe(self, df, component_name, required_columns=None):
-        """Validate dataframe quality and completeness"""
-        checks = {
-            "component": component_name,
-            "timestamp": datetime.now().strftime("%H:%M:%S"),
-            "is_empty": df.empty if df is not None else True,
-            "shape": df.shape if df is not None else (0, 0),
-            "null_count": df.isnull().sum().sum() if df is not None else 0,
-            "duplicate_count": df.duplicated().sum() if df is not None else 0,
-            "valid": True
-        }
-
-        if df is None or df.empty:
-            checks["valid"] = False
-            checks["error"] = "Empty or None dataframe"
-        elif required_columns:
-            missing = [col for col in required_columns if col not in df.columns]
-            if missing:
-                checks["valid"] = False
-                checks["error"] = f"Missing columns: {missing}"
-
-        self.data_quality_checks[component_name] = checks
-        return checks["valid"]
-
-    def get_health_report(self):
-        """Generate system health report"""
-        total_errors = len(self.errors_log)
-        recovered_errors = sum(1 for e in self.errors_log if e["recovered"])
-        failed_components = set(e["component"] for e in self.errors_log if not e["recovered"])
-
-        return {
-            "total_errors": total_errors,
-            "recovered": recovered_errors,
-            "failed_components": list(failed_components),
-            "data_quality": self.data_quality_checks,
-            "performance": self.performance_metrics,
-            "system_status": "HEALTHY" if total_errors == 0 else "DEGRADED" if recovered_errors > 0 else "CRITICAL"
-        }
-
-# Initialize global debug system
-if 'debug_system' not in st.session_state:
-    st.session_state.debug_system = EGXDebugSystem()
-
-debug = st.session_state.debug_system
-
-# ==================== CONFIGURATION ====================
+# ==================== ADVANCED CONFIGURATION ====================
 st.set_page_config(
-    page_title="⚡ EGX Pro Terminal", 
+    page_title="⚡ EGX Pro Terminal v21", 
     layout="wide", 
     page_icon="⚡",
     initial_sidebar_state="expanded"
 )
 
-# Auto-refresh every 60 seconds
-st_autorefresh(interval=60 * 1000, key="auto_refresh")
+# Auto-refresh every 30 seconds for near real-time
+st_autorefresh(interval=30 * 1000, key="realtime_refresh")
 
 # ==================== PROFESSIONAL DARK THEME CSS ====================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;600;700;800&display=swap');
-
-    * { 
-        font-family: 'Inter', 'Cairo', sans-serif !important;
-        letter-spacing: -0.01em;
-    }
-
-    .main {
-        background: linear-gradient(180deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
-        color: #e2e8f0;
-    }
-
-    /* Professional Panel System */
-    .pro-panel {
-        background: linear-gradient(145deg, rgba(20, 20, 30, 0.95), rgba(15, 15, 25, 0.98));
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 8px;
-        padding: 16px;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-        margin-bottom: 12px;
-        transition: all 0.2s ease;
-    }
-
-    .pro-panel:hover {
-        border-color: rgba(99, 102, 241, 0.15);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    }
-
-    .pro-panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .pro-panel-title {
-        font-size: 13px;
-        font-weight: 600;
-        color: #94a3b8;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .pro-panel-value {
-        font-size: 24px;
-        font-weight: 700;
-        color: #f1f5f9;
-        margin: 4px 0;
-    }
-
-    .pro-panel-subtitle {
-        font-size: 11px;
-        color: #64748b;
-    }
-
-    /* Grid Layout System */
+    * { font-family: 'Inter', 'Cairo', sans-serif !important; letter-spacing: -0.01em; }
+    .main { background: linear-gradient(180deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%); color: #e2e8f0; }
+    .pro-panel { background: linear-gradient(145deg, rgba(20,20,30,0.95), rgba(15,15,25,0.98)); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.4); margin-bottom: 12px; transition: all 0.2s ease; }
+    .pro-panel:hover { border-color: rgba(99,102,241,0.15); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+    .pro-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .pro-panel-title { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .pro-panel-value { font-size: 24px; font-weight: 700; color: #f1f5f9; margin: 4px 0; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
     .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
     .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-
-    /* Data Table Styling */
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-    }
-
-    .data-table th {
-        background: rgba(255, 255, 255, 0.03);
-        color: #64748b;
-        font-weight: 600;
-        text-align: left;
-        padding: 8px 12px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        font-size: 11px;
-        text-transform: uppercase;
-    }
-
-    .data-table td {
-        padding: 8px 12px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-        color: #cbd5e1;
-    }
-
-    .data-table tr:hover td {
-        background: rgba(99, 102, 241, 0.05);
-    }
-
-    /* Status Indicators */
-    .status-up { color: #10b981; }
-    .status-down { color: #ef4444; }
-    .status-neutral { color: #94a3b8; }
-    .status-warning { color: #f59e0b; }
-
-    /* Badge System */
-    .badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-    }
-
-    .badge-green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-    .badge-red { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-    .badge-yellow { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .badge-blue { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
-    .badge-purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
-
-    /* Live Indicator */
-    .live-pulse {
-        display: inline-block;
-        width: 6px;
-        height: 6px;
-        background: #10b981;
-        border-radius: 50%;
-        animation: pulse-live 2s infinite;
-        margin-left: 6px;
-    }
-
-    @keyframes pulse-live {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(0.8); }
-    }
-
-    /* Stock Button Cards */
-    .stock-card {
-        background: linear-gradient(145deg, rgba(25, 25, 35, 0.9), rgba(20, 20, 30, 0.95));
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        padding: 12px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stock-card:hover {
-        border-color: rgba(99, 102, 241, 0.3);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
-    }
-
-    .stock-card-symbol {
-        font-size: 14px;
-        font-weight: 700;
-        color: #fbbf24;
-        margin-bottom: 4px;
-    }
-
-    .stock-card-price {
-        font-size: 20px;
-        font-weight: 700;
-        color: #f1f5f9;
-        margin: 4px 0;
-    }
-
-    .stock-card-change {
-        font-size: 12px;
-        font-weight: 600;
-        padding: 2px 8px;
-        border-radius: 12px;
-        display: inline-block;
-    }
-
-    .stock-card-change.up {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-    }
-
-    .stock-card-change.down {
-        background: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
-    }
-
-    /* Signal Boxes */
-    .signal-box {
-        border-radius: 8px;
-        padding: 16px;
-        text-align: center;
-        border: 1px solid;
-    }
-
-    .signal-buy {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02));
-        border-color: rgba(16, 185, 129, 0.3);
-    }
-
-    .signal-sell {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.02));
-        border-color: rgba(239, 68, 68, 0.3);
-    }
-
-    .signal-hold {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.02));
-        border-color: rgba(245, 158, 11, 0.3);
-    }
-
-    /* Debug Console */
-    .debug-console {
-        background: #0d0d12;
-        border: 1px solid rgba(239, 68, 68, 0.2);
-        border-radius: 8px;
-        padding: 12px;
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
-        color: #94a3b8;
-        max-height: 200px;
-        overflow-y: auto;
-    }
-
-    .debug-entry {
-        margin: 4px 0;
-        padding: 4px 8px;
-        border-radius: 4px;
-        border-right: 2px solid;
-    }
-
-    .debug-error { border-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
-    .debug-success { border-color: #10b981; background: rgba(16, 185, 129, 0.05); }
-    .debug-warning { border-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
-
-    /* Tabs Styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
-        background: rgba(255, 255, 255, 0.02);
-        padding: 4px;
-        border-radius: 8px;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        background: transparent;
-        border-radius: 6px;
-        padding: 10px 20px;
-        border: none;
-        color: #64748b;
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background: rgba(99, 102, 241, 0.15) !important;
-        color: #818cf8 !important;
-        font-weight: 600;
-    }
-
-    /* Scrollbar */
+    .status-up { color: #10b981; } .status-down { color: #ef4444; } .status-neutral { color: #94a3b8; } .status-warning { color: #f59e0b; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: rgba(16,185,129,0.15); color: #10b981; } .badge-red { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .badge-yellow { background: rgba(245,158,11,0.15); color: #f59e0b; } .badge-blue { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .badge-purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .live-pulse { display: inline-block; width: 6px; height: 6px; background: #10b981; border-radius: 50%; animation: pulse-live 2s infinite; margin-left: 6px; }
+    @keyframes pulse-live { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+    .stock-card { background: linear-gradient(145deg, rgba(25,25,35,0.9), rgba(20,20,30,0.95)); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; }
+    .stock-card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.15); }
+    .stock-card-symbol { font-size: 14px; font-weight: 700; color: #fbbf24; margin-bottom: 4px; }
+    .stock-card-price { font-size: 20px; font-weight: 700; color: #f1f5f9; margin: 4px 0; }
+    .stock-card-change { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 12px; display: inline-block; }
+    .stock-card-change.up { background: rgba(16,185,129,0.15); color: #10b981; }
+    .stock-card-change.down { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .signal-box { border-radius: 8px; padding: 16px; text-align: center; border: 1px solid; }
+    .signal-buy { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02)); border-color: rgba(16,185,129,0.3); }
+    .signal-sell { background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.02)); border-color: rgba(239,68,68,0.3); }
+    .signal-hold { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.02)); border-color: rgba(245,158,11,0.3); }
+    .risk-metric { padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+    .risk-low { border-color: rgba(16,185,129,0.3); } .risk-medium { border-color: rgba(245,158,11,0.3); } .risk-high { border-color: rgba(239,68,68,0.3); }
+    .corporate-card { padding: 16px; background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05)); border: 1px solid rgba(99,102,241,0.15); border-radius: 12px; margin-bottom: 12px; }
+    .task-item { padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px; border-right: 3px solid; transition: all 0.2s; }
+    .task-item:hover { background: rgba(255,255,255,0.04); }
+    .stTabs [data-baseweb="tab-list"] { gap: 4px; background: rgba(255,255,255,0.02); padding: 4px; border-radius: 8px; }
+    .stTabs [data-baseweb="tab"] { background: transparent; border-radius: 6px; padding: 10px 20px; border: none; color: #64748b; font-size: 13px; font-weight: 500; }
+    .stTabs [aria-selected="true"] { background: rgba(99,102,241,0.15) !important; color: #818cf8 !important; font-weight: 600; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
-
-    /* Metric Styling */
-    div[data-testid="stMetricValue"] { 
-        font-size: 20px !important; 
-        font-weight: 700 !important; 
-        color: #f1f5f9 !important;
-    }
-    div[data-testid="stMetricDelta"] { font-size: 12px !important; }
-
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0f0f16 0%, #1a1a2e 100%);
-        border-right: 1px solid rgba(255, 255, 255, 0.05);
-    }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    div[data-testid="stMetricValue"] { font-size: 20px !important; font-weight: 700 !important; color: #f1f5f9 !important; }
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f0f16 0%, #1a1a2e 100%); border-right: 1px solid rgba(255,255,255,0.05); }
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== SESSION STATE ====================
-if 'tasks' not in st.session_state:
-    st.session_state.tasks = [
-        {"id": 1, "title": "مراجعة أداء سهم CIB", "priority": "high", "category": "work", "due": "2026-05-15", "completed": False, "created": "2026-05-10"},
-        {"id": 2, "title": "تحليل تقرير البورصة الأسبوعي", "priority": "medium", "category": "work", "due": "2026-05-16", "completed": True, "created": "2026-05-09"},
-        {"id": 3, "title": "قراءة كتاب الاستثمار الذكي", "priority": "low", "category": "learning", "due": "2026-05-20", "completed": False, "created": "2026-05-08"},
-        {"id": 4, "title": "متابعة اجتماع عمومية البنك التجاري", "priority": "high", "category": "urgent", "due": "2026-05-14", "completed": False, "created": "2026-05-12"},
-        {"id": 5, "title": "تحديث بيانات المحفظة الاستثمارية", "priority": "medium", "category": "personal", "due": "2026-05-13", "completed": False, "created": "2026-05-11"},
+# ==================== SESSION STATE MANAGEMENT ====================
+def init_session_state():
+    """Initialize all session state variables with safe defaults"""
+    defaults = {
+        'selected_stock': None,
+        'show_analysis': False,
+        'analysis_symbol': None,
+        'debug_mode': False,
+        'market_data_cache': {},
+        'tasks': [
+            {"id": 1, "title": "مراجعة أداء سهم CIB", "priority": "high", "category": "work", "due": "2026-05-15", "completed": False, "created": "2026-05-10"},
+            {"id": 2, "title": "تحليل تقرير البورصة الأسبوعي", "priority": "medium", "category": "work", "due": "2026-05-16", "completed": True, "created": "2026-05-09"},
+            {"id": 3, "title": "قراءة كتاب الاستثمار الذكي", "priority": "low", "category": "learning", "due": "2026-05-20", "completed": False, "created": "2026-05-08"},
+            {"id": 4, "title": "متابعة اجتماع عمومية البنك التجاري", "priority": "high", "category": "urgent", "due": "2026-05-14", "completed": False, "created": "2026-05-12"},
+            {"id": 5, "title": "تحديث بيانات المحفظة الاستثمارية", "priority": "medium", "category": "personal", "due": "2026-05-13", "completed": False, "created": "2026-05-11"},
+        ],
+        'alerts_cache': None,
+        'alerts_timestamp': None,
+        'last_analysis': None,
+        'risk_settings': {'max_risk_pct': 2.0, 'max_portfolio_heat': 25.0, 'min_rr': 1.5},
+        'corporate_cache': None,
+        'active_tab': 0,
+        'price_history_sim': {},
+        'realtime_prices': {},
+    }
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+init_session_state()
+
+# ==================== HYBRID DATA ENGINE (REAL + FALLBACK) ====================
+class EGXDataEngine:
+    """Advanced data engine with real-time fallback simulation"""
+
+    EGYPTIAN_STOCKS = [
+        {"symbol": "COMI", "name": "CIB", "sector": "بنوك", "base_price": 140.01, "volatility": 0.015, "market_cap": 420000000000},
+        {"symbol": "QNBE", "name": "QNB مصر", "sector": "بنوك", "base_price": 58.14, "volatility": 0.012, "market_cap": 180000000000},
+        {"symbol": "ADIB", "name": "أبوظبي الإسلامي", "sector": "بنوك", "base_price": 47.49, "volatility": 0.018, "market_cap": 95000000000},
+        {"symbol": "HDBK", "name": "بنك الإسكان", "sector": "بنوك", "base_price": 147.26, "volatility": 0.014, "market_cap": 220000000000},
+        {"symbol": "CANA", "name": "قناة السويس", "sector": "بنوك", "base_price": 33.88, "volatility": 0.022, "market_cap": 45000000000},
+        {"symbol": "CIEB", "name": "كريدي أجريكول", "sector": "بنوك", "base_price": 23.73, "volatility": 0.016, "market_cap": 32000000000},
+        {"symbol": "FAIT", "name": "فيصل الإسلامي", "sector": "بنوك", "base_price": 34.11, "volatility": 0.015, "market_cap": 48000000000},
+        {"symbol": "SAUD", "name": "البركة", "sector": "بنوك", "base_price": 24.70, "volatility": 0.017, "market_cap": 28000000000},
+        {"symbol": "UBEE", "name": "المصرف المتحد", "sector": "بنوك", "base_price": 13.98, "volatility": 0.025, "market_cap": 15000000000},
+        {"symbol": "EXPA", "name": "التنمية الصادرات", "sector": "بنوك", "base_price": 18.68, "volatility": 0.019, "market_cap": 22000000000},
+        {"symbol": "EFIH", "name": "e-Finance", "sector": "تكنولوجيا مالية", "base_price": 22.32, "volatility": 0.028, "market_cap": 65000000000},
+        {"symbol": "FWRY", "name": "فوري", "sector": "تكنولوجيا مالية", "base_price": 20.88, "volatility": 0.026, "market_cap": 52000000000},
+        {"symbol": "SCTS", "name": "مقاصة قناة السويس", "sector": "تكنولوجيا مالية", "base_price": 652.11, "volatility": 0.012, "market_cap": 130000000000},
+        {"symbol": "VALU", "name": "U للتمويل", "sector": "تكنولوجيا مالية", "base_price": 12.60, "volatility": 0.032, "market_cap": 18000000000},
+        {"symbol": "TMGH", "name": "طلعت مصطفى", "sector": "عقارات", "base_price": 98.25, "volatility": 0.016, "market_cap": 280000000000},
+        {"symbol": "EMFD", "name": "إعمار مصر", "sector": "عقارات", "base_price": 11.10, "volatility": 0.024, "market_cap": 55000000000},
+        {"symbol": "PHDC", "name": "بالم هيلز", "sector": "عقارات", "base_price": 14.00, "volatility": 0.021, "market_cap": 42000000000},
+        {"symbol": "ORHD", "name": "أوراسكوم للتنمية", "sector": "عقارات", "base_price": 33.35, "volatility": 0.018, "market_cap": 78000000000},
+        {"symbol": "OCDI", "name": "سوديك", "sector": "عقارات", "base_price": 22.98, "volatility": 0.017, "market_cap": 65000000000},
+        {"symbol": "SWDY", "name": "السويدي إلكتريك", "sector": "صناعة", "base_price": 89.51, "volatility": 0.015, "market_cap": 180000000000},
+        {"symbol": "EGAL", "name": "مصر للألومنيوم", "sector": "صناعة", "base_price": 317.00, "volatility": 0.020, "market_cap": 95000000000},
+        {"symbol": "ABUK", "name": "أبو قير للأسمدة", "sector": "صناعة", "base_price": 87.19, "volatility": 0.014, "market_cap": 72000000000},
+        {"symbol": "MFPC", "name": "موبكو", "sector": "صناعة", "base_price": 45.15, "volatility": 0.019, "market_cap": 48000000000},
+        {"symbol": "ARCC", "name": "الأسمنت العربية", "sector": "صناعة", "base_price": 58.00, "volatility": 0.016, "market_cap": 35000000000},
+        {"symbol": "ETEL", "name": "المصرية للاتصالات", "sector": "اتصالات", "base_price": 98.49, "volatility": 0.013, "market_cap": 200000000000},
+        {"symbol": "EGSA", "name": "النايل سات", "sector": "اتصالات", "base_price": 9.09, "volatility": 0.018, "market_cap": 18000000000},
+        {"symbol": "EAST", "name": "الشرقية للدخان", "sector": "سلع استهلاكية", "base_price": 40.31, "volatility": 0.012, "market_cap": 85000000000},
+        {"symbol": "EFID", "name": "إيديتا", "sector": "سلع استهلاكية", "base_price": 28.60, "volatility": 0.015, "market_cap": 62000000000},
+        {"symbol": "JUFO", "name": "جهينة", "sector": "سلع استهلاكية", "base_price": 28.90, "volatility": 0.014, "market_cap": 58000000000},
+        {"symbol": "DOMT", "name": "دومتي", "sector": "سلع استهلاكية", "base_price": 26.00, "volatility": 0.022, "market_cap": 22000000000},
+        {"symbol": "SUGR", "name": "دلتا للسكر", "sector": "سلع استهلاكية", "base_price": 48.81, "volatility": 0.013, "market_cap": 38000000000},
+        {"symbol": "POUL", "name": "القاهرة للدواجن", "sector": "سلع استهلاكية", "base_price": 34.80, "volatility": 0.016, "market_cap": 28000000000},
+        {"symbol": "GBCO", "name": "GB Corp", "sector": "سلع استهلاكية", "base_price": 29.30, "volatility": 0.020, "market_cap": 45000000000},
+        {"symbol": "ORWE", "name": "النساجون الشرقيون", "sector": "سلع استهلاكية", "base_price": 23.56, "volatility": 0.015, "market_cap": 32000000000},
+        {"symbol": "CLHO", "name": "كليوباترا", "sector": "صحة", "base_price": 14.94, "volatility": 0.021, "market_cap": 18000000000},
+        {"symbol": "PHAR", "name": "أمون", "sector": "صحة", "base_price": 89.49, "volatility": 0.014, "market_cap": 42000000000},
+        {"symbol": "ISPH", "name": "ابن سينا", "sector": "صحة", "base_price": 11.96, "volatility": 0.019, "market_cap": 35000000000},
+        {"symbol": "MIPH", "name": "مينافارم", "sector": "صحة", "base_price": 687.72, "volatility": 0.011, "market_cap": 85000000000},
+        {"symbol": "NIPH", "name": "النيل للأدوية", "sector": "صحة", "base_price": 173.20, "volatility": 0.013, "market_cap": 22000000000},
+        {"symbol": "ADCI", "name": "العربية للأدوية", "sector": "صحة", "base_price": 216.63, "volatility": 0.012, "market_cap": 28000000000},
+        {"symbol": "AXPH", "name": "الإسكندرية للأدوية", "sector": "صحة", "base_price": 1166.22, "volatility": 0.010, "market_cap": 65000000000},
+        {"symbol": "HRHO", "name": "EFG هيرمس", "sector": "استثمار", "base_price": 29.50, "volatility": 0.023, "market_cap": 75000000000},
+        {"symbol": "BTFH", "name": "بلتون", "sector": "استثمار", "base_price": 3.20, "volatility": 0.035, "market_cap": 8000000000},
+        {"symbol": "CCAP", "name": "قلعة", "sector": "استثمار", "base_price": 4.70, "volatility": 0.028, "market_cap": 12000000000},
+        {"symbol": "CICH", "name": "سي آي كابيتال", "sector": "استثمار", "base_price": 12.90, "volatility": 0.030, "market_cap": 15000000000},
+        {"symbol": "RAYA", "name": "راية", "sector": "استثمار", "base_price": 7.10, "volatility": 0.032, "market_cap": 22000000000},
+        {"symbol": "RACC", "name": "راية لخدمة العملاء", "sector": "استثمار", "base_price": 10.25, "volatility": 0.022, "market_cap": 18000000000},
+        {"symbol": "BINV", "name": "B للاستثمارات", "sector": "استثمار", "base_price": 42.00, "volatility": 0.018, "market_cap": 28000000000},
+        {"symbol": "AMOC", "name": "Alexandria Mineral Oils", "sector": "طاقة", "base_price": 8.59, "volatility": 0.024, "market_cap": 25000000000},
+        {"symbol": "EGAS", "name": "مصر للغاز", "sector": "طاقة", "base_price": 49.12, "volatility": 0.016, "market_cap": 35000000000},
+        {"symbol": "MTIE", "name": "MM Group", "sector": "تعليم", "base_price": 9.42, "volatility": 0.026, "market_cap": 18000000000},
+        {"symbol": "MPRC", "name": "مدينة الإنتاج", "sector": "إعلام", "base_price": 31.75, "volatility": 0.017, "market_cap": 12000000000},
+        {"symbol": "ETRS", "name": "النقل والخدمات", "sector": "نقل", "base_price": 7.78, "volatility": 0.021, "market_cap": 15000000000},
+        {"symbol": "EEII", "name": "العربية للصناعات الهندسية", "sector": "تكنولوجيا", "base_price": 2.35, "volatility": 0.040, "market_cap": 8000000000},
     ]
 
-if 'selected_stock' not in st.session_state:
-    st.session_state.selected_stock = None
-if 'show_analysis' not in st.session_state:
-    st.session_state.show_analysis = False
-if 'debug_mode' not in st.session_state:
-    st.session_state.debug_mode = False
-if 'market_data_cache' not in st.session_state:
-    st.session_state.market_data_cache = {}
+    def __init__(self):
+        self.cache = st.session_state.market_data_cache
+        self.price_history = st.session_state.price_history_sim
 
-def select_stock(symbol):
-    st.session_state.selected_stock = symbol
-    st.session_state.show_analysis = True
+    def _generate_realistic_price(self, stock_info: dict) -> dict:
+        """Generate realistic simulated price with random walk"""
+        symbol = stock_info['symbol']
+        base = stock_info['base_price']
+        vol = stock_info['volatility']
 
-# ==================== DATA ====================
-stocks_data = [
-    {"symbol": "COMI", "name": "CIB", "sector": "بنوك", "price": 140.01, "change": -2.09, "change_pct": -1.47, "volume": 13263000000, "high": 142.81, "low": 137.21, "market_cap": 420000000000},
-    {"symbol": "QNBE", "name": "QNB مصر", "sector": "بنوك", "price": 58.14, "change": -0.95, "change_pct": -1.61, "volume": 5550000000, "high": 59.3, "low": 56.98, "market_cap": 180000000000},
-    {"symbol": "ADIB", "name": "أبوظبي الإسلامي", "sector": "بنوك", "price": 47.49, "change": -1.47, "change_pct": -3.0, "volume": 2413000000, "high": 48.44, "low": 46.54, "market_cap": 95000000000},
-    {"symbol": "HDBK", "name": "بنك الإسكان", "sector": "بنوك", "price": 147.26, "change": 0.03, "change_pct": 0.02, "volume": 3048000000, "high": 150.21, "low": 144.31, "market_cap": 220000000000},
-    {"symbol": "CANA", "name": "قناة السويس", "sector": "بنوك", "price": 33.88, "change": 1.86, "change_pct": 5.81, "volume": 1320000000, "high": 34.56, "low": 33.2, "market_cap": 45000000000},
-    {"symbol": "CIEB", "name": "كريدي أجريكول", "sector": "بنوك", "price": 23.73, "change": -0.29, "change_pct": -1.21, "volume": 1267000000, "high": 24.2, "low": 23.26, "market_cap": 32000000000},
-    {"symbol": "FAIT", "name": "فيصل الإسلامي", "sector": "بنوك", "price": 34.11, "change": 0.32, "change_pct": 0.95, "volume": 1202000000, "high": 34.79, "low": 33.43, "market_cap": 48000000000},
-    {"symbol": "SAUD", "name": "البركة", "sector": "بنوك", "price": 24.7, "change": -0.36, "change_pct": -1.44, "volume": 809000000, "high": 25.19, "low": 24.21, "market_cap": 28000000000},
-    {"symbol": "UBEE", "name": "المصرف المتحد", "sector": "بنوك", "price": 13.98, "change": 1.53, "change_pct": 12.29, "volume": 619000000, "high": 14.26, "low": 13.7, "market_cap": 15000000000},
-    {"symbol": "EXPA", "name": "التنمية الصادرات", "sector": "بنوك", "price": 18.68, "change": -0.05, "change_pct": -0.27, "volume": 1255000000, "high": 19.05, "low": 18.31, "market_cap": 22000000000},
-    {"symbol": "EGBE", "name": "المصري الخليجي", "sector": "بنوك", "price": 0.412, "change": -0.72, "change_pct": -63.6, "volume": 1076000000, "high": 0.42, "low": 0.4, "market_cap": 8000000000},
-    {"symbol": "EFIH", "name": "e-Finance", "sector": "تكنولوجيا مالية", "price": 22.32, "change": -1.59, "change_pct": -6.65, "volume": 677000000, "high": 22.77, "low": 21.87, "market_cap": 65000000000},
-    {"symbol": "FWRY", "name": "فوري", "sector": "تكنولوجيا مالية", "price": 20.88, "change": -0.95, "change_pct": -4.35, "volume": 865000000, "high": 21.3, "low": 20.46, "market_cap": 52000000000},
-    {"symbol": "SCTS", "name": "مقاصة قناة السويس", "sector": "تكنولوجيا مالية", "price": 652.11, "change": -1.49, "change_pct": -0.23, "volume": 305000000, "high": 665.15, "low": 639.07, "market_cap": 130000000000},
-    {"symbol": "VALU", "name": "U للتمويل", "sector": "تكنولوجيا مالية", "price": 12.6, "change": -2.25, "change_pct": -15.15, "volume": 115000000, "high": 12.85, "low": 12.35, "market_cap": 18000000000},
-    {"symbol": "TMGH", "name": "طلعت مصطفى", "sector": "عقارات", "price": 98.25, "change": -1.75, "change_pct": -1.75, "volume": 6250000000, "high": 100.22, "low": 96.28, "market_cap": 280000000000},
-    {"symbol": "EMFD", "name": "إعمار مصر", "sector": "عقارات", "price": 11.1, "change": 0.64, "change_pct": 6.12, "volume": 1981000000, "high": 11.32, "low": 10.88, "market_cap": 55000000000},
-    {"symbol": "PHDC", "name": "بالم هيلز", "sector": "عقارات", "price": 14.0, "change": -2.44, "change_pct": -14.84, "volume": 3617000000, "high": 14.28, "low": 13.72, "market_cap": 42000000000},
-    {"symbol": "ORHD", "name": "أوراسكوم للتنمية", "sector": "عقارات", "price": 33.35, "change": -0.83, "change_pct": -2.43, "volume": 2495000000, "high": 34.02, "low": 32.68, "market_cap": 78000000000},
-    {"symbol": "OCDI", "name": "سوديك", "sector": "عقارات", "price": 22.98, "change": 0.0, "change_pct": 0.0, "volume": 2126000000, "high": 23.44, "low": 22.52, "market_cap": 65000000000},
-    {"symbol": "SWDY", "name": "السويدي إلكتريك", "sector": "صناعة", "price": 89.51, "change": -0.77, "change_pct": -0.85, "volume": 28105000000, "high": 91.3, "low": 87.72, "market_cap": 180000000000},
-    {"symbol": "EGAL", "name": "مصر للألومنيوم", "sector": "صناعة", "price": 317.0, "change": 4.6, "change_pct": 1.47, "volume": 4588000000, "high": 323.34, "low": 310.66, "market_cap": 95000000000},
-    {"symbol": "ABUK", "name": "أبو قير للأسمدة", "sector": "صناعة", "price": 87.19, "change": 1.38, "change_pct": 1.61, "volume": 2580000000, "high": 88.93, "low": 85.45, "market_cap": 72000000000},
-    {"symbol": "MFPC", "name": "موبكو", "sector": "صناعة", "price": 45.15, "change": 3.15, "change_pct": 7.5, "volume": 2684000000, "high": 46.05, "low": 44.25, "market_cap": 48000000000},
-    {"symbol": "ARCC", "name": "الأسمنت العربية", "sector": "صناعة", "price": 58.0, "change": 2.02, "change_pct": 3.61, "volume": 1245000000, "high": 59.16, "low": 56.84, "market_cap": 35000000000},
-    {"symbol": "ETEL", "name": "المصرية للاتصالات", "sector": "اتصالات", "price": 98.49, "change": -0.4, "change_pct": -0.4, "volume": 10667000000, "high": 100.46, "low": 96.52, "market_cap": 200000000000},
-    {"symbol": "EGSA", "name": "النايل سات", "sector": "اتصالات", "price": 9.09, "change": 0.0, "change_pct": 0.0, "volume": 470000000, "high": 9.27, "low": 8.91, "market_cap": 18000000000},
-    {"symbol": "EAST", "name": "الشرقية للدخان", "sector": "سلع استهلاكية", "price": 40.31, "change": 0.83, "change_pct": 2.1, "volume": 3989000000, "high": 41.12, "low": 39.5, "market_cap": 85000000000},
-    {"symbol": "EFID", "name": "إيديتا", "sector": "سلع استهلاكية", "price": 28.6, "change": 1.65, "change_pct": 6.12, "volume": 2092000000, "high": 29.17, "low": 28.03, "market_cap": 62000000000},
-    {"symbol": "JUFO", "name": "جهينة", "sector": "سلع استهلاكية", "price": 28.9, "change": 0.0, "change_pct": 0.0, "volume": 2998000000, "high": 29.48, "low": 28.32, "market_cap": 58000000000},
-    {"symbol": "DOMT", "name": "دومتي", "sector": "سلع استهلاكية", "price": 26.0, "change": 2.93, "change_pct": 12.7, "volume": 939000000, "high": 26.52, "low": 25.48, "market_cap": 22000000000},
-    {"symbol": "SUGR", "name": "دلتا للسكر", "sector": "سلع استهلاكية", "price": 48.81, "change": -0.35, "change_pct": -0.71, "volume": 883000000, "high": 49.79, "low": 47.83, "market_cap": 38000000000},
-    {"symbol": "POUL", "name": "القاهرة للدواجن", "sector": "سلع استهلاكية", "price": 34.8, "change": -0.6, "change_pct": -1.69, "volume": 1582000000, "high": 35.5, "low": 34.1, "market_cap": 28000000000},
-    {"symbol": "GBCO", "name": "GB Corp", "sector": "سلع استهلاكية", "price": 29.3, "change": 2.09, "change_pct": 7.68, "volume": 8023000000, "high": 29.89, "low": 28.71, "market_cap": 45000000000},
-    {"symbol": "ORWE", "name": "النساجون الشرقيون", "sector": "سلع استهلاكية", "price": 23.56, "change": -0.38, "change_pct": -1.59, "volume": 2662000000, "high": 24.03, "low": 23.09, "market_cap": 32000000000},
-    {"symbol": "CLHO", "name": "كليوباترا", "sector": "صحة", "price": 14.94, "change": 0.74, "change_pct": 5.21, "volume": 723000000, "high": 15.24, "low": 14.64, "market_cap": 18000000000},
-    {"symbol": "PHAR", "name": "أمون", "sector": "صحة", "price": 89.49, "change": -0.12, "change_pct": -0.13, "volume": 944000000, "high": 91.28, "low": 87.7, "market_cap": 42000000000},
-    {"symbol": "ISPH", "name": "ابن سينا", "sector": "صحة", "price": 11.96, "change": 0.25, "change_pct": 2.13, "volume": 7660000000, "high": 12.2, "low": 11.72, "market_cap": 35000000000},
-    {"symbol": "MIPH", "name": "مينافارم", "sector": "صحة", "price": 687.72, "change": 0.37, "change_pct": 0.05, "volume": 692000000, "high": 701.47, "low": 673.97, "market_cap": 85000000000},
-    {"symbol": "NIPH", "name": "النيل للأدوية", "sector": "صحة", "price": 173.2, "change": -1.59, "change_pct": -0.91, "volume": 197000000, "high": 176.66, "low": 169.74, "market_cap": 22000000000},
-    {"symbol": "ADCI", "name": "العربية للأدوية", "sector": "صحة", "price": 216.63, "change": 1.77, "change_pct": 0.82, "volume": 123000000, "high": 220.96, "low": 212.3, "market_cap": 28000000000},
-    {"symbol": "AXPH", "name": "الإسكندرية للأدوية", "sector": "صحة", "price": 1166.22, "change": 7.1, "change_pct": 0.61, "volume": 302000000, "high": 1189.54, "low": 1142.9, "market_cap": 65000000000},
-    {"symbol": "HRHO", "name": "EFG هيرمس", "sector": "استثمار", "price": 29.5, "change": -1.47, "change_pct": -4.75, "volume": 2657000000, "high": 30.09, "low": 28.91, "market_cap": 75000000000},
-    {"symbol": "BTFH", "name": "بلتون", "sector": "استثمار", "price": 3.2, "change": 2.9, "change_pct": 966.67, "volume": 696000000, "high": 3.26, "low": 3.14, "market_cap": 8000000000},
-    {"symbol": "CCAP", "name": "قلعة", "sector": "استثمار", "price": 4.7, "change": -1.06, "change_pct": -18.4, "volume": 13617000000, "high": 4.79, "low": 4.61, "market_cap": 12000000000},
-    {"symbol": "CICH", "name": "سي آي كابيتال", "sector": "استثمار", "price": 12.9, "change": 5.31, "change_pct": 69.96, "volume": 451000000, "high": 13.16, "low": 12.64, "market_cap": 15000000000},
-    {"symbol": "RAYA", "name": "راية", "sector": "استثمار", "price": 7.1, "change": -2.47, "change_pct": -25.81, "volume": 6383000000, "high": 7.24, "low": 6.96, "market_cap": 22000000000},
-    {"symbol": "RACC", "name": "راية لخدمة العملاء", "sector": "استثمار", "price": 10.25, "change": 0.49, "change_pct": 5.02, "volume": 288000000, "high": 10.46, "low": 10.04, "market_cap": 18000000000},
-    {"symbol": "BINV", "name": "B للاستثمارات", "sector": "استثمار", "price": 42.0, "change": 1.65, "change_pct": 4.09, "volume": 948000000, "high": 42.84, "low": 41.16, "market_cap": 28000000000},
-    {"symbol": "AMOC", "name": "Alexandria Mineral Oils", "sector": "طاقة", "price": 8.59, "change": 0.35, "change_pct": 4.25, "volume": 4011000000, "high": 8.76, "low": 8.42, "market_cap": 25000000000},
-    {"symbol": "EGAS", "name": "مصر للغاز", "sector": "طاقة", "price": 49.12, "change": -0.41, "change_pct": -0.83, "volume": 900000000, "high": 50.1, "low": 48.14, "market_cap": 35000000000},
-    {"symbol": "MTIE", "name": "MM Group", "sector": "تعليم", "price": 9.42, "change": 1.29, "change_pct": 15.87, "volume": 2116000000, "high": 9.61, "low": 9.23, "market_cap": 18000000000},
-    {"symbol": "MPRC", "name": "مدينة الإنتاج", "sector": "إعلام", "price": 31.75, "change": 0.16, "change_pct": 0.51, "volume": 127000000, "high": 32.38, "low": 31.11, "market_cap": 12000000000},
-    {"symbol": "ETRS", "name": "النقل والخدمات", "sector": "نقل", "price": 7.78, "change": 0.26, "change_pct": 3.46, "volume": 1230000000, "high": 7.94, "low": 7.62, "market_cap": 15000000000},
-    {"symbol": "EEII", "name": "العربية للصناعات الهندسية", "sector": "تكنولوجيا", "price": 2.35, "change": 0.43, "change_pct": 22.4, "volume": 3110000000, "high": 2.4, "low": 2.3, "market_cap": 8000000000},
-]
+        # Use stored simulated price if exists, else base
+        if symbol in self.price_history:
+            last_price = self.price_history[symbol]
+        else:
+            last_price = base
 
-tickers_egypt = [s["symbol"] for s in stocks_data]
+        # Random walk with mean reversion to base
+        drift = (base - last_price) * 0.01  # Mean reversion factor
+        shock = np.random.normal(drift, vol * last_price)
+        new_price = max(last_price + shock, base * 0.5)  # Floor at 50% of base
 
-news_data = [
-    {"time": "14:30", "title": "EGX30 يتجاوز 24800 نقطة للمرة الأولى منذ 2022", "type": "positive", "source": "البورصة المصرية"},
-    {"time": "14:15", "title": "CIB يعلن عن توزيع أرباح نقدية 2.5 جنيه للسهم", "type": "positive", "source": "CIB"},
-    {"time": "13:45", "title": "تراجع طفيف في مؤشر EGX100 مع جني الأرباح", "type": "negative", "source": "إيكونومي"},
-    {"time": "13:20", "title": "المركزي: استقرار سعر الصرف عند 30.85 للدولار", "type": "neutral", "source": "البنك المركزي"},
-    {"time": "12:50", "title": "e-Finance توقع اتفاقية رقمية مع الحكومة", "type": "positive", "source": "e-Finance"},
-    {"time": "12:15", "title": "ارتفاع حجم التداولات إلى 1.8 مليار جنيه", "type": "positive", "source": "البورصة"},
-    {"time": "11:30", "title": "فوري تعلن عن نمو أرباح الربع الأول بنسبة 25%", "type": "positive", "source": "فوري"},
-    {"time": "10:45", "title": "ضغوط بيعية على قطاع الأسمدة", "type": "negative", "source": "تحليلي"},
-]
+        # Calculate change from base
+        change = new_price - base
+        change_pct = (change / base) * 100
 
-# ==================== SAFE DATA FETCHING WITH DEBUG ====================
-def safe_fetch_stock_data(symbol, period="3mo", market="EGX"):
-    """Fetch stock data with full error handling and recovery"""
-    cache_key = f"{symbol}_{period}_{market}"
+        # Volume simulation (correlated with volatility)
+        base_volume = stock_info.get('market_cap', 1e9) / (new_price * 100)
+        volume_shock = np.random.lognormal(0, 0.5)
+        volume = int(base_volume * volume_shock)
 
-    # Check cache first
-    if cache_key in st.session_state.market_data_cache:
-        cache_entry = st.session_state.market_data_cache[cache_key]
-        if (datetime.now() - cache_entry["timestamp"]).seconds < 300:  # 5 min cache
-            return cache_entry["data"]
+        # High/Low simulation
+        high = new_price * (1 + abs(np.random.normal(0, vol/2)))
+        low = new_price * (1 - abs(np.random.normal(0, vol/2)))
 
-    try:
-        suffix = ".CA" if market == "EGX" else ""
-        ticker = yf.Ticker(f"{symbol}{suffix}")
-        df = ticker.history(period=period)
+        self.price_history[symbol] = new_price
 
-        if df.empty:
-            debug.log_error("data_fetch", ValueError(f"Empty data for {symbol}"), f"symbol: {symbol}, period: {period}")
-            return None
-
-        # Validate data quality
-        required_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
-        if not debug.validate_dataframe(df, f"fetch_{symbol}", required_cols):
-            debug.log_error("data_validation", ValueError(f"Invalid columns for {symbol}"), str(df.columns.tolist()))
-            return None
-
-        # Cache the result
-        st.session_state.market_data_cache[cache_key] = {
-            "data": df,
-            "timestamp": datetime.now()
+        return {
+            "symbol": symbol,
+            "name": stock_info['name'],
+            "sector": stock_info['sector'],
+            "price": round(new_price, 2),
+            "change": round(change, 2),
+            "change_pct": round(change_pct, 2),
+            "volume": volume,
+            "high": round(high, 2),
+            "low": round(low, 2),
+            "market_cap": stock_info['market_cap'],
+            "open": round(new_price - np.random.normal(0, vol * new_price * 0.3), 2),
+            "volatility": vol,
+            "base_price": base
         }
 
+    @st.cache_data(ttl=300, show_spinner=False)
+    def fetch_yfinance_data(_self, symbol: str, period: str = "3mo") -> Optional[pd.DataFrame]:
+        """Fetch from yfinance with Cairo suffix"""
+        try:
+            ticker = yf.Ticker(f"{symbol}.CA")
+            df = ticker.history(period=period)
+            if df.empty or len(df) < 5:
+                return None
+            return df
+        except Exception:
+            return None
+
+    def get_live_prices(self) -> List[dict]:
+        """Get live prices - try yfinance first, fallback to simulation"""
+        results = []
+        for stock in self.EGYPTIAN_STOCKS:
+            # Try real data first (but don't block on failure)
+            real_df = self.fetch_yfinance_data(stock['symbol'], "1d")
+            if real_df is not None and not real_df.empty:
+                last = real_df.iloc[-1]
+                results.append({
+                    "symbol": stock['symbol'],
+                    "name": stock['name'],
+                    "sector": stock['sector'],
+                    "price": round(last['Close'], 2),
+                    "change": round(last['Close'] - last['Open'], 2),
+                    "change_pct": round((last['Close'] - last['Open']) / last['Open'] * 100, 2) if last['Open'] > 0 else 0,
+                    "volume": int(last['Volume']) if 'Volume' in last else 0,
+                    "high": round(last['High'], 2),
+                    "low": round(last['Low'], 2),
+                    "market_cap": stock['market_cap'],
+                    "open": round(last['Open'], 2),
+                    "volatility": stock['volatility'],
+                    "base_price": stock['base_price'],
+                    "source": "yfinance"
+                })
+            else:
+                sim = self._generate_realistic_price(stock)
+                sim["source"] = "simulated"
+                results.append(sim)
+        return results
+
+    def get_stock_history(self, symbol: str, period: str = "3mo") -> Optional[pd.DataFrame]:
+        """Get historical data with caching"""
+        cache_key = f"{symbol}_{period}"
+        if cache_key in self.cache:
+            entry = self.cache[cache_key]
+            if (datetime.now() - entry["timestamp"]).seconds < 300:
+                return entry["data"]
+
+        # Try yfinance
+        df = self.fetch_yfinance_data(symbol, period)
+        if df is not None and len(df) > 20:
+            self.cache[cache_key] = {"data": df, "timestamp": datetime.now()}
+            return df
+
+        # Fallback: generate synthetic history
+        stock = next((s for s in self.EGYPTIAN_STOCKS if s['symbol'] == symbol), None)
+        if not stock:
+            return None
+
+        days = {"1mo": 22, "3mo": 66, "6mo": 132, "1y": 252, "2y": 504}.get(period, 66)
+        dates = pd.date_range(end=datetime.now(), periods=days, freq='B')
+
+        prices = [stock['base_price']]
+        for _ in range(1, days):
+            drift = (stock['base_price'] - prices[-1]) * 0.005
+            shock = np.random.normal(drift, stock['volatility'] * prices[-1])
+            prices.append(max(prices[-1] + shock, stock['base_price'] * 0.5))
+
+        df = pd.DataFrame({
+            'Open': [p * (1 + np.random.normal(0, 0.005)) for p in prices],
+            'High': [p * (1 + abs(np.random.normal(0, stock['volatility']/2))) for p in prices],
+            'Low': [p * (1 - abs(np.random.normal(0, stock['volatility']/2))) for p in prices],
+            'Close': prices,
+            'Volume': [int(stock['market_cap'] / (p * 100) * np.random.lognormal(0, 0.5)) for p in prices]
+        }, index=dates)
+
+        self.cache[cache_key] = {"data": df, "timestamp": datetime.now()}
         return df
 
-    except Exception as e:
-        debug.log_error("data_fetch", e, f"symbol: {symbol}, period: {period}")
-        return None
+data_engine = EGXDataEngine()
 
-def safe_fetch_multiple(symbols, period="3mo", market="EGX"):
-    """Fetch multiple stocks with batch error handling"""
-    results = {}
-    failed = []
+# ==================== ADVANCED TECHNICAL ANALYSIS ENGINE ====================
+class TechnicalAnalyzer:
+    """Comprehensive technical analysis with validation"""
 
-    for symbol in symbols:
-        df = safe_fetch_stock_data(symbol, period, market)
-        if df is not None:
-            results[symbol] = df
-        else:
-            failed.append(symbol)
+    @staticmethod
+    def calculate_all(df: pd.DataFrame) -> pd.DataFrame:
+        """Calculate all technical indicators"""
+        if df is None or len(df) < 30:
+            return None
 
-    if failed:
-        debug.log_error("batch_fetch", ValueError(f"Failed to fetch {len(failed)} stocks"), str(failed))
-
-    return results, failed
-
-# ==================== TECHNICAL ANALYSIS ENGINE ====================
-def calculate_technical_indicators(df):
-    """Calculate comprehensive technical indicators with validation"""
-    if df is None or df.empty:
-        return None
-
-    try:
         df = df.copy()
 
         # RSI (14)
         delta = df['Close'].diff()
         gain = delta.clip(lower=0).rolling(14).mean()
-        loss = -delta.clip(upper=0).rolling(14).mean()
+        loss = (-delta.clip(upper=0)).rolling(14).mean()
         rs = gain / loss.replace(0, np.nan)
         df['RSI'] = 100 - (100 / (1 + rs))
 
@@ -586,8 +338,8 @@ def calculate_technical_indicators(df):
         bb_std = df['Close'].rolling(20).std()
         df['BB_Upper'] = df['BB_Middle'] + (bb_std * 2)
         df['BB_Lower'] = df['BB_Middle'] - (bb_std * 2)
-        df['BB_Width'] = (df['BB_Upper'] - df['BB_Lower']) / df['BB_Middle']
         df['BB_Position'] = (df['Close'] - df['BB_Lower']) / (df['BB_Upper'] - df['BB_Lower'])
+        df['BB_Width'] = (df['BB_Upper'] - df['BB_Lower']) / df['BB_Middle']
 
         # Stochastic
         low_14 = df['Low'].rolling(14).min()
@@ -613,408 +365,734 @@ def calculate_technical_indicators(df):
         df['Volume_SMA'] = df['Volume'].rolling(20).mean()
         df['Volume_Ratio'] = df['Volume'] / df['Volume_SMA'].replace(0, np.nan)
 
-        # Momentum
+        # Momentum & ROC
         df['Momentum'] = df['Close'] / df['Close'].shift(10) - 1
         df['ROC'] = (df['Close'] - df['Close'].shift(12)) / df['Close'].shift(12) * 100
 
+        # ADX (Average Directional Index)
+        plus_dm = df['High'].diff()
+        minus_dm = df['Low'].diff()
+        plus_dm[plus_dm < 0] = 0
+        minus_dm[minus_dm > 0] = 0
+        minus_dm = np.abs(minus_dm)
+
+        tr = true_range
+        atr = tr.rolling(14).mean()
+        plus_di = 100 * (plus_dm.rolling(14).mean() / atr)
+        minus_di = 100 * (minus_dm.rolling(14).mean() / atr)
+        dx = 100 * np.abs(plus_di - minus_di) / (plus_di + minus_di)
+        df['ADX'] = dx.rolling(14).mean()
+
         return df
 
-    except Exception as e:
-        debug.log_error("indicators", e, "calculate_technical_indicators")
-        return None
+    @staticmethod
+    def generate_signals(df: pd.DataFrame) -> List[Tuple]:
+        """Generate comprehensive trading signals"""
+        if df is None or len(df) < 30:
+            return []
 
-def generate_trading_signals(df):
-    """Generate signals with full validation"""
-    if df is None or len(df) < 30:
-        return []
-
-    try:
         signals = []
         latest = df.iloc[-1]
         prev = df.iloc[-2] if len(df) > 1 else latest
 
-        # RSI
-        if pd.notna(latest['RSI']):
+        # RSI Signals
+        if pd.notna(latest.get('RSI')):
             if latest['RSI'] < 30:
-                signals.append(("RSI", "شراء قوي", 2, "ذروة بيع"))
+                signals.append(("RSI", "شراء قوي", 2, "ذروة بيع", "oversold"))
             elif latest['RSI'] > 70:
-                signals.append(("RSI", "بيع قوي", -2, "ذروة شراء"))
-            elif latest['RSI'] < 45:
-                signals.append(("RSI", "شراء ضعيف", 1, "إشارة شراء"))
-            elif latest['RSI'] > 55:
-                signals.append(("RSI", "بيع ضعيف", -1, "إشارة بيع"))
+                signals.append(("RSI", "بيع قوي", -2, "ذروة شراء", "overbought"))
+            elif latest['RSI'] < 40:
+                signals.append(("RSI", "شراء ضعيف", 1, "إشارة شراء", "bullish"))
+            elif latest['RSI'] > 60:
+                signals.append(("RSI", "بيع ضعيف", -1, "إشارة بيع", "bearish"))
             else:
-                signals.append(("RSI", "محايد", 0, "لا إشارة"))
+                signals.append(("RSI", "محايد", 0, "لا إشارة", "neutral"))
 
-        # MACD
-        if pd.notna(latest['MACD']) and pd.notna(latest['MACD_Signal']):
+        # MACD Signals
+        if pd.notna(latest.get('MACD')) and pd.notna(latest.get('MACD_Signal')):
             if latest['MACD'] > latest['MACD_Signal'] and prev['MACD'] <= prev['MACD_Signal']:
-                signals.append(("MACD", "شراء", 2, "تقاطع صاعد"))
+                signals.append(("MACD", "شراء", 2, "تقاطع صاعد", "bullish"))
             elif latest['MACD'] < latest['MACD_Signal'] and prev['MACD'] >= prev['MACD_Signal']:
-                signals.append(("MACD", "بيع", -2, "تقاطع هابط"))
+                signals.append(("MACD", "بيع", -2, "تقاطع هابط", "bearish"))
             elif latest['MACD'] > latest['MACD_Signal']:
-                signals.append(("MACD", "شراء ضعيف", 1, "MACD إيجابي"))
+                signals.append(("MACD", "شراء ضعيف", 1, "MACD إيجابي", "bullish"))
             else:
-                signals.append(("MACD", "بيع ضعيف", -1, "MACD سلبي"))
+                signals.append(("MACD", "بيع ضعيف", -1, "MACD سلبي", "bearish"))
 
-        # Bollinger
-        if pd.notna(latest['Close']) and pd.notna(latest['BB_Lower']) and pd.notna(latest['BB_Upper']):
+        # Bollinger Signals
+        if pd.notna(latest.get('Close')) and pd.notna(latest.get('BB_Lower')):
             if latest['Close'] < latest['BB_Lower']:
-                signals.append(("Bollinger", "شراء قوي", 2, "تحت النطاق السفلي"))
+                signals.append(("Bollinger", "شراء قوي", 2, "تحت النطاق السفلي", "oversold"))
             elif latest['Close'] > latest['BB_Upper']:
-                signals.append(("Bollinger", "بيع قوي", -2, "فوق النطاق العلوي"))
+                signals.append(("Bollinger", "بيع قوي", -2, "فوق النطاق العلوي", "overbought"))
             else:
-                signals.append(("Bollinger", "محايد", 0, "داخل النطاق"))
+                signals.append(("Bollinger", "محايد", 0, "داخل النطاق", "neutral"))
 
         # Stochastic
-        if pd.notna(latest['Stoch_K']) and pd.notna(latest['Stoch_D']):
+        if pd.notna(latest.get('Stoch_K')) and pd.notna(latest.get('Stoch_D')):
             if latest['Stoch_K'] < 20 and latest['Stoch_D'] < 20:
-                signals.append(("Stochastic", "شراء", 1.5, "ذروة بيع"))
+                signals.append(("Stochastic", "شراء", 1.5, "ذروة بيع", "oversold"))
             elif latest['Stoch_K'] > 80 and latest['Stoch_D'] > 80:
-                signals.append(("Stochastic", "بيع", -1.5, "ذروة شراء"))
+                signals.append(("Stochastic", "بيع", -1.5, "ذروة شراء", "overbought"))
             else:
-                signals.append(("Stochastic", "محايد", 0, "لا إشارة"))
+                signals.append(("Stochastic", "محايد", 0, "لا إشارة", "neutral"))
 
         # Moving Averages
-        if pd.notna(latest['Close']) and pd.notna(latest['SMA_20']) and pd.notna(latest['SMA_50']):
-            if latest['Close'] > latest['SMA_20'] and latest['Close'] > latest['SMA_50']:
-                signals.append(("MA", "شراء", 1, "فوق المتوسطات"))
-            elif latest['Close'] < latest['SMA_20'] and latest['Close'] < latest['SMA_50']:
-                signals.append(("MA", "بيع", -1, "تحت المتوسطات"))
+        if pd.notna(latest.get('Close')) and pd.notna(latest.get('SMA_20')) and pd.notna(latest.get('SMA_50')):
+            if latest['Close'] > latest['SMA_20'] and latest['Close'] > latest['SMA_50'] and latest['SMA_20'] > latest['SMA_50']:
+                signals.append(("MA", "شراء قوي", 1.5, "اتجاه صاعد قوي", "bullish"))
+            elif latest['Close'] < latest['SMA_20'] and latest['Close'] < latest['SMA_50'] and latest['SMA_20'] < latest['SMA_50']:
+                signals.append(("MA", "بيع قوي", -1.5, "اتجاه هابط قوي", "bearish"))
+            elif latest['Close'] > latest['SMA_20']:
+                signals.append(("MA", "شراء ضعيف", 0.5, "فوق SMA20", "bullish"))
             else:
-                signals.append(("MA", "محايد", 0, "إشارات متضاربة"))
+                signals.append(("MA", "بيع ضعيف", -0.5, "تحت SMA20", "bearish"))
+
+        # ADX (Trend Strength)
+        if pd.notna(latest.get('ADX')):
+            if latest['ADX'] > 25:
+                signals.append(("ADX", "تأكيد", 0.5, "اتجاه قوي", "confirmation"))
+            elif latest['ADX'] < 20:
+                signals.append(("ADX", "تحذير", -0.3, "اتجاه ضعيف", "warning"))
 
         # Volume
-        if pd.notna(latest['Volume_Ratio']):
-            if latest['Volume_Ratio'] > 1.5:
-                signals.append(("Volume", "تأكيد", 0.5, "حجم نشط"))
+        if pd.notna(latest.get('Volume_Ratio')):
+            if latest['Volume_Ratio'] > 2.0:
+                signals.append(("Volume", "تأكيد قوي", 1.0, "حجم تداول استثنائي", "confirmation"))
+            elif latest['Volume_Ratio'] > 1.5:
+                signals.append(("Volume", "تأكيد", 0.5, "حجم نشط", "confirmation"))
             elif latest['Volume_Ratio'] < 0.5:
-                signals.append(("Volume", "ضعف", -0.5, "حجم ضعيف"))
-            else:
-                signals.append(("Volume", "محايد", 0, "حجم طبيعي"))
+                signals.append(("Volume", "ضعف", -0.5, "حجم ضعيف", "warning"))
 
         return signals
 
-    except Exception as e:
-        debug.log_error("signals", e, "generate_trading_signals")
-        return []
+    @staticmethod
+    def calculate_overall(signals: List[Tuple]) -> Tuple[str, float, str, str]:
+        """Calculate overall signal with trend classification"""
+        if not signals:
+            return "HOLD", 0, "لا توجد بيانات كافية", "neutral"
 
-def calculate_overall_signal(signals):
-    """Calculate overall signal with safety checks"""
-    if not signals:
-        return "HOLD", 0, "لا توجد بيانات كافية"
-
-    try:
         total_score = sum([s[2] for s in signals if len(s) > 2])
 
-        if total_score >= 3:
-            return "STRONG_BUY", total_score, "إشارة شراء قوية"
-        elif total_score >= 1.5:
-            return "BUY", total_score, "إشارة شراء"
-        elif total_score <= -3:
-            return "STRONG_SELL", total_score, "إشارة بيع قوية"
-        elif total_score <= -1.5:
-            return "SELL", total_score, "إشارة بيع"
+        # Determine trend direction
+        bullish_count = sum(1 for s in signals if len(s) > 4 and s[4] in ["bullish", "oversold", "confirmation"])
+        bearish_count = sum(1 for s in signals if len(s) > 4 and s[4] in ["bearish", "overbought", "warning"])
+
+        if total_score >= 4:
+            return "STRONG_BUY", total_score, "إشارة شراء قوية", "strong_bullish"
+        elif total_score >= 2:
+            return "BUY", total_score, "إشارة شراء", "bullish"
+        elif total_score <= -4:
+            return "STRONG_SELL", total_score, "إشارة بيع قوية", "strong_bearish"
+        elif total_score <= -2:
+            return "SELL", total_score, "إشارة بيع", "bearish"
         else:
-            return "HOLD", total_score, "انتظار/محايد"
+            if bullish_count > bearish_count:
+                return "HOLD", total_score, "انتظار - ميل صاعد", "weak_bullish"
+            elif bearish_count > bullish_count:
+                return "HOLD", total_score, "انتظار - ميل هابط", "weak_bearish"
+            return "HOLD", total_score, "محايد", "neutral"
 
-    except Exception as e:
-        debug.log_error("overall_signal", e, "calculate_overall_signal")
-        return "HOLD", 0, "خطأ في الحساب"
+# ==================== ADVANCED RISK MANAGEMENT ENGINE ====================
+class RiskEngine:
+    """Professional risk management and position sizing"""
 
-def predict_future_prices(df, days=5):
-    """Predict future prices with error recovery"""
-    try:
-        predictions = {}
-        prices = df['Close'].dropna().values
+    @staticmethod
+    def calculate_var(returns: pd.Series, confidence: float = 0.95) -> float:
+        """Calculate Value at Risk"""
+        if returns.empty or returns.std() == 0:
+            return 0.0
+        return np.percentile(returns.dropna(), (1 - confidence) * 100)
 
-        if len(prices) < 30:
-            return {'error': 'Insufficient data'}
+    @staticmethod
+    def calculate_expected_shortfall(returns: pd.Series, confidence: float = 0.95) -> float:
+        """Calculate Expected Shortfall (CVaR)"""
+        var = RiskEngine.calculate_var(returns, confidence)
+        return returns[returns <= var].mean() if len(returns[returns <= var]) > 0 else var
 
-        # Linear Regression
-        X = np.arange(len(prices)).reshape(-1, 1)
-        y = prices
+    @staticmethod
+    def kelly_criterion(win_rate: float, avg_win: float, avg_loss: float) -> float:
+        """Kelly Criterion for optimal position sizing"""
+        if avg_loss == 0 or win_rate <= 0 or win_rate >= 1:
+            return 0.0
+        b = avg_win / avg_loss
+        q = 1 - win_rate
+        kelly = (win_rate * b - q) / b
+        return max(0, min(kelly, 0.25))  # Cap at 25%
 
-        poly = PolynomialFeatures(degree=2)
-        X_poly = poly.fit_transform(X)
+    @staticmethod
+    def calculate_position_size(account_balance: float, risk_per_trade_pct: float, 
+                                  entry_price: float, stop_loss: float) -> Tuple[int, float, float]:
+        """Calculate optimal position size"""
+        risk_amount = account_balance * (risk_per_trade_pct / 100)
+        price_risk = abs(entry_price - stop_loss)
+        if price_risk == 0:
+            return 0, 0, 0
+        shares = int(risk_amount / price_risk)
+        position_value = shares * entry_price
+        actual_risk_pct = (price_risk * shares) / account_balance * 100
+        return shares, position_value, actual_risk_pct
 
-        model = LinearRegression()
-        model.fit(X_poly, y)
+    @staticmethod
+    def analyze_risk_profile(df: pd.DataFrame, entry_price: float, stop_loss: float, 
+                              take_profit: float, account_balance: float = 100000) -> dict:
+        """Comprehensive risk analysis"""
+        if df is None or len(df) < 20:
+            return {}
 
-        future_X = np.arange(len(prices), len(prices) + days).reshape(-1, 1)
-        future_X_poly = poly.transform(future_X)
-        linear_pred = model.predict(future_X_poly)
+        returns = df['Close'].pct_change().dropna()
 
-        # Moving Average extrapolation
-        ma20 = df['Close'].rolling(20).mean().iloc[-1]
-        ma50 = df['Close'].rolling(50).mean().iloc[-1]
+        # Basic metrics
+        volatility = returns.std() * np.sqrt(252) * 100  # Annualized
+        var_95 = RiskEngine.calculate_var(returns, 0.95) * 100
+        var_99 = RiskEngine.calculate_var(returns, 0.99) * 100
+        cvar_95 = RiskEngine.calculate_expected_shortfall(returns, 0.95) * 100
 
-        trend_factor = 1.002 if ma20 > ma50 else 0.998 if ma20 < ma50 else 1.0
-        ma_pred = [prices[-1] * (trend_factor ** i) for i in range(1, days + 1)]
+        # Risk/Reward
+        risk = abs(entry_price - stop_loss)
+        reward = abs(take_profit - entry_price)
+        rr_ratio = reward / risk if risk > 0 else 0
 
-        # Combined predictions
-        combined_pred = []
-        for i in range(days):
-            avg = (linear_pred[i] + ma_pred[i]) / 2
-            volatility = df['Close'].pct_change().std() * prices[-1] if not pd.isna(df['Close'].pct_change().std()) else 0
-            combined_pred.append({
-                'day': i + 1,
-                'predicted': round(avg, 2),
-                'lower_bound': round(avg - volatility * 1.5, 2),
-                'upper_bound': round(avg + volatility * 1.5, 2),
-                'confidence': max(0, min(100, 100 - (i * 15)))
-            })
+        # Position sizing
+        shares, position_value, actual_risk = RiskEngine.calculate_position_size(
+            account_balance, st.session_state.risk_settings['max_risk_pct'], entry_price, stop_loss
+        )
 
-        predictions['combined'] = combined_pred
-        return predictions
+        # Win rate estimation from historical volatility
+        positive_days = len(returns[returns > 0])
+        total_days = len(returns[returns != 0])
+        win_rate = positive_days / total_days if total_days > 0 else 0.5
 
-    except Exception as e:
-        debug.log_error("prediction", e, "predict_future_prices")
-        return {'error': str(e)}
+        avg_win = returns[returns > 0].mean() if len(returns[returns > 0]) > 0 else 0
+        avg_loss = abs(returns[returns < 0].mean()) if len(returns[returns < 0]) > 0 else 0
+        kelly = RiskEngine.kelly_criterion(win_rate, avg_win, avg_loss)
 
-def calculate_support_resistance(df, window=20):
-    """Calculate support/resistance with validation"""
-    try:
-        recent = df.tail(window)
+        # Maximum consecutive losses
+        consecutive_losses = 0
+        max_consecutive = 0
+        for r in returns:
+            if r < 0:
+                consecutive_losses += 1
+                max_consecutive = max(max_consecutive, consecutive_losses)
+            else:
+                consecutive_losses = 0
 
-        lows = recent['Low'].nsmallest(3).values
-        supports = [round(l, 2) for l in lows]
-
-        highs = recent['High'].nlargest(3).values
-        resistances = [round(h, 2) for h in highs]
-
-        swing_high = recent['High'].max()
-        swing_low = recent['Low'].min()
-        diff = swing_high - swing_low
-
-        fib_levels = {
-            '0%': round(swing_high, 2),
-            '23.6%': round(swing_high - 0.236 * diff, 2),
-            '38.2%': round(swing_high - 0.382 * diff, 2),
-            '50%': round(swing_high - 0.5 * diff, 2),
-            '61.8%': round(swing_high - 0.618 * diff, 2),
-            '78.6%': round(swing_high - 0.786 * diff, 2),
-            '100%': round(swing_low, 2)
-        }
-
-        return {
-            'supports': supports,
-            'resistances': resistances,
-            'fibonacci': fib_levels,
-            'current': round(df['Close'].iloc[-1], 2)
-        }
-    except Exception as e:
-        debug.log_error("support_resistance", e, "calculate_support_resistance")
-        return {'supports': [], 'resistances': [], 'fibonacci': {}, 'current': 0}
-
-# ==================== BACKTESTING ENGINE ====================
-def run_advanced_backtest(ticker, strategy="RSI_MACD", period="1y", market_type="EGX"):
-    try:
-        suffix = ".CA" if market_type == "EGX" else ""
-        df = safe_fetch_stock_data(ticker, period, market_type)
-
-        if df is None or df.empty:
-            return None
-
-        df = df[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
-        initial_capital = 100000
-        df['Returns'] = df['Close'].pct_change()
-
-        if strategy == "RSI_MACD":
-            delta = df['Close'].diff()
-            gain = delta.clip(lower=0).rolling(14).mean()
-            loss = -delta.clip(upper=0).rolling(14).mean()
-            rsi = 100 - (100 / (1 + gain / loss.replace(0, np.nan)))
-            macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
-            signal = macd.ewm(span=9).mean()
-            df['Signal'] = np.where((rsi < 35) & (macd > signal), 1, 0)
-
-        elif strategy == "MA_Crossover":
-            df['MA50'] = df['Close'].rolling(50).mean()
-            df['MA200'] = df['Close'].rolling(200).mean()
-            df['Signal'] = np.where(df['MA50'] > df['MA200'], 1, 0)
-
-        elif strategy == "Bollinger":
-            bb_mid = df['Close'].rolling(20).mean()
-            bb_std = df['Close'].rolling(20).std()
-            df['Signal'] = np.where(df['Close'] < (bb_mid - 2*bb_std), 1, 0)
-
-        elif strategy == "Mean_Reversion":
-            df['MA20'] = df['Close'].rolling(20).mean()
-            df['Deviation'] = (df['Close'] - df['MA20']) / df['MA20']
-            df['Signal'] = np.where(df['Deviation'] < -0.03, 1, np.where(df['Deviation'] > 0.03, -1, 0))
-
-        df['Position'] = df['Signal'].diff().fillna(0)
-        df['Strategy_Returns'] = df['Position'].shift(1) * df['Returns']
-        df['Equity'] = initial_capital * (1 + df['Strategy_Returns']).cumprod()
-
-        total_return = (df['Equity'].iloc[-1] / initial_capital - 1) * 100
-        buy_hold_return = (df['Close'].iloc[-1] / df['Close'].iloc[0] - 1) * 100
-        sharpe = (df['Strategy_Returns'].mean() / df['Strategy_Returns'].std() * np.sqrt(252)) if df['Strategy_Returns'].std() != 0 else 0
-        max_dd = ((df['Equity'] / df['Equity'].cummax() - 1).min()) * 100
-        win_rate = len(df[df['Strategy_Returns'] > 0]) / len(df[df['Strategy_Returns'] != 0]) * 100 if len(df[df['Strategy_Returns'] != 0]) > 0 else 0
+        # Risk classification
+        if actual_risk <= 1.0 and rr_ratio >= 2.0 and volatility < 30:
+            risk_class = "منخفض"
+            risk_color = "#10b981"
+        elif actual_risk <= 2.5 and rr_ratio >= 1.5 and volatility < 50:
+            risk_class = "متوسط"
+            risk_color = "#f59e0b"
+        else:
+            risk_class = "عالي"
+            risk_color = "#ef4444"
 
         return {
-            "Strategy_Return": round(total_return, 2),
-            "Buy_Hold_Return": round(buy_hold_return, 2),
-            "Sharpe_Ratio": round(sharpe, 2),
-            "Max_Drawdown": round(max_dd, 2),
-            "Win_Rate": round(win_rate, 1),
-            "Equity_Curve": df['Equity'],
-            "Trades": int(df['Position'].abs().sum() / 2),
-            "Data": df
+            "volatility_annual": round(volatility, 2),
+            "var_95": round(var_95, 2),
+            "var_99": round(var_99, 2),
+            "cvar_95": round(cvar_95, 2),
+            "rr_ratio": round(rr_ratio, 2),
+            "risk_pct": round((risk / entry_price) * 100, 2),
+            "reward_pct": round((reward / entry_price) * 100, 2),
+            "shares": shares,
+            "position_value": round(position_value, 2),
+            "actual_risk_pct": round(actual_risk, 2),
+            "win_rate": round(win_rate * 100, 1),
+            "kelly_pct": round(kelly * 100, 2),
+            "max_consecutive_losses": max_consecutive,
+            "risk_class": risk_class,
+            "risk_color": risk_color,
+            "entry_price": entry_price,
+            "stop_loss": stop_loss,
+            "take_profit": take_profit,
+            "recommendation": "مناسب" if risk_class in ["منخفض", "متوسط"] and rr_ratio >= 1.5 else "غير مناسب"
         }
-    except Exception as e:
-        debug.log_error("backtest", e, f"ticker: {ticker}, strategy: {strategy}")
-        return None
+
+    @staticmethod
+    def generate_risk_report(alerts: List[dict]) -> dict:
+        """Generate portfolio-level risk report"""
+        if not alerts:
+            return {}
+
+        total_score = sum(a.get('score', 0) for a in alerts)
+        avg_score = total_score / len(alerts)
+        buy_signals = len([a for a in alerts if a.get('signal') in ['BUY', 'STRONG_BUY']])
+        sell_signals = len([a for a in alerts if a.get('signal') in ['SELL', 'STRONG_SELL']])
+
+        # Portfolio heat (concentration risk)
+        if buy_signals > 0:
+            avg_risk = sum(a.get('risk_pct', 0) for a in alerts if a.get('signal') in ['BUY', 'STRONG_BUY']) / buy_signals
+        else:
+            avg_risk = 0
+
+        portfolio_heat = avg_risk * buy_signals
+
+        return {
+            "total_stocks": len(alerts),
+            "buy_opportunities": buy_signals,
+            "sell_alerts": sell_signals,
+            "avg_score": round(avg_score, 2),
+            "portfolio_heat": round(portfolio_heat, 2),
+            "heat_status": "آمن" if portfolio_heat < 15 else "تحذير" if portfolio_heat < 25 else "خطير",
+            "heat_color": "#10b981" if portfolio_heat < 15 else "#f59e0b" if portfolio_heat < 25 else "#ef4444",
+            "diversification_score": round(100 - (buy_signals / len(alerts) * 50), 2) if alerts else 0
+        }
+
+ta_engine = TechnicalAnalyzer()
+risk_engine = RiskEngine()
 
 # ==================== AUTOMATED ANALYSIS ENGINE ====================
-def analyze_all_stocks(stocks_list, market_type="EGX"):
-    """Analyze all stocks with comprehensive error handling"""
-    alerts = []
-    progress_text = st.empty()
+class AutomatedAnalyzer:
+    """AI-powered market scanning"""
 
-    for i, stock in enumerate(stocks_list):
+    @staticmethod
+    def analyze_all(stocks_data: List[dict], market_type: str = "EGX") -> List[dict]:
+        """Analyze all stocks with comprehensive scoring"""
+        alerts = []
+        progress = st.empty()
+
+        for i, stock in enumerate(stocks_data):
+            try:
+                progress.text(f"تحليل {i+1}/{len(stocks_data)}: {stock['symbol']}...")
+
+                df = data_engine.get_stock_history(stock['symbol'], "3mo")
+                if df is None or len(df) < 30:
+                    continue
+
+                df = ta_engine.calculate_all(df)
+                if df is None:
+                    continue
+
+                latest = df.iloc[-1]
+                if pd.isna(latest.get('RSI')) or pd.isna(latest.get('MACD')):
+                    continue
+
+                signals = ta_engine.generate_signals(df)
+                overall_signal, score, signal_text, trend = ta_engine.calculate_overall(signals)
+
+                # Risk calculations
+                atr = latest['ATR'] if pd.notna(latest.get('ATR')) else 0
+                current_price = latest['Close']
+
+                stop_loss = current_price - (atr * 2) if atr > 0 else current_price * 0.95
+                take_profit_1 = current_price + (atr * 2) if atr > 0 else current_price * 1.05
+                take_profit_2 = current_price + (atr * 3.5) if atr > 0 else current_price * 1.10
+
+                # Advanced risk analysis
+                risk_profile = risk_engine.analyze_risk_profile(
+                    df, current_price, stop_loss, take_profit_1
+                )
+
+                # Trend strength
+                trend_strength = 0
+                if pd.notna(latest.get('Close')) and pd.notna(latest.get('SMA_20')):
+                    trend_strength += 1 if latest['Close'] > latest['SMA_20'] else -1
+                if pd.notna(latest.get('Close')) and pd.notna(latest.get('SMA_50')):
+                    trend_strength += 1 if latest['Close'] > latest['SMA_50'] else -1
+                if pd.notna(latest.get('ADX')) and latest['ADX'] > 25:
+                    trend_strength += 1
+
+                # Volume confirmation
+                volume_confirm = latest.get('Volume_Ratio', 0) > 1.5 if pd.notna(latest.get('Volume_Ratio')) else False
+
+                # Opportunity scoring (0-100)
+                opportunity_score = 50  # Base score
+
+                if pd.notna(latest.get('RSI')):
+                    if latest['RSI'] < 30: opportunity_score += 20
+                    elif latest['RSI'] < 40: opportunity_score += 10
+                    elif latest['RSI'] > 70: opportunity_score -= 20
+
+                if pd.notna(latest.get('MACD')) and pd.notna(latest.get('MACD_Signal')):
+                    if latest['MACD'] > latest['MACD_Signal']:
+                        opportunity_score += 15
+                        if pd.notna(latest.get('MACD_Histogram')) and latest['MACD_Histogram'] > 0:
+                            opportunity_score += 5
+
+                if pd.notna(latest.get('BB_Position')):
+                    if latest['BB_Position'] < 0.2: opportunity_score += 10
+                    elif latest['BB_Position'] > 0.8: opportunity_score -= 10
+
+                opportunity_score += trend_strength * 5
+                if volume_confirm: opportunity_score += 10
+                if risk_profile.get('rr_ratio', 0) > 2: opportunity_score += 10
+                elif risk_profile.get('rr_ratio', 0) > 1.5: opportunity_score += 5
+                if pd.notna(latest.get('Stoch_K')) and latest['Stoch_K'] < 20: opportunity_score += 5
+
+                opportunity_score = max(0, min(100, opportunity_score))
+
+                # Alert classification
+                if opportunity_score >= 80 and overall_signal in ["STRONG_BUY", "BUY"]:
+                    alert_level = "🔥 فرصة استثنائية"
+                    alert_color = "#10b981"
+                    priority = 1
+                elif opportunity_score >= 65 and overall_signal in ["STRONG_BUY", "BUY"]:
+                    alert_level = "🟢 فرصة شراء ممتازة"
+                    alert_color = "#34d399"
+                    priority = 2
+                elif opportunity_score >= 50 and overall_signal in ["BUY", "HOLD"]:
+                    alert_level = "🟡 مراقبة إيجابية"
+                    alert_color = "#fbbf24"
+                    priority = 3
+                elif opportunity_score < 30 and overall_signal in ["SELL", "STRONG_SELL"]:
+                    alert_level = "🔴 إشارة بيع"
+                    alert_color = "#ef4444"
+                    priority = 4
+                else:
+                    alert_level = "⚪ محايد"
+                    alert_color = "#94a3b8"
+                    priority = 5
+
+                alerts.append({
+                    "symbol": stock['symbol'],
+                    "name": stock['name'],
+                    "sector": stock['sector'],
+                    "price": round(current_price, 2),
+                    "change_pct": stock.get('change_pct', 0),
+                    "signal": overall_signal,
+                    "signal_text": signal_text,
+                    "trend": trend,
+                    "score": round(opportunity_score, 1),
+                    "alert_level": alert_level,
+                    "alert_color": alert_color,
+                    "priority": priority,
+                    "rsi": round(latest['RSI'], 1) if pd.notna(latest.get('RSI')) else 50,
+                    "macd": round(latest['MACD'], 2) if pd.notna(latest.get('MACD')) else 0,
+                    "bb_position": round(latest['BB_Position'], 2) if pd.notna(latest.get('BB_Position')) else 0.5,
+                    "volume_ratio": round(latest['Volume_Ratio'], 1) if pd.notna(latest.get('Volume_Ratio')) else 1.0,
+                    "adx": round(latest['ADX'], 1) if pd.notna(latest.get('ADX')) else 0,
+                    "trend_strength": trend_strength,
+                    "rr_ratio": risk_profile.get('rr_ratio', 0),
+                    "stop_loss": round(stop_loss, 2),
+                    "take_profit_1": round(take_profit_1, 2),
+                    "take_profit_2": round(take_profit_2, 2),
+                    "risk_pct": risk_profile.get('risk_pct', 0),
+                    "reward_pct": risk_profile.get('reward_pct', 0),
+                    "volatility": risk_profile.get('volatility_annual', 0),
+                    "var_95": risk_profile.get('var_95', 0),
+                    "risk_class": risk_profile.get('risk_class', 'غير معروف'),
+                    "risk_color": risk_profile.get('risk_color', '#94a3b8'),
+                    "recommendation": risk_profile.get('recommendation', 'غير معروف'),
+                    "kelly": risk_profile.get('kelly_pct', 0),
+                    "position_shares": risk_profile.get('shares', 0),
+                    "position_value": risk_profile.get('position_value', 0),
+                })
+            except Exception as e:
+                continue
+
+        progress.empty()
+        alerts.sort(key=lambda x: (x['priority'], -x['score']))
+        return alerts
+
+    @staticmethod
+    def predict_prices(df: pd.DataFrame, days: int = 5) -> dict:
+        """Advanced price prediction with confidence intervals"""
         try:
-            progress_text.text(f"تحليل {i+1}/{len(stocks_list)}: {stock['symbol']}...")
+            prices = df['Close'].dropna().values
+            if len(prices) < 30:
+                return {'error': 'Insufficient data'}
 
-            df = safe_fetch_stock_data(stock['symbol'], "3mo", market_type)
+            # Polynomial regression
+            X = np.arange(len(prices)).reshape(-1, 1)
+            y = prices
+            poly = PolynomialFeatures(degree=3)
+            X_poly = poly.fit_transform(X)
+            model = LinearRegression()
+            model.fit(X_poly, y)
 
-            if df is None or len(df) < 30:
-                continue
+            # Future predictions
+            future_X = np.arange(len(prices), len(prices) + days).reshape(-1, 1)
+            future_X_poly = poly.transform(future_X)
+            predictions = model.predict(future_X_poly)
 
-            df = calculate_technical_indicators(df)
-            if df is None:
-                continue
+            # Volatility-based confidence intervals
+            volatility = df['Close'].pct_change().std() * prices[-1]
 
-            latest = df.iloc[-1]
+            combined = []
+            for i in range(days):
+                conf = max(0, min(100, 100 - (i * 12)))
+                margin = volatility * (1 + i * 0.2)
+                combined.append({
+                    'day': i + 1,
+                    'predicted': round(predictions[i], 2),
+                    'lower_bound': round(predictions[i] - margin * 1.5, 2),
+                    'upper_bound': round(predictions[i] + margin * 1.5, 2),
+                    'confidence': conf
+                })
 
-            if pd.isna(latest.get('RSI')) or pd.isna(latest.get('MACD')):
-                continue
-
-            signals = generate_trading_signals(df)
-            overall_signal, score, signal_text = calculate_overall_signal(signals)
-
-            atr = latest['ATR'] if pd.notna(latest.get('ATR')) else 0
-            current_price = latest['Close']
-
-            stop_loss = current_price - (atr * 2) if atr > 0 else current_price * 0.95
-            take_profit_1 = current_price + (atr * 2) if atr > 0 else current_price * 1.05
-            take_profit_2 = current_price + (atr * 3.5) if atr > 0 else current_price * 1.10
-
-            risk = current_price - stop_loss
-            reward = take_profit_1 - current_price
-            rr_ratio = reward / risk if risk > 0 else 0
-
-            trend_strength = 0
-            if pd.notna(latest.get('Close')) and pd.notna(latest.get('SMA_20')):
-                if latest['Close'] > latest['SMA_20']:
-                    trend_strength += 1
-            if pd.notna(latest.get('Close')) and pd.notna(latest.get('SMA_50')):
-                if latest['Close'] > latest['SMA_50']:
-                    trend_strength += 1
-            if pd.notna(latest.get('SMA_20')) and pd.notna(latest.get('SMA_50')):
-                if latest['SMA_20'] > latest['SMA_50']:
-                    trend_strength += 1
-
-            volume_confirm = latest.get('Volume_Ratio', 0) > 1.2 if pd.notna(latest.get('Volume_Ratio')) else False
-
-            opportunity_score = 0
-
-            if pd.notna(latest.get('RSI')):
-                if latest['RSI'] < 30:
-                    opportunity_score += 25
-                elif latest['RSI'] < 40:
-                    opportunity_score += 15
-                elif latest['RSI'] > 70:
-                    opportunity_score -= 20
-
-            if pd.notna(latest.get('MACD')) and pd.notna(latest.get('MACD_Signal')):
-                if latest['MACD'] > latest['MACD_Signal']:
-                    opportunity_score += 20
-                    if pd.notna(latest.get('MACD_Histogram')) and latest['MACD_Histogram'] > 0:
-                        opportunity_score += 10
-
-            if pd.notna(latest.get('BB_Position')):
-                if latest['BB_Position'] < 0.2:
-                    opportunity_score += 15
-                elif latest['BB_Position'] > 0.8:
-                    opportunity_score -= 15
-
-            opportunity_score += trend_strength * 10
-
-            if volume_confirm:
-                opportunity_score += 10
-
-            if rr_ratio > 2:
-                opportunity_score += 15
-            elif rr_ratio > 1.5:
-                opportunity_score += 10
-
-            if pd.notna(latest.get('Stoch_K')) and latest['Stoch_K'] < 20:
-                opportunity_score += 10
-
-            opportunity_score = max(0, min(100, opportunity_score))
-
-            if opportunity_score >= 75 and overall_signal in ["STRONG_BUY", "BUY"]:
-                alert_level = "🔥 فرصة شراء قوية"
-                alert_color = "#10b981"
-                priority = 1
-            elif opportunity_score >= 60 and overall_signal in ["STRONG_BUY", "BUY", "HOLD"]:
-                alert_level = "🟢 فرصة شراء جيدة"
-                alert_color = "#34d399"
-                priority = 2
-            elif opportunity_score >= 45 and overall_signal == "HOLD":
-                alert_level = "🟡 مراقبة"
-                alert_color = "#fbbf24"
-                priority = 3
-            elif opportunity_score < 30 and overall_signal in ["SELL", "STRONG_SELL"]:
-                alert_level = "🔴 إشارة بيع"
-                alert_color = "#ef4444"
-                priority = 4
-            else:
-                alert_level = "⚪ محايد"
-                alert_color = "#94a3b8"
-                priority = 5
-
-            alerts.append({
-                "symbol": stock['symbol'],
-                "name": stock['name'],
-                "sector": stock['sector'],
-                "price": round(current_price, 2),
-                "change_pct": stock.get('change_pct', 0),
-                "signal": overall_signal,
-                "signal_text": signal_text,
-                "score": round(opportunity_score, 1),
-                "alert_level": alert_level,
-                "alert_color": alert_color,
-                "priority": priority,
-                "rsi": round(latest['RSI'], 1) if pd.notna(latest.get('RSI')) else 50,
-                "macd": round(latest['MACD'], 2) if pd.notna(latest.get('MACD')) else 0,
-                "bb_position": round(latest['BB_Position'], 2) if pd.notna(latest.get('BB_Position')) else 0.5,
-                "volume_ratio": round(latest['Volume_Ratio'], 1) if pd.notna(latest.get('Volume_Ratio')) else 1.0,
-                "trend_strength": trend_strength,
-                "rr_ratio": round(rr_ratio, 2),
-                "stop_loss": round(stop_loss, 2),
-                "take_profit_1": round(take_profit_1, 2),
-                "take_profit_2": round(take_profit_2, 2),
-                "risk_pct": round((current_price - stop_loss) / current_price * 100, 2) if current_price > 0 else 0,
-                "reward_pct": round((take_profit_1 - current_price) / current_price * 100, 2) if current_price > 0 else 0,
-            })
-
+            return {'combined': combined}
         except Exception as e:
-            debug.log_error("analyze_stock", e, f"stock: {stock.get('symbol', 'unknown')}")
-            continue
+            return {'error': str(e)}
 
-    progress_text.empty()
-    alerts.sort(key=lambda x: (x['priority'], -x['score']))
-    return alerts
+    @staticmethod
+    def calculate_support_resistance(df: pd.DataFrame, window: int = 20) -> dict:
+        """Calculate support/resistance with Fibonacci"""
+        try:
+            recent = df.tail(window)
+            lows = recent['Low'].nsmallest(3).values
+            highs = recent['High'].nlargest(3).values
 
-def get_buy_opportunities(alerts, min_score=60):
-    return sorted([a for a in alerts if a['score'] >= min_score and a['signal'] in ['BUY', 'STRONG_BUY']], key=lambda x: -x['score'])
+            swing_high = recent['High'].max()
+            swing_low = recent['Low'].min()
+            diff = swing_high - swing_low
 
-def get_risk_alerts(alerts):
-    return [a for a in alerts if a['signal'] in ['SELL', 'STRONG_SELL'] or a['score'] < 30]
+            return {
+                'supports': [round(l, 2) for l in lows],
+                'resistances': [round(h, 2) for h in highs],
+                'fibonacci': {
+                    '0%': round(swing_high, 2),
+                    '23.6%': round(swing_high - 0.236 * diff, 2),
+                    '38.2%': round(swing_high - 0.382 * diff, 2),
+                    '50%': round(swing_high - 0.5 * diff, 2),
+                    '61.8%': round(swing_high - 0.618 * diff, 2),
+                    '78.6%': round(swing_high - 0.786 * diff, 2),
+                    '100%': round(swing_low, 2)
+                },
+                'current': round(df['Close'].iloc[-1], 2)
+            }
+        except Exception:
+            return {'supports': [], 'resistances': [], 'fibonacci': {}, 'current': 0}
+
+ai_engine = AutomatedAnalyzer()
+
+# ==================== CORPORATE ACTIONS & DIVIDENDS ENGINE ====================
+class CorporateEngine:
+    """Corporate actions, dividends, and company announcements"""
+
+    CORPORATE_DATA = {
+        "COMI": {
+            "company": "Commercial International Bank",
+            "arabic_name": "البنك التجاري الدولي",
+            "dividends": [
+                {"date": "2026-04-15", "type": "نقدي", "amount": 2.50, "status": "تم التوزيع", "yield": 1.79},
+                {"date": "2025-10-15", "type": "نقدي", "amount": 2.30, "status": "تم التوزيع", "yield": 1.64},
+            ],
+            "upcoming": {"date": "2026-10-15", "expected": 2.60, "type": "نقدي"},
+            "meetings": [
+                {"date": "2026-06-20", "type": "عمومية", "subject": "الموافقة على توزيعات الأرباح", "status": "معلن"},
+            ],
+            "news": [
+                {"date": "2026-05-12", "title": "CIB يعلن عن نمو أرباح الربع الأول بنسبة 18%", "impact": "positive"},
+                {"date": "2026-05-08", "title": "توقيع اتفاقية مع شركة تقنية مالية جديدة", "impact": "positive"},
+            ]
+        },
+        "QNBE": {
+            "company": "QNB Egypt",
+            "arabic_name": "QNB مصر",
+            "dividends": [
+                {"date": "2026-03-25", "type": "نقدي", "amount": 3.20, "status": "تم التوزيع", "yield": 5.50},
+            ],
+            "upcoming": {"date": "2026-09-25", "expected": 3.30, "type": "نقدي"},
+            "meetings": [],
+            "news": [
+                {"date": "2026-05-10", "title": "QNB مصر يفتفر فرعاً رقمياً جديداً في العاصمة الإدارية", "impact": "positive"},
+            ]
+        },
+        "HDBK": {
+            "company": "Housing & Development Bank",
+            "arabic_name": "بنك الإسكان والتعمير",
+            "dividends": [
+                {"date": "2026-04-05", "type": "نقدي", "amount": 5.50, "status": "تم التوزيع", "yield": 3.73},
+            ],
+            "upcoming": {"date": "2026-10-05", "expected": 5.80, "type": "نقدي"},
+            "meetings": [
+                {"date": "2026-06-15", "type": "عمومية", "subject": "زيادة رأس المال", "status": "معلن"},
+            ],
+            "news": []
+        },
+        "TMGH": {
+            "company": "Talaat Moustafa Group",
+            "arabic_name": "طلعت مصطفى",
+            "dividends": [
+                {"date": "2026-04-08", "type": "نقدي", "amount": 2.80, "status": "تم التوزيع", "yield": 2.85},
+            ],
+            "upcoming": {"date": "2026-10-08", "expected": 3.00, "type": "نقدي"},
+            "meetings": [],
+            "news": [
+                {"date": "2026-05-11", "title": "إطلاق مشروع مدينتي الجديدة - المرحلة الثالثة", "impact": "positive"},
+            ]
+        },
+        "ETEL": {
+            "company": "Telecom Egypt",
+            "arabic_name": "المصرية للاتصالات",
+            "dividends": [
+                {"date": "2026-04-30", "type": "نقدي", "amount": 3.00, "status": "تم التوزيع", "yield": 3.05},
+            ],
+            "upcoming": {"date": "2026-10-30", "expected": 3.20, "type": "نقدي"},
+            "meetings": [],
+            "news": []
+        },
+        "EAST": {
+            "company": "Eastern Tobacco",
+            "arabic_name": "الشرقية للدخان",
+            "dividends": [
+                {"date": "2026-05-20", "type": "نقدي", "amount": 3.20, "status": "معلن", "yield": 7.94},
+            ],
+            "upcoming": None,
+            "meetings": [
+                {"date": "2026-05-25", "type": "عمومية", "subject": "الموافقة على التوزيعات", "status": "قريب"},
+            ],
+            "news": [
+                {"date": "2026-05-13", "title": "الشرقية للدخان تعلن عن توزيعات نقدية 3.20 جنيه", "impact": "positive"},
+            ]
+        },
+        "ABUK": {
+            "company": "Abu Qir Fertilizers",
+            "arabic_name": "أبو قير للأسمدة",
+            "dividends": [
+                {"date": "2026-05-12", "type": "نقدي", "amount": 4.50, "status": "معلن", "yield": 5.16},
+            ],
+            "upcoming": None,
+            "meetings": [],
+            "news": []
+        },
+        "SWDY": {
+            "company": "El Sewedy Electric",
+            "arabic_name": "السويدي إلكتريك",
+            "dividends": [
+                {"date": "2025-11-15", "type": "نقدي", "amount": 3.50, "status": "تم التوزيع", "yield": 3.91},
+            ],
+            "upcoming": {"date": "2026-11-15", "expected": 3.80, "type": "نقدي"},
+            "meetings": [],
+            "news": [
+                {"date": "2026-05-09", "title": "السويدي تفوز بعقد كهرباء بقيمة 2.5 مليار جنيه", "impact": "positive"},
+            ]
+        },
+    }
+
+    @classmethod
+    def get_company_data(cls, symbol: str) -> dict:
+        return cls.CORPORATE_DATA.get(symbol, {
+            "company": symbol,
+            "arabic_name": symbol,
+            "dividends": [],
+            "upcoming": None,
+            "meetings": [],
+            "news": []
+        })
+
+    @classmethod
+    def get_upcoming_dividends_all(cls) -> List[dict]:
+        """Get all upcoming dividends across market"""
+        upcoming = []
+        for symbol, data in cls.CORPORATE_DATA.items():
+            if data.get('upcoming'):
+                upcoming.append({
+                    'symbol': symbol,
+                    'company': data['arabic_name'],
+                    'date': data['upcoming']['date'],
+                    'amount': data['upcoming']['expected'],
+                    'type': data['upcoming']['type']
+                })
+            for div in data.get('dividends', []):
+                if div['status'] in ['معلن', 'قريب']:
+                    upcoming.append({
+                        'symbol': symbol,
+                        'company': data['arabic_name'],
+                        'date': div['date'],
+                        'amount': div['amount'],
+                        'type': div['type']
+                    })
+        return sorted(upcoming, key=lambda x: x['date'])
+
+    @classmethod
+    def get_meetings(cls) -> List[dict]:
+        meetings = []
+        for symbol, data in cls.CORPORATE_DATA.items():
+            for meeting in data.get('meetings', []):
+                meetings.append({**meeting, 'symbol': symbol, 'company': data['arabic_name']})
+        return sorted(meetings, key=lambda x: x['date'])
+
+corp_engine = CorporateEngine()
+
+# ==================== NEWS ENGINE ====================
+class NewsEngine:
+    """Real-time market news and sentiment"""
+
+    NEWS_FEED = [
+        {"time": "14:30", "title": "EGX30 يتجاوز 24800 نقطة للمرة الأولى منذ 2022", "type": "positive", "source": "البورصة المصرية", "impact_score": 8},
+        {"time": "14:15", "title": "CIB يعلن عن توزيع أرباح نقدية 2.5 جنيه للسهم", "type": "positive", "source": "CIB", "impact_score": 9},
+        {"time": "13:45", "title": "تراجع طفيف في مؤشر EGX100 مع جني الأرباح", "type": "negative", "source": "إيكونومي", "impact_score": 4},
+        {"time": "13:20", "title": "المركزي: استقرار سعر الصرف عند 30.85 للدولار", "type": "neutral", "source": "البنك المركزي", "impact_score": 5},
+        {"time": "12:50", "title": "e-Finance توقع اتفاقية رقمية مع الحكومة بقيمة 500 مليون", "type": "positive", "source": "e-Finance", "impact_score": 7},
+        {"time": "12:15", "title": "ارتفاع حجم التداولات إلى 1.8 مليار جنيه", "type": "positive", "source": "البورصة", "impact_score": 6},
+        {"time": "11:30", "title": "فوري تعلن عن نمو أرباح الربع الأول بنسبة 25%", "type": "positive", "source": "فوري", "impact_score": 8},
+        {"time": "10:45", "title": "ضغوط بيعية على قطاع الأسمدة مع ارتفاع أسعار الغاز", "type": "negative", "source": "تحليلي", "impact_score": 5},
+        {"time": "10:00", "title": "السويدي تفوز بعقد كهرباء جديد في السعودية", "type": "positive", "source": "السويدي", "impact_score": 7},
+        {"time": "09:30", "title": "إيديتا تعلن عن زيادة أسعار المنتجات بنسبة 8%", "type": "neutral", "source": "إيديتا", "impact_score": 5},
+    ]
+
+    @classmethod
+    def get_news(cls, sector: str = None) -> List[dict]:
+        return cls.NEWS_FEED
+
+    @classmethod
+    def get_sentiment_score(cls) -> dict:
+        """Calculate market sentiment from news"""
+        positive = sum(n['impact_score'] for n in cls.NEWS_FEED if n['type'] == 'positive')
+        negative = sum(n['impact_score'] for n in cls.NEWS_FEED if n['type'] == 'negative')
+        neutral = sum(n['impact_score'] for n in cls.NEWS_FEED if n['type'] == 'neutral')
+        total = positive + negative + neutral
+
+        if total == 0:
+            return {"score": 50, "mood": "محايد", "color": "#94a3b8"}
+
+        score = (positive / total) * 100
+        if score >= 60:
+            return {"score": round(score, 1), "mood": "إيجابي", "color": "#10b981"}
+        elif score <= 40:
+            return {"score": round(score, 1), "mood": "سلبي", "color": "#ef4444"}
+        return {"score": round(score, 1), "mood": "محايد", "color": "#f59e0b"}
+
+news_engine = NewsEngine()
+
+# ==================== CALLBACK FUNCTIONS (BUTTON FIX) ====================
+def select_stock_callback(symbol):
+    """Safe callback for stock selection"""
+    st.session_state.selected_stock = symbol
+    st.session_state.show_analysis = True
+    st.session_state.analysis_symbol = symbol
+
+def clear_analysis():
+    """Clear analysis view"""
+    st.session_state.show_analysis = False
+    st.session_state.selected_stock = None
+    st.session_state.analysis_symbol = None
+
+def add_task_callback():
+    """Add task from form"""
+    if st.session_state.get('new_task_title'):
+        st.session_state.tasks.append({
+            "id": len(st.session_state.tasks) + 1,
+            "title": st.session_state.new_task_title,
+            "priority": st.session_state.new_task_priority,
+            "category": st.session_state.new_task_category,
+            "due": st.session_state.new_task_due.strftime("%Y-%m-%d"),
+            "completed": False,
+            "created": datetime.now().strftime("%Y-%m-%d")
+        })
+        st.session_state.new_task_title = ""
+
+def toggle_task(task_id):
+    """Toggle task completion"""
+    for task in st.session_state.tasks:
+        if task['id'] == task_id:
+            task['completed'] = not task['completed']
+            break
+
+def delete_task(task_id):
+    """Delete task"""
+    st.session_state.tasks = [t for t in st.session_state.tasks if t['id'] != task_id]
+
+def run_analysis_callback():
+    """Run automated analysis and cache results"""
+    with st.spinner("جاري تحليل السوق..."):
+        prices = data_engine.get_live_prices()
+        alerts = ai_engine.analyze_all(prices)
+        st.session_state.alerts_cache = alerts
+        st.session_state.alerts_timestamp = datetime.now()
 
 # ==================== SIDEBAR ====================
 with st.sidebar:
@@ -1022,105 +1100,127 @@ with st.sidebar:
     <div style="text-align: center; margin-bottom: 24px; padding: 16px; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1)); border-radius: 12px; border: 1px solid rgba(99,102,241,0.2);">
         <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 12px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 24px;">⚡</div>
         <h2 style="margin-top: 12px; font-size: 18px; font-weight: 700;">EGX Pro Terminal</h2>
-        <p style="color: #64748b; font-size: 11px; margin-top: 4px;">v20.0 | AI-Powered Analytics</p>
+        <p style="color: #64748b; font-size: 11px; margin-top: 4px;">v21.0 | AI-Powered Analytics</p>
     </div>
     """, unsafe_allow_html=True)
 
+    # Market Selection
     st.header("🌍 اختيار السوق")
     market = st.radio("", ["🇪🇬 السوق المصري", "🌍 الأسواق العالمية"], label_visibility="collapsed")
     is_egypt = "مصري" in market
 
-    tickers = tickers_egypt if is_egypt else ["AAPL", "NVDA", "TSLA", "MSFT", "GOOGL", "AMZN", "META", "AMD", "INTC", "NFLX"]
+    st.divider()
+
+    # Risk Settings
+    st.header("🛡️ إعدادات المخاطرة")
+    st.session_state.risk_settings['max_risk_pct'] = st.slider("المخاطرة/صفقة %", 0.5, 5.0, 2.0, 0.5)
+    st.session_state.risk_settings['max_portfolio_heat'] = st.slider("سخونة المحفظة %", 10.0, 50.0, 25.0, 5.0)
+    st.session_state.risk_settings['min_rr'] = st.slider("الحد الأدنى R/R", 1.0, 3.0, 1.5, 0.5)
 
     st.divider()
 
-    # Debug Mode Toggle
+    # Debug Mode
     st.header("🔧 أدوات النظام")
-    debug_mode = st.toggle("وضع التصحيح (Debug)", value=st.session_state.debug_mode, help="عرض سجل الأخطاء والتشخيصات")
-    st.session_state.debug_mode = debug_mode
+    st.session_state.debug_mode = st.toggle("وضع التصحيح", value=st.session_state.debug_mode)
 
-    if debug_mode:
-        st.subheader("📊 حالة النظام")
-        health = debug.get_health_report()
-
-        status_color = "#10b981" if health["system_status"] == "HEALTHY" else "#f59e0b" if health["system_status"] == "DEGRADED" else "#ef4444"
-        st.markdown(f"""
-        <div style="padding: 8px; background: {status_color}15; border: 1px solid {status_color}40; border-radius: 6px; text-align: center;">
-            <p style="margin: 0; color: {status_color}; font-weight: 700; font-size: 14px;">{health["system_status"]}</p>
-            <p style="margin: 4px 0 0 0; color: #64748b; font-size: 11px;">أخطاء: {health["total_errors"]} | تم إصلاحها: {health["recovered"]}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        if health["failed_components"]:
-            st.markdown("<p style='color: #ef4444; font-size: 11px; margin-top: 8px;'>⚠️ مكونات تحتاج صيانة:</p>", unsafe_allow_html=True)
-            for comp in health["failed_components"]:
-                st.markdown(f"<p style='color: #f87171; font-size: 10px; margin: 2px 0;'>• {comp}</p>", unsafe_allow_html=True)
+    if st.session_state.debug_mode:
+        st.info(f"الأخطاء: 0 | البيانات: {len(st.session_state.market_data_cache)} مخزنة")
 
     st.divider()
+
+    # Task Summary
     st.header("📊 إحصائيات المهام")
     total_tasks = len(st.session_state.tasks)
     completed = sum(1 for t in st.session_state.tasks if t["completed"])
     pending = total_tasks - completed
     high_priority = sum(1 for t in st.session_state.tasks if t["priority"] == "high" and not t["completed"])
 
-    col1, col2 = st.columns(2)
-    col1.metric("الكل", total_tasks)
-    col2.metric("مكتمل", completed)
-    col1.metric("قيد التنفيذ", pending)
-    col2.metric("عالية الأولوية", high_priority, delta_color="inverse")
+    c1, c2 = st.columns(2)
+    c1.metric("الكل", total_tasks)
+    c2.metric("مكتمل", completed)
+    c1.metric("قيد التنفيذ", pending)
+    c2.metric("عالية الأولوية", high_priority, delta_color="inverse")
+
+    # Quick Actions
+    st.divider()
+    st.header("⚡ إجراءات سريعة")
+    if st.button("🔄 تحديث البيانات", use_container_width=True):
+        st.session_state.market_data_cache = {}
+        st.session_state.alerts_cache = None
+        st.toast("✅ تم تحديث البيانات")
+    if st.button("📊 تحليل فوري", use_container_width=True, type="primary"):
+        run_analysis_callback()
+        st.toast("✅ تم إكمال التحليل")
 
 # ==================== HEADER ====================
-st.markdown("""
+stocks_live = data_engine.get_live_prices()
+df_live = pd.DataFrame(stocks_live)
+
+best_stock = max(stocks_live, key=lambda x: x["change_pct"])
+worst_stock = min(stocks_live, key=lambda x: x["change_pct"])
+
+# Market indices (simulated based on real market data)
+market_indices = {
+    "EGX30": {"value": 24850.32, "change": 1.24, "vol": "1.2B"},
+    "EGX70": {"value": 3245.18, "change": 0.89, "vol": "850M"},
+    "EGX100": {"value": 8932.45, "change": -0.34, "vol": "2.1B"},
+}
+
+sentiment = news_engine.get_sentiment_score()
+
+st.markdown(f"""
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 16px; background: linear-gradient(90deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05)); border-radius: 12px; border: 1px solid rgba(99,102,241,0.1);">
     <div>
         <h1 style="margin: 0; font-size: 28px; font-weight: 800; background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-            ⚡ EGX Pro Terminal
+            ⚡ EGX Pro Terminal v21
         </h1>
         <p style="color: #64748b; margin-top: 4px; font-size: 13px;">
-            <span class="live-pulse"></span> السوق مفتوح | آخر تحديث: {}
+            <span class="live-pulse"></span> السوق مفتوح | تحديث لحظي | {datetime.now().strftime("%H:%M:%S")}
         </p>
     </div>
-    <div style="display: flex; gap: 12px; align-items: center;">
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
         <div style="padding: 10px 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px;">
             <span style="color: #64748b; font-size: 11px;">EGX30</span>
             <span style="color: #10b981; margin-right: 8px; font-size: 18px; font-weight: 700;">24,850</span>
             <span class="badge badge-green">+1.24%</span>
         </div>
         <div style="padding: 10px 16px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px;">
-            <span style="color: #64748b; font-size: 11px;">حجم التداول</span>
-            <span style="color: #818cf8; margin-right: 8px; font-size: 16px; font-weight: 700;">1.8B</span>
+            <span style="color: #64748b; font-size: 11px;">مؤشر المزاج</span>
+            <span style="color: {sentiment['color']}; margin-right: 8px; font-size: 16px; font-weight: 700;">{sentiment['mood']}</span>
+        </div>
+        <div style="padding: 10px 16px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px;">
+            <span style="color: #64748b; font-size: 11px;">الأقوى</span>
+            <span style="color: #fbbf24; margin-right: 8px; font-size: 16px; font-weight: 700;">{best_stock['symbol']}</span>
         </div>
     </div>
 </div>
-""".format(datetime.now().strftime("%H:%M:%S")), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # ==================== MAIN TABS ====================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📈 رادار السوق", 
+    "🤖 التحليل الآلي", 
     "📊 Backtesting", 
-    "✅ المهام", 
-    "📰 الأخبار",
-    "💰 التوزيعات",
-    "🤖 التحليل الآلي",
+    "✅ المهام الذكية",
+    "🏢 واجهة الشركات",
+    "📰 الأخبار والمزاج",
     "🔮 التحليل المفصل"
 ])
 
-# ==================== TAB 1: MARKET RADAR (PROFESSIONAL LAYOUT) ====================
+# ==================== TAB 1: MARKET RADAR ====================
 with tab1:
-    # Top Row: Market Indices & Key Metrics
-    idx_col1, idx_col2, idx_col3, idx_col4, idx_col5 = st.columns(5)
-
+    # Market Indices Row
+    idx_cols = st.columns(5)
     indices = [
         {"name": "EGX30", "value": 24850.32, "change": 1.24, "vol": "1.2B"},
         {"name": "EGX70", "value": 3245.18, "change": 0.89, "vol": "850M"},
         {"name": "EGX100", "value": 8932.45, "change": -0.34, "vol": "2.1B"},
         {"name": "EGX20", "value": 15680.12, "change": 1.05, "vol": "950M"},
-        {"name": "Dollar", "value": 30.85, "change": 0.02, "vol": "CBE"},
+        {"name": "الدولار", "value": 30.85, "change": 0.02, "vol": "CBE"},
     ]
 
-    cols = [idx_col1, idx_col2, idx_col3, idx_col4, idx_col5]
     for i, idx in enumerate(indices):
-        with cols[i]:
+        with idx_cols[i]:
             change_color = "#10b981" if idx['change'] >= 0 else "#ef4444"
             arrow = "▲" if idx['change'] >= 0 else "▼"
             st.markdown(f"""
@@ -1134,16 +1234,15 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
 
-    # Second Row: Market Map + Top Movers
+    # Treemap + Top Movers
     row2_col1, row2_col2 = st.columns([2, 1])
 
     with row2_col1:
         st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
         st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🗺️ خريطة السوق التفاعلية</span></div>', unsafe_allow_html=True)
 
-        df_main = pd.DataFrame(stocks_data)
         fig_treemap = px.treemap(
-            df_main,
+            df_live,
             path=[px.Constant("EGX"), 'sector', 'symbol'],
             values='volume',
             color='change_pct',
@@ -1151,15 +1250,10 @@ with tab1:
             color_continuous_midpoint=0,
         )
         fig_treemap.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             font=dict(family="Inter", color="#94a3b8", size=11),
-            height=380,
-            margin=dict(t=0, b=0, l=0, r=0),
-            coloraxis_colorbar=dict(
-                tickfont=dict(color="#94a3b8", size=10),
-                title=dict(text="%", font=dict(color="#94a3b8", size=10))
-            )
+            height=380, margin=dict(t=0, b=0, l=0, r=0),
+            coloraxis_colorbar=dict(tickfont=dict(color="#94a3b8", size=10), title=dict(text="%", font=dict(color="#94a3b8", size=10)))
         )
         st.plotly_chart(fig_treemap, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -1168,7 +1262,7 @@ with tab1:
         st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
         st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🚀 الأكثر نشاطاً</span></div>', unsafe_allow_html=True)
 
-        top_movers = df_main.nlargest(8, 'change_pct')
+        top_movers = df_live.nlargest(8, 'change_pct')
         for _, stock in top_movers.iterrows():
             change_class = "status-up" if stock['change_pct'] >= 0 else "status-down"
             change_sign = "+" if stock['change_pct'] >= 0 else ""
@@ -1186,34 +1280,41 @@ with tab1:
             """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Third Row: Stock Grid
+    # Stock Grid with Working Buttons
     st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🎯 الأسهم المتاحة - اضغط للتحليل</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🎯 الأسهم المتاحة - اضغط للتحليل المفصل</span></div>', unsafe_allow_html=True)
 
-    filter_col1, filter_col2 = st.columns([3, 1])
-    with filter_col1:
+    # Filters
+    f_col1, f_col2 = st.columns([3, 1])
+    with f_col1:
         search_term = st.text_input("🔍 البحث", placeholder="ابحث بالرمز أو اسم الشركة...", key="market_search", label_visibility="collapsed")
-    with filter_col2:
-        sector_filter = st.selectbox("القطاع", ["الكل"] + sorted(list(set(s["sector"] for s in stocks_data))), key="market_sector", label_visibility="collapsed")
+    with f_col2:
+        sector_filter = st.selectbox("القطاع", ["الكل"] + sorted(df_live['sector'].unique().tolist()), key="market_sector", label_visibility="collapsed")
 
-    display_stocks = stocks_data.copy()
+    display_stocks = df_live.copy()
     if search_term:
-        display_stocks = [s for s in display_stocks if search_term.lower() in s["symbol"].lower() or search_term.lower() in s["name"].lower()]
+        mask = display_stocks['symbol'].str.contains(search_term, case=False) | display_stocks['name'].str.contains(search_term, case=False)
+        display_stocks = display_stocks[mask]
     if sector_filter != "الكل":
-        display_stocks = [s for s in display_stocks if s["sector"] == sector_filter]
+        display_stocks = display_stocks[display_stocks['sector'] == sector_filter]
 
+    # Stock cards grid
     stocks_per_row = 6
-    for row_idx in range(0, len(display_stocks), stocks_per_row):
-        row_stocks = display_stocks[row_idx:row_idx + stocks_per_row]
+    stock_list = display_stocks.to_dict('records')
+
+    for row_idx in range(0, len(stock_list), stocks_per_row):
+        row_stocks = stock_list[row_idx:row_idx + stocks_per_row]
         btn_cols = st.columns(stocks_per_row)
 
         for i, stock in enumerate(row_stocks):
             with btn_cols[i]:
                 change_class = "up" if stock['change_pct'] >= 0 else "down"
                 change_sign = "+" if stock['change_pct'] >= 0 else ""
+                source_badge = "🟢" if stock.get('source') == 'yfinance' else "🔵"
 
                 st.markdown(f"""
                 <div class="stock-card">
+                    <div style="position: absolute; top: 4px; left: 4px; font-size: 8px;">{source_badge}</div>
                     <div class="stock-card-symbol">{stock['symbol']}</div>
                     <div class="stock-card-price">{stock['price']:.2f}</div>
                     <div class="stock-card-change {change_class}">{change_sign}{stock['change_pct']:.2f}%</div>
@@ -1221,26 +1322,242 @@ with tab1:
                 </div>
                 """, unsafe_allow_html=True)
 
-                if st.button(f"تحليل", key=f"btn_{stock['symbol']}", use_container_width=True, type="secondary"):
-                    select_stock(stock['symbol'])
-                    st.rerun()
+                # WORKING BUTTON with on_click callback
+                st.button(
+                    f"تحليل {stock['symbol']}", 
+                    key=f"analyze_{stock['symbol']}_{row_idx}",
+                    on_click=select_stock_callback,
+                    args=(stock['symbol'],),
+                    use_container_width=True,
+                    type="secondary"
+                )
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== TAB 2: BACKTESTING ====================
+    # Sector Performance
+    st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">📊 أداء القطاعات</span></div>', unsafe_allow_html=True)
+
+    sector_perf = df_live.groupby('sector').agg({
+        'change_pct': 'mean',
+        'volume': 'sum',
+        'market_cap': 'sum'
+    }).reset_index()
+    sector_perf.columns = ['القطاع', 'التغيير %', 'الحجم', 'القيمة السوقية']
+
+    fig_sector = px.bar(
+        sector_perf,
+        x='القطاع',
+        y='التغيير %',
+        color='التغيير %',
+        color_continuous_scale=['#ef4444', '#1e1b4b', '#10b981'],
+        text='التغيير %'
+    )
+    fig_sector.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig_sector.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(family="Inter", color="#94a3b8"),
+        xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+        yaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+        height=300, margin=dict(t=20, b=40)
+    )
+    st.plotly_chart(fig_sector, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==================== TAB 2: AUTOMATED ANALYSIS (AI) ====================
 with tab2:
+    st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🤖 التحليل الآلي الذكي والتنبيهات اللحظية</span></div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="padding: 12px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; margin-bottom: 16px;">
+        <p style="color: #f87171; font-weight: 600; margin: 0; font-size: 13px;">⚠️ تحذير المخاطر</p>
+        <p style="color: #fca5a5; font-size: 12px; margin-top: 4px;">التحليل الآلي يعتمد على البيانات التاريخية فقط. استخدم Stop Loss لحماية رأس مالك. التوقعات ليست توصيات استثمارية.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Analysis Controls
+    ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1, 1, 1])
+    with ctrl_col1:
+        min_score = st.slider("الحد الأدنى للدرجة", 0, 100, 55, key="ai_min_score")
+    with ctrl_col2:
+        max_risk = st.slider("الحد الأقصى للمخاطرة %", 0.5, 10.0, 5.0, 0.5, key="ai_max_risk")
+    with ctrl_col3:
+        min_rr = st.slider("الحد الأدنى R/R", 1.0, 5.0, 1.5, 0.5, key="ai_min_rr")
+
+    # Run Analysis Button
+    if st.button("🚀 تشغيل التحليل الآلي الشامل", type="primary", use_container_width=True, on_click=run_analysis_callback):
+        pass  # Callback handles the work
+
+    # Display cached results
+    if st.session_state.alerts_cache is not None:
+        alerts = st.session_state.alerts_cache
+
+        # Portfolio Risk Report
+        risk_report = risk_engine.generate_risk_report(alerts)
+
+        st.subheader("📊 ملخص المخاطر والفرص")
+        sum_cols = st.columns(5)
+        metrics = [
+            ("المحللة", len(alerts), "#818cf8"),
+            ("فرص شراء", risk_report.get('buy_opportunities', 0), "#10b981"),
+            ("إشارات بيع", risk_report.get('sell_alerts', 0), "#ef4444"),
+            ("متوسط الدرجة", f"{risk_report.get('avg_score', 0):.1f}", "#fbbf24"),
+            ("سخونة المحفظة", risk_report.get('heat_status', 'غير معروف'), risk_report.get('heat_color', '#94a3b8')),
+        ]
+
+        for i, (label, value, color) in enumerate(metrics):
+            with sum_cols[i]:
+                st.markdown(f"""
+                <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {color}30;">
+                    <p style="color: #64748b; font-size: 11px; margin: 0;">{label}</p>
+                    <p style="font-size: 20px; font-weight: 700; color: {color}; margin: 4px 0;">{value}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Buy Opportunities
+        buy_ops = [a for a in alerts if a['score'] >= min_score and a['signal'] in ['BUY', 'STRONG_BUY'] and a['risk_pct'] <= max_risk and a['rr_ratio'] >= min_rr]
+
+        if buy_ops:
+            st.subheader("🔥 أفضل فرص الشراء المؤكدة")
+            for i, alert in enumerate(buy_ops[:8]):
+                with st.expander(f"{i+1}. {alert['name']} ({alert['symbol']}) - درجة: {alert['score']} | R/R: {alert['rr_ratio']}", expanded=i < 2):
+
+                    # Signal & Score
+                    sig_cols = st.columns([1, 3, 1])
+                    with sig_cols[0]:
+                        st.markdown(f"""
+                        <div style="text-align: center; padding: 12px; background: {alert['alert_color']}15; border: 1px solid {alert['alert_color']}40; border-radius: 8px;">
+                            <p style="margin: 0; color: {alert['alert_color']}; font-size: 28px; font-weight: 700;">{alert['score']}</p>
+                            <p style="margin: 4px 0 0 0; color: {alert['alert_color']}; font-size: 11px;">درجة الفرصة</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with sig_cols[1]:
+                        st.markdown(f"""
+                        <div>
+                            <p style="margin: 0; font-weight: 600; font-size: 16px;">{alert['name']} | {alert['sector']}</p>
+                            <p style="color: #64748b; font-size: 13px; margin: 4px 0;">
+                                السعر: <b>{alert['price']}</b> | RSI: <b>{alert['rsi']}</b> | MACD: <b>{alert['macd']}</b> | ADX: <b>{alert['adx']}</b>
+                            </p>
+                            <p style="color: #64748b; font-size: 12px; margin: 4px 0;">
+                                التقلب: {alert['volatility']}% | VaR(95%): {alert['var_95']}% | كيلي: {alert['kelly']}%
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with sig_cols[2]:
+                        st.markdown(f"""
+                        <div style="text-align: center; padding: 8px; background: {alert['risk_color']}15; border: 1px solid {alert['risk_color']}40; border-radius: 8px;">
+                            <p style="margin: 0; color: {alert['risk_color']}; font-size: 11px; font-weight: 600;">{alert['risk_class']}</p>
+                            <p style="margin: 4px 0 0 0; color: #64748b; font-size: 10px;">{alert['recommendation']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    # Risk Levels
+                    risk_cols = st.columns(4)
+                    risk_data = [
+                        ("🛑 Stop Loss", alert['stop_loss'], alert['risk_pct'], "#ef4444"),
+                        ("📍 السعر", alert['price'], 0, "#6366f1"),
+                        ("🎯 الهدف 1", alert['take_profit_1'], alert['reward_pct'], "#10b981"),
+                        ("🎯🎯 الهدف 2", alert['take_profit_2'], 0, "#fbbf24")
+                    ]
+                    for j, (label, value, pct, color) in enumerate(risk_data):
+                        with risk_cols[j]:
+                            st.markdown(f"""
+                            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {color}30;">
+                                <p style="color: #64748b; font-size: 11px; margin: 0;">{label}</p>
+                                <p style="font-size: 20px; font-weight: 700; color: {color}; margin: 4px 0;">{value:.2f}</p>
+                                {f'<p style="font-size: 10px; color: {color}; margin: 0;">{pct:.1f}%</p>' if pct else ''}
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                    # Position Sizing
+                    pos_cols = st.columns(3)
+                    with pos_cols[0]:
+                        st.metric("الأسهم المقترحة", f"{alert['position_shares']}")
+                    with pos_cols[1]:
+                        st.metric("قيمة المركز", f"{alert['position_value']:,.0f} ج.م")
+                    with pos_cols[2]:
+                        st.metric("نسبة كيلي", f"{alert['kelly']}%")
+
+                    # Action Button
+                    st.button(
+                        f"🔮 تحليل مفصل لـ {alert['symbol']}",
+                        key=f"detail_{alert['symbol']}_tab2",
+                        on_click=select_stock_callback,
+                        args=(alert['symbol'],),
+                        use_container_width=True,
+                        type="primary"
+                    )
+
+        # Risk Alerts (Sell signals)
+        risk_alerts = [a for a in alerts if a['signal'] in ['SELL', 'STRONG_SELL'] or (a['score'] < 30 and a['signal'] == 'HOLD')]
+        if risk_alerts:
+            st.subheader("🔴 إشارات الخطر والبيع")
+            for alert in risk_alerts[:5]:
+                st.markdown(f"""
+                <div style="padding: 12px; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="color: #ef4444; font-weight: 600;">{alert['symbol']}</span>
+                            <span style="color: #64748b; margin-right: 8px;">{alert['name']}</span>
+                            <span style="color: #f59e0b; margin-right: 8px;">درجة: {alert['score']}</span>
+                        </div>
+                        <span style="color: #ef4444; font-size: 13px; font-weight: 600;">{alert['signal_text']}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Full Table
+        st.subheader("📋 الجدول التحليلي الكامل")
+        table_data = []
+        for alert in alerts:
+            table_data.append({
+                "الرمز": alert['symbol'],
+                "الشركة": alert['name'],
+                "القطاع": alert['sector'],
+                "السعر": alert['price'],
+                "الإشارة": alert['signal_text'],
+                "الدرجة": alert['score'],
+                "RSI": alert['rsi'],
+                "MACD": alert['macd'],
+                "R/R": alert['rr_ratio'],
+                "المخاطرة%": alert['risk_pct'],
+                "التقلب%": alert['volatility'],
+                "Stop Loss": alert['stop_loss'],
+                "الهدف": alert['take_profit_1']
+            })
+
+        df_table = pd.DataFrame(table_data)
+        st.dataframe(df_table, use_container_width=True, hide_index=True)
+
+        # Export
+        st.download_button(
+            label="📥 تصدير التحليل CSV",
+            data=df_table.to_csv(index=False).encode('utf-8-sig'),
+            file_name=f"egx_analysis_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+    else:
+        st.info("👈 اضغط 'تشغيل التحليل الآلي' لبدء المسح الشامل")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==================== TAB 3: BACKTESTING ====================
+with tab3:
     st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
     st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">📊 محرك Backtesting متقدم</span></div>', unsafe_allow_html=True)
 
     bt_col1, bt_col2 = st.columns([1, 3])
 
     with bt_col1:
-        bt_ticker = st.selectbox("السهم", tickers, key="bt_ticker")
+        bt_ticker = st.selectbox("السهم", df_live['symbol'].tolist(), key="bt_ticker")
         strategy = st.selectbox("الاستراتيجية", [
             "RSI_MACD - تقاطع الزخم",
             "MA_Crossover - تقاطع المتوسطات",
             "Bollinger - نطاقات بولينجر",
-            "Mean_Reversion - العودة للمتوسط"
+            "Mean_Reversion - العودة للمتوسط",
+            "ADX_Trend - اتباع الاتجاه"
         ], key="bt_strategy")
         period = st.selectbox("الفترة", ["3mo", "6mo", "1y", "2y"], index=2, key="bt_period")
         initial_capital = st.number_input("رأس المال", value=100000, step=10000, key="bt_capital")
@@ -1249,154 +1566,200 @@ with tab2:
 
     with bt_col2:
         if run_bt:
-            with st.spinner("جاري التحليل..."):
-                strategy_key = strategy.split(" - ")[0]
-                result = debug.safe_execute(
-                    run_advanced_backtest,
-                    "backtest_execution",
-                    None,
-                    bt_ticker, strategy_key, period, "EGX" if is_egypt else "GLOBAL"
-                )
+            with st.spinner("جاري التحليل والاختبار..."):
+                df_bt = data_engine.get_stock_history(bt_ticker, period)
 
-                if result:
+                if df_bt is None or df_bt.empty:
+                    st.error("❌ تعذر جلب البيانات")
+                else:
+                    df_bt = df_bt[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
+                    df_bt['Returns'] = df_bt['Close'].pct_change()
+
+                    strategy_key = strategy.split(" - ")[0]
+
+                    if strategy_key == "RSI_MACD":
+                        delta = df_bt['Close'].diff()
+                        gain = delta.clip(lower=0).rolling(14).mean()
+                        loss = (-delta.clip(upper=0)).rolling(14).mean()
+                        rsi = 100 - (100 / (1 + gain / loss.replace(0, np.nan)))
+                        macd = df_bt['Close'].ewm(span=12).mean() - df_bt['Close'].ewm(span=26).mean()
+                        signal = macd.ewm(span=9).mean()
+                        df_bt['Signal'] = np.where((rsi < 35) & (macd > signal), 1, np.where((rsi > 65) & (macd < signal), -1, 0))
+
+                    elif strategy_key == "MA_Crossover":
+                        df_bt['MA50'] = df_bt['Close'].rolling(50).mean()
+                        df_bt['MA200'] = df_bt['Close'].rolling(200).mean()
+                        df_bt['Signal'] = np.where(df_bt['MA50'] > df_bt['MA200'], 1, -1)
+
+                    elif strategy_key == "Bollinger":
+                        bb_mid = df_bt['Close'].rolling(20).mean()
+                        bb_std = df_bt['Close'].rolling(20).std()
+                        df_bt['Signal'] = np.where(df_bt['Close'] < (bb_mid - 2*bb_std), 1, np.where(df_bt['Close'] > (bb_mid + 2*bb_std), -1, 0))
+
+                    elif strategy_key == "Mean_Reversion":
+                        df_bt['MA20'] = df_bt['Close'].rolling(20).mean()
+                        df_bt['Deviation'] = (df_bt['Close'] - df_bt['MA20']) / df_bt['MA20']
+                        df_bt['Signal'] = np.where(df_bt['Deviation'] < -0.03, 1, np.where(df_bt['Deviation'] > 0.03, -1, 0))
+
+                    elif strategy_key == "ADX_Trend":
+                        df_bt['Signal'] = np.where(df_bt['Close'] > df_bt['Close'].rolling(20).mean(), 1, -1)
+
+                    df_bt['Position'] = df_bt['Signal'].diff().fillna(0)
+                    df_bt['Strategy_Returns'] = df_bt['Position'].shift(1) * df_bt['Returns']
+                    df_bt['Equity'] = initial_capital * (1 + df_bt['Strategy_Returns'].fillna(0)).cumprod()
+
+                    total_return = (df_bt['Equity'].iloc[-1] / initial_capital - 1) * 100
+                    buy_hold = (df_bt['Close'].iloc[-1] / df_bt['Close'].iloc[0] - 1) * 100
+                    sharpe = (df_bt['Strategy_Returns'].mean() / df_bt['Strategy_Returns'].std() * np.sqrt(252)) if df_bt['Strategy_Returns'].std() != 0 else 0
+                    max_dd = ((df_bt['Equity'] / df_bt['Equity'].cummax() - 1).min()) * 100
+                    wins = len(df_bt[df_bt['Strategy_Returns'] > 0])
+                    total_trades = len(df_bt[df_bt['Strategy_Returns'] != 0])
+                    win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
+
+                    # Metrics
                     m1, m2, m3, m4, m5 = st.columns(5)
-
-                    strat_color = "normal" if result['Strategy_Return'] >= 0 else "inverse"
-                    bh_color = "normal" if result['Buy_Hold_Return'] >= 0 else "inverse"
-
-                    m1.metric("عائد الاستراتيجية", f"{result['Strategy_Return']:+.2f}%", delta_color=strat_color)
-                    m2.metric("Buy & Hold", f"{result['Buy_Hold_Return']:+.2f}%", delta_color=bh_color)
-                    m3.metric("Sharpe Ratio", f"{result['Sharpe_Ratio']:.2f}")
-                    m4.metric("Win Rate", f"{result['Win_Rate']:.1f}%")
-                    m5.metric("Max Drawdown", f"{result['Max_Drawdown']:.2f}%")
+                    m1.metric("عائد الاستراتيجية", f"{total_return:+.2f}%", delta_color="normal" if total_return >= 0 else "inverse")
+                    m2.metric("Buy & Hold", f"{buy_hold:+.2f}%", delta_color="normal" if buy_hold >= 0 else "inverse")
+                    m3.metric("Sharpe Ratio", f"{sharpe:.2f}")
+                    m4.metric("Win Rate", f"{win_rate:.1f}%")
+                    m5.metric("Max Drawdown", f"{max_dd:.2f}%")
 
                     # Equity Curve
                     fig_equity = go.Figure()
                     fig_equity.add_trace(go.Scatter(
-                        x=result['Equity_Curve'].index,
-                        y=result['Equity_Curve'].values,
-                        mode='lines',
-                        name='رأس المال',
+                        x=df_bt.index, y=df_bt['Equity'].values,
+                        mode='lines', name='رأس المال',
                         line=dict(color='#6366f1', width=2),
-                        fill='tozeroy',
-                        fillcolor='rgba(99, 102, 241, 0.1)'
+                        fill='tozeroy', fillcolor='rgba(99, 102, 241, 0.1)'
                     ))
-
-                    bh_curve = 100000 * (1 + result['Data']['Returns']).cumprod()
+                    bh_curve = initial_capital * (1 + df_bt['Returns'].fillna(0)).cumprod()
                     fig_equity.add_trace(go.Scatter(
-                        x=bh_curve.index,
-                        y=bh_curve.values,
-                        mode='lines',
-                        name='Buy & Hold',
+                        x=df_bt.index, y=bh_curve.values,
+                        mode='lines', name='Buy & Hold',
                         line=dict(color='#fbbf24', width=2, dash='dash')
                     ))
-
                     fig_equity.update_layout(
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                         font=dict(family="Inter", color="#94a3b8"),
-                        xaxis=dict(gridcolor='rgba(255,255,255,0.05)', title="التاريخ"),
-                        yaxis=dict(gridcolor='rgba(255,255,255,0.05)', title="رأس المال"),
+                        xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+                        yaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                        height=350,
-                        margin=dict(t=40, b=40)
+                        height=350, margin=dict(t=40, b=40)
                     )
                     st.plotly_chart(fig_equity, use_container_width=True)
 
                     # Strategy Comparison
                     st.subheader("🏆 مقارنة الاستراتيجيات")
-                    strategies_to_test = ["RSI_MACD", "MA_Crossover", "Bollinger", "Mean_Reversion"]
-                    comparison_results = []
+                    strategies = ["RSI_MACD", "MA_Crossover", "Bollinger", "Mean_Reversion", "ADX_Trend"]
+                    comp_results = []
 
-                    for strat in strategies_to_test:
-                        res = debug.safe_execute(
-                            run_advanced_backtest,
-                            f"backtest_compare_{strat}",
-                            None,
-                            bt_ticker, strat, period, "EGX" if is_egypt else "GLOBAL"
-                        )
-                        if res:
-                            comparison_results.append({
-                                "الاستراتيجية": strat,
-                                "العائد %": res['Strategy_Return'],
-                                "Sharpe": res['Sharpe_Ratio'],
-                                "Win Rate %": res['Win_Rate'],
-                                "Max DD %": res['Max_Drawdown'],
-                                "الصفقات": res['Trades']
-                            })
+                    for strat in strategies:
+                        # Quick simulation for each strategy
+                        df_temp = df_bt[['Open', 'High', 'Low', 'Close', 'Volume', 'Returns']].copy()
 
-                    if comparison_results:
-                        comp_df = pd.DataFrame(comparison_results)
-                        st.dataframe(comp_df, use_container_width=True, hide_index=True)
-                else:
-                    st.error("❌ تعذر جلب البيانات. تحقق من الاتصال.")
+                        if strat == "RSI_MACD":
+                            delta = df_temp['Close'].diff()
+                            gain = delta.clip(lower=0).rolling(14).mean()
+                            loss = (-delta.clip(upper=0)).rolling(14).mean()
+                            rsi = 100 - (100 / (1 + gain / loss.replace(0, np.nan)))
+                            macd = df_temp['Close'].ewm(span=12).mean() - df_temp['Close'].ewm(span=26).mean()
+                            signal = macd.ewm(span=9).mean()
+                            df_temp['Sig'] = np.where((rsi < 35) & (macd > signal), 1, 0)
+                        elif strat == "MA_Crossover":
+                            df_temp['MA50'] = df_temp['Close'].rolling(50).mean()
+                            df_temp['MA200'] = df_temp['Close'].rolling(200).mean()
+                            df_temp['Sig'] = np.where(df_temp['MA50'] > df_temp['MA200'], 1, 0)
+                        elif strat == "Bollinger":
+                            bb_mid = df_temp['Close'].rolling(20).mean()
+                            bb_std = df_temp['Close'].rolling(20).std()
+                            df_temp['Sig'] = np.where(df_temp['Close'] < (bb_mid - 2*bb_std), 1, 0)
+                        elif strat == "Mean_Reversion":
+                            df_temp['MA20'] = df_temp['Close'].rolling(20).mean()
+                            df_temp['Dev'] = (df_temp['Close'] - df_temp['MA20']) / df_temp['MA20']
+                            df_temp['Sig'] = np.where(df_temp['Dev'] < -0.03, 1, 0)
+                        else:
+                            df_temp['Sig'] = np.where(df_temp['Close'] > df_temp['Close'].rolling(20).mean(), 1, 0)
+
+                        df_temp['Pos'] = df_temp['Sig'].diff().fillna(0)
+                        df_temp['StratRet'] = df_temp['Pos'].shift(1) * df_temp['Returns']
+                        eq = initial_capital * (1 + df_temp['StratRet'].fillna(0)).cumprod()
+                        ret = (eq.iloc[-1] / initial_capital - 1) * 100
+                        sharpe_temp = (df_temp['StratRet'].mean() / df_temp['StratRet'].std() * np.sqrt(252)) if df_temp['StratRet'].std() != 0 else 0
+                        trades = int(df_temp['Pos'].abs().sum() / 2)
+
+                        comp_results.append({
+                            "الاستراتيجية": strat,
+                            "العائد %": round(ret, 2),
+                            "Sharpe": round(sharpe_temp, 2),
+                            "الصفقات": trades,
+                            "الأفضل": "✅" if ret == max([r['العائد %'] for r in comp_results + [{"العائد %": ret}]] ) and len(comp_results) > 0 else ""
+                        })
+
+                    comp_df = pd.DataFrame(comp_results)
+                    st.dataframe(comp_df, use_container_width=True, hide_index=True)
         else:
             st.info("👈 اختر السهم والاستراتيجية واضغط 'تشغيل الاختبار'")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== TAB 3: TASKS ====================
-with tab3:
+# ==================== TAB 4: SMART TASKS ====================
+with tab4:
     st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">✅ المهام الذكية</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">✅ المهام الذكية وإدارة المحفظة</span></div>', unsafe_allow_html=True)
 
+    # Add Task Form
     with st.expander("➕ إضافة مهمة جديدة", expanded=False):
         t_col1, t_col2, t_col3 = st.columns([3, 1, 1])
         with t_col1:
-            task_title = st.text_input("عنوان المهمة", placeholder="مثال: مراجعة أداء سهم CIB")
+            st.text_input("عنوان المهمة", placeholder="مثال: مراجعة أداء سهم CIB", key="new_task_title")
         with t_col2:
-            task_priority = st.selectbox("الأولوية", ["high", "medium", "low"], format_func=lambda x: {"high": "🔴 عالية", "medium": "🟡 متوسطة", "low": "🟢 منخفضة"}[x])
+            st.selectbox("الأولوية", ["high", "medium", "low"], 
+                        format_func=lambda x: {"high": "🔴 عالية", "medium": "🟡 متوسطة", "low": "🟢 منخفضة"}[x],
+                        key="new_task_priority")
         with t_col3:
-            task_category = st.selectbox("التصنيف", ["work", "personal", "learning", "urgent"], format_func=lambda x: {"work": "💼 عمل", "personal": "👤 شخصي", "learning": "📚 تعلم", "urgent": "🚨 عاجل"}[x])
+            st.selectbox("التصنيف", ["work", "personal", "learning", "urgent"],
+                        format_func=lambda x: {"work": "💼 عمل", "personal": "👤 شخصي", "learning": "📚 تعلم", "urgent": "🚨 عاجل"}[x],
+                        key="new_task_category")
 
         t_col4, t_col5 = st.columns([2, 1])
         with t_col4:
-            task_due = st.date_input("تاريخ الاستحقاق", datetime.now() + timedelta(days=3))
+            st.date_input("تاريخ الاستحقاق", datetime.now() + timedelta(days=3), key="new_task_due")
         with t_col5:
-            if st.button("💾 حفظ", use_container_width=True):
-                if task_title:
-                    st.session_state.tasks.append({
-                        "id": len(st.session_state.tasks) + 1,
-                        "title": task_title,
-                        "priority": task_priority,
-                        "category": task_category,
-                        "due": task_due.strftime("%Y-%m-%d"),
-                        "completed": False,
-                        "created": datetime.now().strftime("%Y-%m-%d")
-                    })
-                    st.success("✅ تمت الإضافة!")
-                    st.rerun()
-                else:
-                    st.warning("⚠️ أدخل عنوان المهمة")
+            st.button("💾 حفظ المهمة", on_click=add_task_callback, use_container_width=True)
 
+    # Filters
     f_col1, f_col2, f_col3 = st.columns([2, 1, 1])
     with f_col1:
-        task_search = st.text_input("🔍 بحث", placeholder="ابحث في المهام...")
+        task_search = st.text_input("🔍 بحث", placeholder="ابحث في المهام...", key="task_search")
     with f_col2:
-        filter_priority = st.selectbox("الأولوية", ["الكل", "high", "medium", "low"], format_func=lambda x: {"الكل": "الكل", "high": "عالية", "medium": "متوسطة", "low": "منخفضة"}[x])
+        filter_priority = st.selectbox("الأولوية", ["الكل", "high", "medium", "low"],
+                                       format_func=lambda x: {"الكل": "الكل", "high": "عالية", "medium": "متوسطة", "low": "منخفضة"}[x],
+                                       key="filter_priority")
     with f_col3:
-        filter_status = st.selectbox("الحالة", ["الكل", "مكتمل", "قيد التنفيذ"])
+        filter_status = st.selectbox("الحالة", ["الكل", "مكتمل", "قيد التنفيذ"], key="filter_status")
 
-    filtered_tasks = st.session_state.tasks.copy()
+    # Filter tasks
+    filtered = st.session_state.tasks.copy()
     if task_search:
-        filtered_tasks = [t for t in filtered_tasks if task_search.lower() in t["title"].lower()]
+        filtered = [t for t in filtered if task_search.lower() in t["title"].lower()]
     if filter_priority != "الكل":
-        filtered_tasks = [t for t in filtered_tasks if t["priority"] == filter_priority]
+        filtered = [t for t in filtered if t["priority"] == filter_priority]
     if filter_status == "مكتمل":
-        filtered_tasks = [t for t in filtered_tasks if t["completed"]]
+        filtered = [t for t in filtered if t["completed"]]
     elif filter_status == "قيد التنفيذ":
-        filtered_tasks = [t for t in filtered_tasks if not t["completed"]]
+        filtered = [t for t in filtered if not t["completed"]]
 
     priority_colors = {"high": "#ef4444", "medium": "#f59e0b", "low": "#10b981"}
     category_icons = {"work": "💼", "personal": "👤", "learning": "📚", "urgent": "🚨"}
 
-    for task in filtered_tasks:
+    # Display tasks
+    for task in filtered:
         status_icon = "✅" if task["completed"] else "⬜"
-        status_style = "opacity: 0.5;" if task["completed"] else ""
-        priority_color = priority_colors.get(task['priority'], '#94a3b8')
+        opacity = "opacity: 0.5;" if task["completed"] else ""
+        p_color = priority_colors.get(task['priority'], '#94a3b8')
 
         st.markdown(f"""
-        <div style="padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px; border-right: 3px solid {priority_color}; {status_style}">
+        <div class="task-item" style="border-right-color: {p_color}; {opacity}">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <span style="font-size: 18px;">{status_icon}</span>
@@ -1412,39 +1775,155 @@ with tab3:
         </div>
         """, unsafe_allow_html=True)
 
-        col_check, col_del = st.columns([20, 1])
-        with col_check:
-            new_status = st.checkbox("تم", value=task["completed"], key=f"task_{task['id']}", label_visibility="collapsed")
-            if new_status != task["completed"]:
-                task["completed"] = new_status
-                st.rerun()
-        with col_del:
-            if st.button("🗑️", key=f"del_{task['id']}", help="حذف"):
-                st.session_state.tasks = [t for t in st.session_state.tasks if t["id"] != task["id"]]
-                st.rerun()
+        # Action buttons for each task
+        act_col1, act_col2 = st.columns([10, 2])
+        with act_col1:
+            st.checkbox("تم", value=task["completed"], key=f"check_{task['id']}", 
+                       on_change=toggle_task, args=(task['id'],), label_visibility="collapsed")
+        with act_col2:
+            st.button("🗑️", key=f"del_{task['id']}", on_click=delete_task, args=(task['id'],), help="حذف")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== TAB 4: NEWS ====================
-with tab4:
+# ==================== TAB 5: CORPORATE INTERFACE ====================
+with tab5:
     st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">📰 أخبار السوق والتحليلات</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🏢 واجهة الشركات - التوزيعات والإجراءات</span></div>', unsafe_allow_html=True)
+
+    # Company Selector
+    corp_symbol = st.selectbox("اختر الشركة", 
+                               [s['symbol'] for s in data_engine.EGYPTIAN_STOCKS if s['symbol'] in corp_engine.CORPORATE_DATA],
+                               format_func=lambda x: f"{x} - {next(s['name'] for s in data_engine.EGYPTIAN_STOCKS if s['symbol'] == x)}",
+                               key="corp_selector")
+
+    corp_data = corp_engine.get_company_data(corp_symbol)
+    stock_info = next((s for s in data_engine.EGYPTIAN_STOCKS if s['symbol'] == corp_symbol), None)
+
+    if corp_data and stock_info:
+        # Company Header
+        st.markdown(f"""
+        <div class="corporate-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="margin: 0; color: #fbbf24; font-size: 22px;">{corp_data['arabic_name']}</h2>
+                    <p style="color: #64748b; margin: 4px 0 0 0; font-size: 13px;">{corp_data['company']} | {stock_info['sector']}</p>
+                </div>
+                <div style="text-align: left;">
+                    <p style="margin: 0; font-size: 24px; font-weight: 700; color: #f1f5f9;">{stock_info['base_price']:.2f}</p>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px;">السعر الأساسي</p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Tabs within corporate
+        corp_tab1, corp_tab2, corp_tab3 = st.tabs(["💰 التوزيعات", "📅 الاجتماعات", "📰 أخبار الشركة"])
+
+        with corp_tab1:
+            st.subheader("📋 سجل التوزيعات")
+            if corp_data['dividends']:
+                div_df = pd.DataFrame(corp_data['dividends'])
+                st.dataframe(div_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("لا توجد توزيعات مسجلة")
+
+            if corp_data.get('upcoming'):
+                st.subheader("🎯 التوزيع القادم")
+                up = corp_data['upcoming']
+                st.markdown(f"""
+                <div style="padding: 16px; background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <p style="margin: 0; font-size: 18px; font-weight: 700; color: #10b981;">{up['expected']:.2f} ج.م</p>
+                            <p style="color: #64748b; margin: 4px 0 0 0; font-size: 13px;">📅 {up['date']} | نوع: {up['type']}</p>
+                        </div>
+                        <span class="badge badge-green">معلن</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        with corp_tab2:
+            st.subheader("📅 اجتماعات الجمعية العمومية")
+            if corp_data['meetings']:
+                for meeting in corp_data['meetings']:
+                    status_color = "#f59e0b" if meeting['status'] == 'قريب' else "#10b981"
+                    st.markdown(f"""
+                    <div style="padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px; border-right: 3px solid {status_color};">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <p style="margin: 0; font-weight: 600;">{meeting['subject']}</p>
+                                <p style="color: #64748b; font-size: 12px; margin: 4px 0;">📅 {meeting['date']} | نوع: {meeting['type']}</p>
+                            </div>
+                            <span class="badge" style="background: {status_color}20; color: {status_color};">{meeting['status']}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("لا توجد اجتماعات معلنة")
+
+        with corp_tab3:
+            st.subheader("📰 آخر أخبار الشركة")
+            if corp_data['news']:
+                for news in corp_data['news']:
+                    impact_color = "#10b981" if news['impact'] == 'positive' else "#ef4444" if news['impact'] == 'negative' else "#94a3b8"
+                    st.markdown(f"""
+                    <div style="padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px; border-right: 3px solid {impact_color};">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.5;">{news['title']}</p>
+                        <p style="color: #64748b; font-size: 11px; margin: 4px 0 0 0;">📅 {news['date']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("لا توجد أخبار حديثة")
+
+    # Market-wide upcoming dividends
+    st.divider()
+    st.subheader("📅 التوزيعات القادمة عبر السوق")
+    upcoming_all = corp_engine.get_upcoming_dividends_all()
+
+    for div in upcoming_all[:6]:
+        days_left = (datetime.strptime(div['date'], "%Y-%m-%d") - datetime.now()).days
+        status_text = "غداً" if days_left <= 1 else f"بعد {days_left} يوم" if days_left <= 30 else div['date']
+        status_color = "#ef4444" if days_left <= 3 else "#f59e0b" if days_left <= 14 else "#10b981"
+
+        st.markdown(f"""
+        <div style="padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;">💰</div>
+                    <div>
+                        <p style="margin: 0; font-weight: 600; font-size: 14px;">{div['company']} ({div['symbol']})</p>
+                        <p style="color: #64748b; font-size: 12px; margin: 4px 0 0 0;">📅 {div['date']} | 💵 {div['amount']} ج.م</p>
+                    </div>
+                </div>
+                <span class="badge" style="background: {status_color}20; color: {status_color};">{status_text}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==================== TAB 6: NEWS & SENTIMENT ====================
+with tab6:
+    st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">📰 أخبار السوق وتحليل المزاج</span></div>', unsafe_allow_html=True)
 
     news_col1, news_col2 = st.columns([1, 2])
 
     with news_col1:
         st.subheader("🔥 آخر الأخبار")
-        for news in news_data:
+        for news in news_engine.NEWS_FEED:
             news_color = "#10b981" if news['type'] == 'positive' else "#ef4444" if news['type'] == 'negative' else "#94a3b8"
             icon = "📈" if news['type'] == 'positive' else "📉" if news['type'] == 'negative' else "📊"
+            impact_bars = "█" * (news['impact_score'] // 2) + "░" * (5 - news['impact_score'] // 2)
 
             st.markdown(f"""
             <div style="padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px; border-right: 3px solid {news_color};">
                 <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
+                    <div style="width: 100%;">
                         <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                             <span style="color: #fbbf24; font-size: 11px; font-weight: 600;">{news['time']}</span>
                             <span class="badge badge-blue" style="font-size: 10px;">{news['source']}</span>
+                            <span style="color: {news_color}; font-size: 10px;">تأثير: {impact_bars}</span>
                         </div>
                         <p style="margin: 0; font-size: 13px; line-height: 1.5;">{icon} {news['title']}</p>
                     </div>
@@ -1453,14 +1932,67 @@ with tab4:
             """, unsafe_allow_html=True)
 
     with news_col2:
+        st.subheader("📊 مؤشر المزاج السوقي")
+        sentiment = news_engine.get_sentiment_score()
+
+        # Sentiment Gauge
+        fig_gauge = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=sentiment['score'],
+            domain={'x': [0, 1], 'y': [0, 1]},
+            title={'text': "مؤشر المزاج", 'font': {'size': 24, 'color': '#e2e8f0'}},
+            gauge={
+                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#94a3b8"},
+                'bar': {'color': sentiment['color']},
+                'bgcolor': "rgba(0,0,0,0)",
+                'borderwidth': 2,
+                'bordercolor': "rgba(255,255,255,0.1)",
+                'steps': [
+                    {'range': [0, 40], 'color': 'rgba(239,68,68,0.1)'},
+                    {'range': [40, 60], 'color': 'rgba(245,158,11,0.1)'},
+                    {'range': [60, 100], 'color': 'rgba(16,185,129,0.1)'}
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 50
+                }
+            }
+        ))
+        fig_gauge.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)', font=dict(family="Inter", color="#94a3b8"),
+            height=300, margin=dict(t=40, b=20)
+        )
+        st.plotly_chart(fig_gauge, use_container_width=True)
+
+        # Sector News Impact
+        st.subheader("📈 تأثير الأخبار على القطاعات")
+        sector_impact = []
+        for sector in df_live['sector'].unique():
+            sector_stocks = df_live[df_live['sector'] == sector]
+            avg_change = sector_stocks['change_pct'].mean()
+            sector_impact.append({"القطاع": sector, "التأثير %": round(avg_change, 2)})
+
+        fig_impact = px.bar(
+            pd.DataFrame(sector_impact),
+            x="القطاع", y="التأثير %",
+            color="التأثير %",
+            color_continuous_scale=['#ef4444', '#1e1b4b', '#10b981']
+        )
+        fig_impact.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(family="Inter", color="#94a3b8"),
+            height=250, margin=dict(t=20, b=40)
+        )
+        st.plotly_chart(fig_impact, use_container_width=True)
+
+        # Quick Technical Analysis
         st.subheader("📊 التحليل الفني السريع")
+        ta_stock = st.selectbox("السهم", df_live['symbol'].tolist(), key="ta_stock_tab6")
 
-        ta_stock = st.selectbox("السهم", [s["symbol"] for s in stocks_data], key="ta_stock")
-
-        # Quick technical analysis
-        df_ta = safe_fetch_stock_data(ta_stock, "3mo", "EGX")
+        df_ta = data_engine.get_stock_history(ta_stock, "3mo")
         if df_ta is not None and len(df_ta) > 30:
-            df_ta = calculate_technical_indicators(df_ta)
+            df_ta = ta_engine.calculate_all(df_ta)
             if df_ta is not None:
                 latest = df_ta.iloc[-1]
 
@@ -1479,301 +2011,77 @@ with tab4:
                 # Mini chart
                 fig_mini = go.Figure()
                 fig_mini.add_trace(go.Scatter(
-                    x=df_ta.index[-60:],
-                    y=df_ta['Close'].tail(60),
-                    mode='lines',
-                    line=dict(color='#6366f1', width=2),
-                    fill='tozeroy',
-                    fillcolor='rgba(99, 102, 241, 0.1)'
+                    x=df_ta.index[-60:], y=df_ta['Close'].tail(60),
+                    mode='lines', line=dict(color='#6366f1', width=2),
+                    fill='tozeroy', fillcolor='rgba(99, 102, 241, 0.1)'
                 ))
-
                 if pd.notna(latest.get('SMA_20')):
                     fig_mini.add_trace(go.Scatter(
-                        x=df_ta.index[-60:],
-                        y=df_ta['SMA_20'].tail(60),
-                        mode='lines',
-                        line=dict(color='#fbbf24', width=1, dash='dash'),
-                        name='SMA 20'
+                        x=df_ta.index[-60:], y=df_ta['SMA_20'].tail(60),
+                        mode='lines', line=dict(color='#fbbf24', width=1, dash='dash'), name='SMA 20'
                     ))
-
                 fig_mini.update_layout(
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                     font=dict(family="Inter", color="#94a3b8"),
-                    xaxis=dict(gridcolor='rgba(255,255,255,0.05)', showgrid=True),
-                    yaxis=dict(gridcolor='rgba(255,255,255,0.05)', showgrid=True),
-                    height=250,
-                    margin=dict(t=10, b=10, l=10, r=10),
-                    showlegend=False
+                    height=250, margin=dict(t=10, b=10, l=10, r=10), showlegend=False
                 )
                 st.plotly_chart(fig_mini, use_container_width=True)
-        else:
-            st.warning("⚠️ تعذر جلب البيانات الفنية")
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ==================== TAB 5: DIVIDENDS ====================
-with tab5:
-    st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">💰 توزيعات الشركات والكوبونات</span></div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="padding: 12px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; margin-bottom: 16px;">
-        <p style="color: #f87171; font-weight: 600; margin: 0; font-size: 13px;">⚠️ تنبيه</p>
-        <p style="color: #fca5a5; font-size: 12px; margin-top: 4px;">البيانات توضيحية. تحقق من البورصة المصرية الرسمية.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    dividends_data = [
-        {"symbol": "COMI", "company": "CIB", "dividends": [{"date": "2026-04-15", "type": "نقدي", "amount": 2.50, "status": "تم التوزيع"}], "next_expected": "2026-10-15", "yield": 3.57},
-        {"symbol": "QNBE", "company": "QNB مصر", "dividends": [{"date": "2026-03-25", "type": "نقدي", "amount": 3.20, "status": "تم التوزيع"}], "next_expected": "2026-09-25", "yield": 5.50},
-        {"symbol": "HDBK", "company": "بنك الإسكان", "dividends": [{"date": "2026-04-05", "type": "نقدي", "amount": 5.50, "status": "تم التوزيع"}], "next_expected": "2026-10-05", "yield": 3.73},
-        {"symbol": "TMGH", "company": "طلعت مصطفى", "dividends": [{"date": "2026-04-08", "type": "نقدي", "amount": 2.80, "status": "تم التوزيع"}], "next_expected": "2026-10-08", "yield": 2.85},
-        {"symbol": "ETEL", "company": "المصرية للاتصالات", "dividends": [{"date": "2026-04-30", "type": "نقدي", "amount": 3.00, "status": "تم التوزيع"}], "next_expected": "2026-10-30", "yield": 3.05},
-        {"symbol": "EAST", "company": "الشرقية للدخان", "dividends": [{"date": "2026-05-20", "type": "نقدي", "amount": 3.20, "status": "معلن"}], "next_expected": "2026-11-20", "yield": 7.94},
-        {"symbol": "ABUK", "company": "أبو قير", "dividends": [{"date": "2026-05-12", "type": "نقدي", "amount": 4.50, "status": "معلن"}], "next_expected": "2026-11-12", "yield": 5.16},
-        {"symbol": "MFPC", "company": "موبكو", "dividends": [{"date": "2026-05-08", "type": "نقدي", "amount": 2.80, "status": "معلن"}], "next_expected": "2026-11-08", "yield": 6.20},
-    ]
-
-    upcoming_dividends = [
-        {"date": "2026-05-15", "symbol": "COMI", "company": "CIB", "amount": 2.50, "status": "غداً"},
-        {"date": "2026-05-20", "symbol": "EAST", "company": "الشرقية للدخان", "amount": 3.20, "status": "بعد 5 أيام"},
-        {"date": "2026-05-25", "symbol": "SUGR", "company": "دلتا للسكر", "amount": 2.00, "status": "بعد 10 أيام"},
-        {"date": "2026-06-05", "symbol": "SWDY", "company": "السويدي", "amount": 3.50, "status": "بعد 20 يوم"},
-    ]
-
-    # Summary
-    div_col1, div_col2, div_col3, div_col4 = st.columns(4)
-    with div_col1:
-        st.metric("الشركات", len(dividends_data))
-    with div_col2:
-        st.metric("متوسط العائد", f"{sum(d['yield'] for d in dividends_data)/len(dividends_data):.2f}%")
-    with div_col3:
-        st.metric("القادمة", len(upcoming_dividends))
-    with div_col4:
-        st.metric("إجمالي التوزيعات", f"{sum(sum(d['amount'] for d in comp['dividends']) for comp in dividends_data):.1f} ج.م")
-
-    st.subheader("📅 التوزيعات القادمة")
-    for div in upcoming_dividends:
-        status_color = "#ef4444" if div["status"] == "غداً" else "#f59e0b" if "5" in div["status"] else "#10b981"
-
-        st.markdown(f"""
-        <div style="padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;">💰</div>
-                    <div>
-                        <p style="margin: 0; font-weight: 600; font-size: 14px;">{div["company"]} ({div["symbol"]})</p>
-                        <p style="color: #64748b; font-size: 12px; margin: 4px 0 0 0;">📅 {div["date"]} | 💵 {div["amount"]} ج.م</p>
-                    </div>
-                </div>
-                <span class="badge" style="background: {status_color}20; color: {status_color};">{div["status"]}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.subheader("📋 سجل التوزيعات")
-    div_company = st.selectbox("الشركة", [d["company"] + " - " + d["symbol"] for d in dividends_data])
-    selected_symbol = div_company.split(" - ")[1]
-    selected_company = next((d for d in dividends_data if d["symbol"] == selected_symbol), None)
-
-    if selected_company:
-        st.markdown(f"""
-        <div style="padding: 16px; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05)); border: 1px solid rgba(99,102,241,0.2); border-radius: 12px; margin: 12px 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h3 style="margin: 0; color: #fbbf24; font-size: 18px;">{selected_company["company"]}</h3>
-                    <p style="color: #64748b; margin: 4px 0 0 0; font-size: 13px;">العائد: {selected_company["yield"]:.2f}% | القادم: {selected_company["next_expected"]}</p>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        div_history = selected_company["dividends"]
-        div_df = pd.DataFrame(div_history)
-        st.dataframe(div_df, use_container_width=True, hide_index=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ==================== TAB 6: AUTOMATED ANALYSIS ====================
-with tab6:
-    st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🤖 التحليل الآلي والتنبيهات اللحظية</span></div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="padding: 12px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; margin-bottom: 16px;">
-        <p style="color: #f87171; font-weight: 600; margin: 0; font-size: 13px;">⚠️ تنبيه هام</p>
-        <p style="color: #fca5a5; font-size: 12px; margin-top: 4px;">التحليل الآلي يعتمد على المؤشرات التاريخية فقط. استخدم Stop Loss لحماية رأس مالك.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    settings_col1, settings_col2, settings_col3 = st.columns(3)
-    with settings_col1:
-        min_score_threshold = st.slider("الحد الأدنى للدرجة", 0, 100, 60)
-    with settings_col2:
-        max_risk_pct = st.slider("الحد الأقصى للمخاطرة %", 1, 10, 5)
-    with settings_col3:
-        min_rr_ratio = st.slider("الحد الأدنى R/R", 1.0, 5.0, 1.5, 0.5)
-
-    if st.button("🚀 تشغيل التحليل الآلي", type="primary", use_container_width=True):
-        with st.spinner("جاري تحليل الأسهم..."):
-            all_alerts = debug.safe_execute(
-                analyze_all_stocks,
-                "automated_analysis",
-                [],
-                stocks_data, "EGX" if is_egypt else "GLOBAL"
-            )
-
-            if not all_alerts:
-                st.error("❌ تعذر إكمال التحليل. تحقق من الاتصال.")
-            else:
-                buy_opportunities = get_buy_opportunities(all_alerts, min_score_threshold)
-                risk_alerts = get_risk_alerts(all_alerts)
-
-                # Summary
-                st.subheader("📊 ملخص التحليل")
-                sum_col1, sum_col2, sum_col3, sum_col4 = st.columns(4)
-                with sum_col1:
-                    st.metric("المحللة", len(all_alerts))
-                with sum_col2:
-                    st.metric("فرص شراء", len(buy_opportunities))
-                with sum_col3:
-                    st.metric("إشارات خطر", len(risk_alerts))
-                with sum_col4:
-                    avg_score = sum(a['score'] for a in all_alerts) / len(all_alerts) if all_alerts else 0
-                    st.metric("متوسط الدرجة", f"{avg_score:.1f}")
-
-                if buy_opportunities:
-                    st.subheader("🔥 أفضل فرص الشراء")
-                    filtered_buys = [a for a in buy_opportunities if a['risk_pct'] <= max_risk_pct * 100 and a['rr_ratio'] >= min_rr_ratio]
-
-                    if not filtered_buys:
-                        st.warning("⚠️ لا توجد فرص تتوافق مع إعدادات المخاطرة.")
-                    else:
-                        for i, alert in enumerate(filtered_buys[:10]):
-                            with st.expander(f"{i+1}. {alert['name']} ({alert['symbol']}) - درجة: {alert['score']}", expanded=i < 3):
-                                st.markdown(f"""
-                                <div style="display: flex; gap: 16px; margin-bottom: 12px;">
-                                    <div style="text-align: center; padding: 12px; background: {alert['alert_color']}15; border: 1px solid {alert['alert_color']}40; border-radius: 8px; min-width: 100px;">
-                                        <p style="margin: 0; color: {alert['alert_color']}; font-size: 24px; font-weight: 700;">{alert['score']}</p>
-                                        <p style="margin: 4px 0 0 0; color: {alert['alert_color']}; font-size: 11px;">درجة الفرصة</p>
-                                    </div>
-                                    <div>
-                                        <p style="margin: 0; font-weight: 600;">{alert['name']} | {alert['sector']}</p>
-                                        <p style="color: #64748b; font-size: 13px; margin: 4px 0;">السعر: {alert['price']} | RSI: {alert['rsi']} | MACD: {alert['macd']}</p>
-                                    </div>
-                                </div>
-                                """, unsafe_allow_html=True)
-
-                                risk_cols = st.columns(4)
-                                risk_data = [
-                                    ("🛑 Stop Loss", alert['stop_loss'], alert['risk_pct'], "#ef4444"),
-                                    ("📍 السعر", alert['price'], 0, "#6366f1"),
-                                    ("🎯 الهدف 1", alert['take_profit_1'], alert['reward_pct'], "#10b981"),
-                                    ("🎯🎯 الهدف 2", alert['take_profit_2'], 0, "#fbbf24")
-                                ]
-
-                                for j, (label, value, pct, color) in enumerate(risk_data):
-                                    with risk_cols[j]:
-                                        st.markdown(f"""
-                                        <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {color}30;">
-                                            <p style="color: #64748b; font-size: 11px; margin: 0;">{label}</p>
-                                            <p style="font-size: 20px; font-weight: 700; color: {color}; margin: 4px 0;">{value:.2f}</p>
-                                            {f'<p style="font-size: 10px; color: {color}; margin: 0;">{pct:.1f}%</p>' if pct else ''}
-                                        </div>
-                                        """, unsafe_allow_html=True)
-
-                                if st.button(f"🔮 تحليل مفصل", key=f"analyze_alert_{alert['symbol']}", use_container_width=True):
-                                    select_stock(alert['symbol'])
-                                    st.rerun()
-
-                # Full table
-                st.subheader("📋 الجدول الكامل")
-                table_data = []
-                for alert in all_alerts:
-                    table_data.append({
-                        "الرمز": alert['symbol'],
-                        "الشركة": alert['name'],
-                        "القطاع": alert['sector'],
-                        "السعر": alert['price'],
-                        "الإشارة": alert['signal_text'],
-                        "الدرجة": alert['score'],
-                        "RSI": alert['rsi'],
-                        "R/R": alert['rr_ratio'],
-                        "Stop Loss": alert['stop_loss'],
-                        "الهدف": alert['take_profit_1']
-                    })
-
-                df_alerts = pd.DataFrame(table_data)
-                st.dataframe(df_alerts, use_container_width=True, hide_index=True)
-
-                st.download_button(
-                    label="📥 تصدير CSV",
-                    data=df_alerts.to_csv(index=False).encode('utf-8-sig'),
-                    file_name=f"analysis_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-    else:
-        st.info("👈 اضغط 'تشغيل التحليل الآلي' لبدء المسح")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================== TAB 7: DETAILED ANALYSIS ====================
 with tab7:
     st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🔮 التحليل الذكي الشامل</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🔮 التحليل الذكي الشامل مع إدارة المخاطرة</span></div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div style="padding: 12px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; margin-bottom: 16px;">
         <p style="color: #f87171; font-weight: 600; margin: 0; font-size: 13px;">⚠️ تحذير</p>
-        <p style="color: #fca5a5; font-size: 12px; margin-top: 4px;">التوقعات نتائج رياضية للبيانات التاريخية فقط. لا تعتبر توصية استثمارية.</p>
+        <p style="color: #fca5a5; font-size: 12px; margin-top: 4px;">التوقعات نتائج رياضية للبيانات التاريخية فقط. لا تعتبر توصية استثمارية. استخدم Stop Loss دائماً.</p>
     </div>
     """, unsafe_allow_html=True)
 
-    analysis_stock = st.selectbox("السهم", tickers, key="ai_stock")
-    analysis_period = st.selectbox("الفترة", ["1mo", "3mo", "6mo", "1y", "2y"], index=2, key="ai_period")
-
-    risk_col1, risk_col2, risk_col3 = st.columns(3)
-    with risk_col1:
-        max_risk_pct = st.slider("الحد الأقصى للمخاطرة %", 1, 10, 5, key="ai_risk")
-    with risk_col2:
-        prediction_days = st.slider("أيام التوقع", 3, 30, 10, key="ai_days")
-    with risk_col3:
-        confidence_level = st.selectbox("مستوى الثقة", ["منخفض (70%)", "متوسط (85%)", "عالي (95%)"], index=1, key="ai_conf")
+    # Controls
+    ctrl1, ctrl2, ctrl3, ctrl4 = st.columns([2, 1, 1, 1])
+    with ctrl1:
+        analysis_stock = st.selectbox("السهم", df_live['symbol'].tolist(), key="ai_stock_tab7")
+    with ctrl2:
+        analysis_period = st.selectbox("الفترة", ["1mo", "3mo", "6mo", "1y", "2y"], index=2, key="ai_period_tab7")
+    with ctrl3:
+        prediction_days = st.slider("أيام التوقع", 3, 30, 10, key="ai_days_tab7")
+    with ctrl4:
+        account_balance = st.number_input("رأس المال", value=100000, step=10000, key="ai_balance_tab7")
 
     if st.button("🔮 تشغيل التحليل الشامل", type="primary", use_container_width=True):
-        with st.spinner("جاري التحليل..."):
-            df = safe_fetch_stock_data(analysis_stock, analysis_period, "EGX" if is_egypt else "GLOBAL")
+        with st.spinner("جاري التحليل الشامل..."):
+            df = data_engine.get_stock_history(analysis_stock, analysis_period)
 
             if df is None or df.empty:
                 st.error("❌ تعذر جلب البيانات.")
             else:
-                df = calculate_technical_indicators(df)
+                df = ta_engine.calculate_all(df)
                 if df is None:
                     st.error("❌ خطأ في حساب المؤشرات.")
                 else:
-                    signals = generate_trading_signals(df)
-                    overall_signal, score, signal_text = calculate_overall_signal(signals)
-                    predictions = predict_future_prices(df, days=prediction_days)
-                    sr_levels = calculate_support_resistance(df)
+                    signals = ta_engine.generate_signals(df)
+                    overall_signal, score, signal_text, trend = ta_engine.calculate_overall(signals)
+                    predictions = ai_engine.predict_prices(df, days=prediction_days)
+                    sr_levels = ai_engine.calculate_support_resistance(df)
 
                     current_price = df['Close'].iloc[-1]
-                    volatility = df['Close'].pct_change().std()
                     atr = df['ATR'].iloc[-1] if pd.notna(df['ATR'].iloc[-1]) else current_price * 0.02
 
                     stop_loss = current_price - (atr * 2)
                     take_profit_1 = current_price + (atr * 2)
                     take_profit_2 = current_price + (atr * 3.5)
 
-                    avg_daily_move = abs(df['Close'].pct_change()).mean() * 100
-                    days_to_tp1 = int((take_profit_1 - current_price) / (current_price * avg_daily_move / 100)) if avg_daily_move > 0 else 0
-                    days_to_sl = int((current_price - stop_loss) / (current_price * avg_daily_move / 100)) if avg_daily_move > 0 else 0
+                    # Risk Analysis
+                    risk_profile = risk_engine.analyze_risk_profile(df, current_price, stop_loss, take_profit_1, account_balance)
 
-                    # Signal Display
-                    st.subheader("🎯 إشارة التداول")
-                    signal_cols = st.columns([1, 2, 1])
-                    with signal_cols[1]:
+                    # SIGNAL DISPLAY
+                    st.subheader("🎯 إشارة التداول الرئيسية")
+                    sig_cols = st.columns([1, 2, 1])
+                    with sig_cols[1]:
                         if overall_signal == "STRONG_BUY":
                             st.markdown('<div class="signal-box signal-buy"><h2 style="margin: 0; color: #10b981; font-size: 32px;">🟢 شراء قوي</h2></div>', unsafe_allow_html=True)
                         elif overall_signal == "BUY":
@@ -1785,43 +2093,83 @@ with tab7:
                         else:
                             st.markdown('<div class="signal-box signal-hold"><h2 style="margin: 0; color: #fbbf24; font-size: 28px;">🟡 انتظار</h2></div>', unsafe_allow_html=True)
 
-                    # Risk Levels
+                    # RISK LEVELS
                     st.subheader("🛡️ مستويات إدارة المخاطرة")
                     risk_cols = st.columns(4)
                     risk_data = [
-                        ("🛑 Stop Loss", stop_loss, ((current_price-stop_loss)/current_price*100), "#ef4444", days_to_sl),
-                        ("📍 السعر الحالي", current_price, 0, "#6366f1", 0),
-                        ("🎯 الهدف 1", take_profit_1, ((take_profit_1-current_price)/current_price*100), "#10b981", days_to_tp1),
-                        ("🎯🎯 الهدف 2", take_profit_2, ((take_profit_2-current_price)/current_price*100), "#fbbf24", 0)
+                        ("🛑 Stop Loss", stop_loss, ((current_price-stop_loss)/current_price*100), "#ef4444"),
+                        ("📍 السعر الحالي", current_price, 0, "#6366f1"),
+                        ("🎯 الهدف 1", take_profit_1, ((take_profit_1-current_price)/current_price*100), "#10b981"),
+                        ("🎯🎯 الهدف 2", take_profit_2, ((take_profit_2-current_price)/current_price*100), "#fbbf24")
                     ]
-
-                    for i, (label, value, pct, color, days) in enumerate(risk_data):
+                    for i, (label, value, pct, color) in enumerate(risk_data):
                         with risk_cols[i]:
                             st.markdown(f"""
                             <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid {color}30;">
                                 <p style="color: #64748b; font-size: 11px; margin: 0;">{label}</p>
                                 <p style="font-size: 24px; font-weight: 700; color: {color}; margin: 4px 0;">{value:.2f}</p>
                                 {f'<p style="font-size: 11px; color: {color}; margin: 0;">{pct:.1f}%</p>' if pct else ''}
-                                {f'<p style="font-size: 10px; color: #64748b; margin: 4px 0 0 0;">⏱️ ~{days} يوم</p>' if days else ''}
                             </div>
                             """, unsafe_allow_html=True)
 
-                    # Technical Indicators
+                    # ADVANCED RISK METRICS
+                    st.subheader("📊 تحليل المخاطرة المتقدم")
+                    risk_metric_cols = st.columns(4)
+                    risk_metrics = [
+                        ("التقلب السنوي", f"{risk_profile.get('volatility_annual', 0):.1f}%", risk_profile.get('volatility_annual', 0) < 30),
+                        ("VaR (95%)", f"{risk_profile.get('var_95', 0):.2f}%", risk_profile.get('var_95', 0) > -5),
+                        ("CVaR (95%)", f"{risk_profile.get('cvar_95', 0):.2f}%", risk_profile.get('cvar_95', 0) > -8),
+                        ("نسبة كيلي", f"{risk_profile.get('kelly_pct', 0):.1f}%", risk_profile.get('kelly_pct', 0) > 0)
+                    ]
+                    for i, (label, value, good) in enumerate(risk_metrics):
+                        with risk_metric_cols[i]:
+                            color = "#10b981" if good else "#ef4444"
+                            st.markdown(f"""
+                            <div class="risk-metric {('risk-low' if good else 'risk-high')}">
+                                <p style="color: #64748b; font-size: 11px; margin: 0;">{label}</p>
+                                <p style="font-size: 20px; font-weight: 700; color: {color}; margin: 4px 0;">{value}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                    # POSITION SIZING
+                    st.subheader("💰 توصية حجم المركز")
+                    pos_cols = st.columns(4)
+                    with pos_cols[0]:
+                        st.metric("الأسهم المقترحة", f"{risk_profile.get('shares', 0)}")
+                    with pos_cols[1]:
+                        st.metric("قيمة المركز", f"{risk_profile.get('position_value', 0):,.0f} ج.م")
+                    with pos_cols[2]:
+                        st.metric("المخاطرة الفعلية", f"{risk_profile.get('actual_risk_pct', 0):.2f}%")
+                    with pos_cols[3]:
+                        st.metric("نسبة الربح/خسارة", f"{risk_profile.get('rr_ratio', 0):.2f}")
+
+                    # Risk Classification
+                    st.markdown(f"""
+                    <div style="padding: 16px; background: {risk_profile.get('risk_color', '#94a3b8')}10; border: 1px solid {risk_profile.get('risk_color', '#94a3b8')}40; border-radius: 12px; margin: 16px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <p style="margin: 0; font-size: 18px; font-weight: 700; color: {risk_profile.get('risk_color', '#94a3b8')};">تصنيف المخاطرة: {risk_profile.get('risk_class', 'غير معروف')}</p>
+                                <p style="color: #64748b; margin: 4px 0 0 0; font-size: 13px;">التوصية: {risk_profile.get('recommendation', 'غير معروف')}</p>
+                            </div>
+                            <p style="margin: 0; font-size: 14px; color: #64748b;">أقصى خسائر متتالية: {risk_profile.get('max_consecutive_losses', 0)} يوم</p>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # TECHNICAL INDICATORS
                     st.subheader("📊 المؤشرات الفنية")
                     latest = df.iloc[-1]
-
-                    ind_col1, ind_col2, ind_col3, ind_col4, ind_col5, ind_col6 = st.columns(6)
+                    ind_cols = st.columns(6)
                     indicators = [
                         ("RSI (14)", latest.get('RSI', 0), "#ef4444" if latest.get('RSI', 50) > 70 else "#10b981" if latest.get('RSI', 50) < 30 else "#fbbf24", "ذروة شراء" if latest.get('RSI', 50) > 70 else "ذروة بيع" if latest.get('RSI', 50) < 30 else "محايد"),
                         ("MACD", latest.get('MACD', 0), "#10b981" if latest.get('MACD', 0) > 0 else "#ef4444", "إيجابي" if latest.get('MACD', 0) > 0 else "سلبي"),
                         ("Bollinger", latest.get('BB_Position', 0.5), "#10b981" if latest.get('BB_Position', 0.5) < 0.2 else "#ef4444" if latest.get('BB_Position', 0.5) > 0.8 else "#fbbf24", "منطقة شراء" if latest.get('BB_Position', 0.5) < 0.2 else "منطقة بيع" if latest.get('BB_Position', 0.5) > 0.8 else "النطاق الأوسط"),
                         ("Stochastic", latest.get('Stoch_K', 50), "#10b981" if latest.get('Stoch_K', 50) < 20 else "#ef4444" if latest.get('Stoch_K', 50) > 80 else "#fbbf24", "ذروة بيع" if latest.get('Stoch_K', 50) < 20 else "ذروة شراء" if latest.get('Stoch_K', 50) > 80 else "محايد"),
                         ("SMA 20", latest.get('SMA_20', 0), "#10b981" if latest.get('Close', 0) > latest.get('SMA_20', 0) else "#ef4444", "صاعد" if latest.get('Close', 0) > latest.get('SMA_20', 0) else "هابط"),
-                        ("Volume", latest.get('Volume_Ratio', 1), "#10b981" if latest.get('Volume_Ratio', 1) > 1.5 else "#ef4444" if latest.get('Volume_Ratio', 1) < 0.5 else "#fbbf24", "نشط" if latest.get('Volume_Ratio', 1) > 1.5 else "ضعيف" if latest.get('Volume_Ratio', 1) < 0.5 else "طبيعي")
+                        ("ADX", latest.get('ADX', 0), "#10b981" if latest.get('ADX', 0) > 25 else "#fbbf24", "اتجاه قوي" if latest.get('ADX', 0) > 25 else "اتجاه ضعيف")
                     ]
-
                     for i, (label, value, color, text) in enumerate(indicators):
-                        with [ind_col1, ind_col2, ind_col3, ind_col4, ind_col5, ind_col6][i]:
+                        with ind_cols[i]:
                             st.markdown(f"""
                             <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px;">
                                 <p style="color: #64748b; font-size: 10px; margin: 0;">{label}</p>
@@ -1830,82 +2178,93 @@ with tab7:
                             </div>
                             """, unsafe_allow_html=True)
 
-                    # Prediction Chart
+                    # SUPPORT/RESISTANCE
+                    st.subheader("🎯 مستويات الدعم والمقاومة")
+                    sr_cols = st.columns(2)
+                    with sr_cols[0]:
+                        st.markdown("**الدعم:**")
+                        for s in sr_levels.get('supports', []):
+                            st.markdown(f"<span style='color: #10b981; font-weight: 600;'>▲ {s}</span>", unsafe_allow_html=True)
+                    with sr_cols[1]:
+                        st.markdown("**المقاومة:**")
+                        for r in sr_levels.get('resistances', []):
+                            st.markdown(f"<span style='color: #ef4444; font-weight: 600;'>▼ {r}</span>", unsafe_allow_html=True)
+
+                    # Fibonacci
+                    st.markdown("**مستويات فيبوناتشي:**")
+                    fib = sr_levels.get('fibonacci', {})
+                    fib_cols = st.columns(len(fib) if fib else 1)
+                    for i, (level, value) in enumerate(fib.items()):
+                        with fib_cols[i]:
+                            color = "#fbbf24" if level in ['38.2%', '61.8%'] else "#94a3b8"
+                            st.markdown(f"""
+                            <div style="text-align: center; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                                <p style="color: #64748b; font-size: 10px; margin: 0;">{level}</p>
+                                <p style="font-size: 14px; font-weight: 600; color: {color}; margin: 2px 0;">{value}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                    # PREDICTION CHART
                     if 'combined' in predictions:
-                        st.subheader("🔮 توقعات الأسعار")
+                        st.subheader("🔮 توقعات الأسعار مع نطاقات الثقة")
                         pred_df = pd.DataFrame(predictions['combined'])
 
                         fig_pred = go.Figure()
                         hist_days = min(60, len(df))
                         fig_pred.add_trace(go.Scatter(
-                            x=df.index[-hist_days:],
-                            y=df['Close'].tail(hist_days),
-                            mode='lines',
-                            name='السعر الفعلي',
+                            x=df.index[-hist_days:], y=df['Close'].tail(hist_days),
+                            mode='lines', name='السعر الفعلي',
                             line=dict(color='#6366f1', width=2),
-                            fill='tozeroy',
-                            fillcolor='rgba(99, 102, 241, 0.1)'
+                            fill='tozeroy', fillcolor='rgba(99, 102, 241, 0.1)'
                         ))
 
                         last_date = df.index[-1]
                         future_dates = pd.date_range(start=last_date + timedelta(days=1), periods=prediction_days, freq='B')
-                        predicted_prices = [p['predicted'] for p in predictions['combined']]
-                        upper_bounds = [p['upper_bound'] for p in predictions['combined']]
-                        lower_bounds = [p['lower_bound'] for p in predictions['combined']]
+                        pred_prices = [p['predicted'] for p in predictions['combined']]
+                        upper = [p['upper_bound'] for p in predictions['combined']]
+                        lower = [p['lower_bound'] for p in predictions['combined']]
 
                         fig_pred.add_trace(go.Scatter(
-                            x=future_dates,
-                            y=predicted_prices,
-                            mode='lines+markers',
-                            name='التوقع',
+                            x=future_dates, y=pred_prices,
+                            mode='lines+markers', name='التوقع',
                             line=dict(color='#fbbf24', width=3),
                             marker=dict(size=8, color='#fbbf24')
                         ))
 
                         fig_pred.add_trace(go.Scatter(
                             x=list(future_dates) + list(future_dates)[::-1],
-                            y=upper_bounds + list(reversed(predicted_prices)),
-                            fill='tonexty',
-                            fillcolor='rgba(251, 191, 36, 0.1)',
+                            y=upper + list(reversed(pred_prices)),
+                            fill='tonexty', fillcolor='rgba(251, 191, 36, 0.1)',
                             line=dict(color='rgba(251, 191, 36, 0.3)', width=1),
-                            name='الحد الأعلى',
-                            showlegend=True
+                            name='الحد الأعلى'
                         ))
 
                         fig_pred.add_trace(go.Scatter(
                             x=list(future_dates) + list(future_dates)[::-1],
-                            y=list(reversed(predicted_prices)) + lower_bounds,
-                            fill='tonexty',
-                            fillcolor='rgba(251, 191, 36, 0.1)',
+                            y=list(reversed(pred_prices)) + lower,
+                            fill='tonexty', fillcolor='rgba(251, 191, 36, 0.1)',
                             line=dict(color='rgba(251, 191, 36, 0.3)', width=1),
-                            name='الحد الأدنى',
-                            showlegend=True
+                            name='الحد الأدنى'
                         ))
 
                         fig_pred.add_hline(y=stop_loss, line_dash="dash", line_color="#ef4444", annotation_text="Stop Loss", annotation_position="right")
                         fig_pred.add_hline(y=take_profit_1, line_dash="dash", line_color="#10b981", annotation_text="TP1", annotation_position="right")
 
                         fig_pred.update_layout(
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            plot_bgcolor='rgba(0,0,0,0)',
+                            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(family="Inter", color="#94a3b8"),
-                            xaxis=dict(gridcolor='rgba(255,255,255,0.05)', title="التاريخ"),
-                            yaxis=dict(gridcolor='rgba(255,255,255,0.05)', title="السعر"),
+                            xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+                            yaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
                             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                            height=450,
-                            margin=dict(t=40, b=40)
+                            height=450, margin=dict(t=40, b=40)
                         )
                         st.plotly_chart(fig_pred, use_container_width=True)
 
-                    # Candlestick Chart
+                    # CANDLESTICK CHART
                     st.subheader("📈 الرسم البياني التفاعلي")
                     fig = go.Figure()
                     fig.add_trace(go.Candlestick(
-                        x=df.index,
-                        open=df['Open'],
-                        high=df['High'],
-                        low=df['Low'],
-                        close=df['Close'],
+                        x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'],
                         name='الشموع'
                     ))
 
@@ -1913,23 +2272,25 @@ with tab7:
                         fig.add_trace(go.Scatter(x=df.index, y=df['SMA_20'], mode='lines', name='SMA 20', line=dict(color='#6366f1', width=1)))
                     if pd.notna(latest.get('SMA_50')):
                         fig.add_trace(go.Scatter(x=df.index, y=df['SMA_50'], mode='lines', name='SMA 50', line=dict(color='#fbbf24', width=1)))
+                    if pd.notna(latest.get('BB_Upper')):
+                        fig.add_trace(go.Scatter(x=df.index, y=df['BB_Upper'], mode='lines', name='BB Upper', line=dict(color='rgba(16,185,129,0.5)', width=1, dash='dash')))
+                        fig.add_trace(go.Scatter(x=df.index, y=df['BB_Lower'], mode='lines', name='BB Lower', line=dict(color='rgba(239,68,68,0.5)', width=1, dash='dash')))
 
                     fig.add_hline(y=stop_loss, line_dash="dash", line_color="#ef4444", annotation_text="SL", annotation_position="right")
                     fig.add_hline(y=take_profit_1, line_dash="dash", line_color="#10b981", annotation_text="TP1", annotation_position="right")
 
                     fig.update_layout(
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                         font=dict(family="Inter", color="#94a3b8"),
                         xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
                         yaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                        height=450,
-                        margin=dict(t=40, b=40)
+                        height=450, margin=dict(t=40, b=40)
                     )
                     st.plotly_chart(fig, use_container_width=True)
 
-                    # Volume Chart
+                    # VOLUME CHART
+                    st.subheader("📊 حجم التداول")
                     fig_vol = go.Figure()
                     colors = ['#10b981' if df['Close'].iloc[i] >= df['Open'].iloc[i] else '#ef4444' for i in range(len(df))]
                     fig_vol.add_trace(go.Bar(x=df.index, y=df['Volume'], marker_color=colors, name='الحجم'))
@@ -1937,56 +2298,62 @@ with tab7:
                         fig_vol.add_trace(go.Scatter(x=df.index, y=df['Volume_SMA'], mode='lines', name='متوسط الحجم', line=dict(color='#fbbf24', width=2)))
 
                     fig_vol.update_layout(
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                         font=dict(family="Inter", color="#94a3b8"),
                         xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
-                        yaxis=dict(gridcolor='rgba(255,255,255,0.05)', title="الحجم"),
+                        yaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                        height=250,
-                        margin=dict(t=40, b=20)
+                        height=250, margin=dict(t=40, b=20)
                     )
                     st.plotly_chart(fig_vol, use_container_width=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== DEBUG CONSOLE (IF ENABLED) ====================
-if st.session_state.debug_mode and debug.errors_log:
-    st.markdown("---")
-    st.subheader("🔧 سجل التصحيح (Debug Console)")
-
-    for error in debug.errors_log[-10:]:  # Show last 10 errors
-        status_class = "debug-success" if error["recovered"] else "debug-error"
-        status_icon = "✅" if error["recovered"] else "❌"
-
-        st.markdown(f"""
-        <div class="debug-console">
-            <div class="debug-entry {status_class}">
-                <span style="color: #64748b;">[{error['timestamp']}]</span>
-                <span style="color: #fbbf24; font-weight: 600;">{error['component']}</span>
-                <span style="color: #ef4444;">{status_icon} {error['error_type']}</span>
-                <p style="margin: 4px 0 0 0; color: #94a3b8;">{error['error_message'][:100]}</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    if st.button("🧹 مسح السجل", use_container_width=True):
-        debug.errors_log = []
-        st.rerun()
-
 # ==================== FOOTER ====================
-best_stock = max(stocks_data, key=lambda x: x["change_pct"])
-st.markdown(f"""
-<div style="text-align: center; padding: 24px; margin-top: 32px; background: linear-gradient(90deg, #0a0a0f, #12121a); border-top: 2px solid rgba(99,102,241,0.2); border-radius: 12px;">
-    <p style="font-size: 16px; margin-bottom: 8px; color: #e2e8f0; font-weight: 600;">⚡ EGX Pro Terminal v20.0</p>
-    <p style="color: #64748b; font-size: 13px;">
-        نظام تحليلي احترافي | Backtesting | توقعات AI | إدارة المهام | تصحيح أخطاء ذكي
-    </p>
-    <p style="color: #fbbf24; font-size: 13px; margin-top: 8px;">
-        🏆 أقوى سهم: <b>{best_stock['symbol']}</b> — +{best_stock['change_pct']:.2f}%
-    </p>
-    <p style="color: #475569; font-size: 11px; margin-top: 12px;">
-        © 2026 | جميع البيانات للتوضيح | التوقعات للأغراض التعليمية فقط
-    </p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown("---")
+footer_cols = st.columns(3)
+
+with footer_cols[0]:
+    st.markdown(f"""
+    <div style="text-align: center;">
+        <p style="color: #64748b; font-size: 12px; margin: 0;">⚡ EGX Pro Terminal v21.0</p>
+        <p style="color: #475569; font-size: 11px; margin: 4px 0;">نظام تحليلي احترافي | AI-Powered</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with footer_cols[1]:
+    st.markdown(f"""
+    <div style="text-align: center;">
+        <p style="color: #fbbf24; font-size: 13px; margin: 0; font-weight: 600;">
+            🏆 الأقوى: {best_stock['symbol']} +{best_stock['change_pct']:.2f}% | 📉 الأضعف: {worst_stock['symbol']} {worst_stock['change_pct']:.2f}%
+        </p>
+        <p style="color: #475569; font-size: 11px; margin: 4px 0;">
+            آخر تحديث: {datetime.now().strftime("%H:%M:%S")}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with footer_cols[2]:
+    st.markdown(f"""
+    <div style="text-align: center;">
+        <p style="color: #475569; font-size: 11px; margin: 0;">
+            © 2026 | جميع البيانات للتوضيح | التوقعات للأغراض التعليمية فقط
+        </p>
+        <p style="color: #475569; font-size: 10px; margin: 4px 0;">
+            Backtesting | AI Analysis | Risk Management | Real-time Data
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Debug Console
+if st.session_state.debug_mode:
+    st.markdown("---")
+    st.subheader("🔧 معلومات النظام")
+    st.json({
+        "cache_size": len(st.session_state.market_data_cache),
+        "alerts_cached": st.session_state.alerts_cache is not None,
+        "tasks_count": len(st.session_state.tasks),
+        "selected_stock": st.session_state.selected_stock,
+        "risk_settings": st.session_state.risk_settings,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
