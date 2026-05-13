@@ -170,6 +170,76 @@ st.markdown("""
         padding: 16px;
         margin: 16px 0;
     }
+
+    /* STOCK BUTTON CARDS */
+    .stock-btn-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05));
+        border: 1px solid rgba(99, 102, 241, 0.15);
+        border-radius: 14px;
+        padding: 14px 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .stock-btn-card:hover {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15));
+        border-color: rgba(99, 102, 241, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
+    }
+    .stock-btn-card:active {
+        transform: translateY(-1px);
+    }
+    .stock-btn-symbol {
+        font-size: 15px;
+        font-weight: 800;
+        color: #fbbf24;
+        margin-bottom: 4px;
+        letter-spacing: 0.5px;
+    }
+    .stock-btn-price {
+        font-size: 18px;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin: 2px 0;
+    }
+    .stock-btn-change {
+        font-size: 13px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-top: 4px;
+    }
+    .stock-btn-change.up {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+    }
+    .stock-btn-change.down {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+    }
+    .stock-btn-sector {
+        font-size: 10px;
+        color: #94a3b8;
+        margin-top: 4px;
+    }
+    .stock-btn-glow {
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+    .stock-btn-card:hover .stock-btn-glow {
+        opacity: 1;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -183,16 +253,17 @@ if 'tasks' not in st.session_state:
         {"id": 5, "title": "تحديث بيانات المحفظة الاستثمارية", "priority": "medium", "category": "personal", "due": "2026-05-13", "completed": False, "created": "2026-05-11"},
     ]
 
-if 'portfolio' not in st.session_state:
-    st.session_state.portfolio = [
-        {"symbol": "COMI", "name": "CIB", "quantity": 500, "buy_price": 47.50, "current_price": 50.25},
-        {"symbol": "SWDY", "name": "السويدي", "quantity": 1200, "buy_price": 11.20, "current_price": 12.80},
-        {"symbol": "ISPH", "name": "العاصمة", "quantity": 3000, "buy_price": 8.50, "current_price": 8.95},
-        {"symbol": "EFIH", "name": "e-Finance", "quantity": 800, "buy_price": 20.10, "current_price": 22.30},
-        {"symbol": "ORAS", "name": "أوراسكوم", "quantity": 1500, "buy_price": 9.10, "current_price": 9.75},
-    ]
 
+if 'selected_stock' not in st.session_state:
+    st.session_state.selected_stock = None
+if 'show_analysis' not in st.session_state:
+    st.session_state.show_analysis = False
 # ==================== DATA ====================
+
+def select_stock(symbol):
+    st.session_state.selected_stock = symbol
+    st.session_state.show_analysis = True
+
 stocks_data = [
     {"symbol": "COMI", "name": "البنك التجاري الدولي - CIB", "sector": "بنوك", "price": 140.01, "change": -2.09, "change_pct": -1.47, "volume": 13263000000, "high": 142.81, "low": 137.21},
     {"symbol": "QNBE", "name": "QNB مصر", "sector": "بنوك", "price": 58.14, "change": -0.95, "change_pct": -1.61, "volume": 5550000000, "high": 59.3, "low": 56.98},
@@ -205,10 +276,12 @@ stocks_data = [
     {"symbol": "UBEE", "name": "المصرف المتحد", "sector": "بنوك", "price": 13.98, "change": 1.53, "change_pct": 12.29, "volume": 619000000, "high": 14.26, "low": 13.7},
     {"symbol": "EXPA", "name": "بنك التنمية الصادرات", "sector": "بنوك", "price": 18.68, "change": -0.05, "change_pct": -0.27, "volume": 1255000000, "high": 19.05, "low": 18.31},
     {"symbol": "EGBE", "name": "البنك المصري الخليجي", "sector": "بنوك", "price": 0.412, "change": -0.72, "change_pct": -63.6, "volume": 1076000000, "high": 0.42, "low": 0.4},
+    {"symbol": "DEIN", "name": "دلتا للتأمين", "sector": "بنوك", "price": 11.38, "change": 0.0, "change_pct": 0.0, "volume": 299000000, "high": 11.61, "low": 11.15},
     {"symbol": "EFIH", "name": "e-Finance للاستثمارات الرقمية", "sector": "تكنولوجيا مالية", "price": 22.32, "change": -1.59, "change_pct": -6.65, "volume": 677000000, "high": 22.77, "low": 21.87},
     {"symbol": "FWRY", "name": "فوري لتكنولوجيا البنوك", "sector": "تكنولوجيا مالية", "price": 20.88, "change": -0.95, "change_pct": -4.35, "volume": 865000000, "high": 21.3, "low": 20.46},
     {"symbol": "SCTS", "name": "قناة السويس لتكنولوجيا المقاصة", "sector": "تكنولوجيا مالية", "price": 652.11, "change": -1.49, "change_pct": -0.23, "volume": 305000000, "high": 665.15, "low": 639.07},
     {"symbol": "VALU", "name": "U للتمويل الاستهلاكي", "sector": "تكنولوجيا مالية", "price": 12.6, "change": -2.25, "change_pct": -15.15, "volume": 115000000, "high": 12.85, "low": 12.35},
+    {"symbol": "CNFN", "name": "كونتكت للتمويل", "sector": "تكنولوجيا مالية", "price": 4.7, "change": -0.84, "change_pct": -15.16, "volume": 2360000000, "high": 4.79, "low": 4.61},
     {"symbol": "TMGH", "name": "طلعت مصطفى القابضة", "sector": "عقارات", "price": 98.25, "change": -1.75, "change_pct": -1.75, "volume": 6250000000, "high": 100.22, "low": 96.28},
     {"symbol": "EMFD", "name": "إعمار مصر للتنمية", "sector": "عقارات", "price": 11.1, "change": 0.64, "change_pct": 6.12, "volume": 1981000000, "high": 11.32, "low": 10.88},
     {"symbol": "PHDC", "name": "بالم هيلز للتطوير", "sector": "عقارات", "price": 14.0, "change": -2.44, "change_pct": -14.84, "volume": 3617000000, "high": 14.28, "low": 13.72},
@@ -217,6 +290,10 @@ stocks_data = [
     {"symbol": "HELI", "name": "حلوان للإسكان", "sector": "عقارات", "price": 7.06, "change": -0.28, "change_pct": -3.81, "volume": 314000000, "high": 7.2, "low": 6.92},
     {"symbol": "MASR", "name": "مدينة نصر للإسكان", "sector": "عقارات", "price": 7.4, "change": 1.51, "change_pct": 25.64, "volume": 1171000000, "high": 7.55, "low": 7.25},
     {"symbol": "GPPL", "name": "الأهرام للاستثمارات", "sector": "عقارات", "price": 1.4, "change": 0.0, "change_pct": 0.0, "volume": 479000000, "high": 1.43, "low": 1.37},
+    {"symbol": "ZMID", "name": "زهراء المعادي", "sector": "عقارات", "price": 5.81, "change": -0.34, "change_pct": -5.53, "volume": 834000000, "high": 5.93, "low": 5.69},
+    {"symbol": "AREH", "name": "المجموعة المصرية العقارية", "sector": "عقارات", "price": 1.36, "change": 0.74, "change_pct": 119.35, "volume": 16800000, "high": 1.39, "low": 1.33},
+    {"symbol": "ADRI", "name": "أراب للتنمية والاستثمار العقاري", "sector": "عقارات", "price": 7.38, "change": 0.82, "change_pct": 12.5, "volume": 1140000000, "high": 7.53, "low": 7.23},
+    {"symbol": "CCRS", "name": "الخليجية الكندية للاستثمار العقاري", "sector": "عقارات", "price": 2.14, "change": 2.88, "change_pct": -389.19, "volume": 2579000000, "high": 2.18, "low": 2.1},
     {"symbol": "SWDY", "name": "السويدي إلكتريك", "sector": "صناعة", "price": 89.51, "change": -0.77, "change_pct": -0.85, "volume": 28105000000, "high": 91.3, "low": 87.72},
     {"symbol": "EGAL", "name": "مصر للألومنيوم", "sector": "صناعة", "price": 317.0, "change": 4.6, "change_pct": 1.47, "volume": 4588000000, "high": 323.34, "low": 310.66},
     {"symbol": "ABUK", "name": "أبو قير للأسمدة", "sector": "صناعة", "price": 87.19, "change": 1.38, "change_pct": 1.61, "volume": 2580000000, "high": 88.93, "low": 85.45},
@@ -237,6 +314,18 @@ stocks_data = [
     {"symbol": "ALUM", "name": "الألومنيوم العربي", "sector": "صناعة", "price": 22.74, "change": 0.4, "change_pct": 1.79, "volume": 579000000, "high": 23.19, "low": 22.29},
     {"symbol": "ELEC", "name": "الكابلات الكهربائية", "sector": "صناعة", "price": 2.19, "change": -0.91, "change_pct": -29.35, "volume": 1082000000, "high": 2.23, "low": 2.15},
     {"symbol": "ENGC", "name": "ICON للهندسة", "sector": "صناعة", "price": 34.9, "change": -1.66, "change_pct": -4.54, "volume": 735000000, "high": 35.6, "low": 34.2},
+    {"symbol": "DTPP", "name": "دلتا للطباعة", "sector": "صناعة", "price": 137.27, "change": 1.11, "change_pct": 0.82, "volume": 806000000, "high": 140.02, "low": 134.52},
+    {"symbol": "PRCL", "name": "المنتجات الخزفية", "sector": "صناعة", "price": 22.6, "change": -3.83, "change_pct": -14.49, "volume": 100000000, "high": 23.05, "low": 22.15},
+    {"symbol": "ECAP", "name": "العز للخزف", "sector": "صناعة", "price": 30.64, "change": 0.46, "change_pct": 1.52, "volume": 276000000, "high": 31.25, "low": 30.03},
+    {"symbol": "CERA", "name": "السيراميك العربي", "sector": "صناعة", "price": 1.17, "change": 0.0, "change_pct": 0.0, "volume": 229000000, "high": 1.19, "low": 1.15},
+    {"symbol": "ORAS", "name": "أوراسكوم للإنشاءات", "sector": "صناعة", "price": 687.5, "change": 4.96, "change_pct": 0.73, "volume": 24088000000, "high": 701.25, "low": 673.75},
+    {"symbol": "CSAG", "name": "وكالات شحن القناة", "sector": "صناعة", "price": 32.0, "change": -0.16, "change_pct": -0.5, "volume": 165000000, "high": 32.64, "low": 31.36},
+    {"symbol": "TAQA", "name": "طاقة عربية", "sector": "صناعة", "price": 13.77, "change": 1.62, "change_pct": 13.33, "volume": 2559000000, "high": 14.05, "low": 13.49},
+    {"symbol": "SKPC", "name": "سيدي كرير للبتروكيماويات", "sector": "صناعة", "price": 17.85, "change": 3.0, "change_pct": 20.2, "volume": 1441000000, "high": 18.21, "low": 17.49},
+    {"symbol": "BIDI", "name": "البدر للبلاستيك", "sector": "صناعة", "price": 1.28, "change": -0.78, "change_pct": -37.86, "volume": 11860000, "high": 1.31, "low": 1.25},
+    {"symbol": "ARVA", "name": "العربية للمحابس", "sector": "صناعة", "price": 9.03, "change": 0.22, "change_pct": 2.5, "volume": 2980000000, "high": 9.21, "low": 8.85},
+    {"symbol": "AIFI", "name": "أطلس لاستصلاح الأراضي", "sector": "صناعة", "price": 1.81, "change": 7.1, "change_pct": -134.22, "volume": 4157000000, "high": 1.85, "low": 1.77},
+    {"symbol": "ACGC", "name": "الأقطان", "sector": "صناعة", "price": 8.58, "change": -1.49, "change_pct": -14.8, "volume": 661340000, "high": 8.75, "low": 8.41},
     {"symbol": "ETEL", "name": "المصرية للاتصالات", "sector": "اتصالات", "price": 98.49, "change": -0.4, "change_pct": -0.4, "volume": 10667000000, "high": 100.46, "low": 96.52},
     {"symbol": "EGSA", "name": "النايل سات", "sector": "اتصالات", "price": 9.09, "change": 0.0, "change_pct": 0.0, "volume": 470000000, "high": 9.27, "low": 8.91},
     {"symbol": "OIH", "name": "أوراسكوم للاستثمار", "sector": "اتصالات", "price": 1.54, "change": 1.32, "change_pct": 600.0, "volume": 708000000, "high": 1.57, "low": 1.51},
@@ -256,10 +345,18 @@ stocks_data = [
     {"symbol": "IFAP", "name": "المنتجات الزراعية", "sector": "سلع استهلاكية", "price": 21.42, "change": -1.34, "change_pct": -5.89, "volume": 244000000, "high": 21.85, "low": 20.99},
     {"symbol": "KABO", "name": "النصر للملابس والمنسوجات", "sector": "سلع استهلاكية", "price": 6.13, "change": -0.81, "change_pct": -11.67, "volume": 112000000, "high": 6.25, "low": 6.01},
     {"symbol": "GTWL", "name": "الذهبية للمنسوجات", "sector": "سلع استهلاكية", "price": 55.94, "change": 0.36, "change_pct": 0.65, "volume": 877000000, "high": 57.06, "low": 54.82},
-    {"symbol": "ACGC", "name": "الأقطان", "sector": "سلع استهلاكية", "price": 8.71, "change": -1.58, "change_pct": -15.35, "volume": 263000000, "high": 8.88, "low": 8.54},
     {"symbol": "SPIN", "name": "الإسكندرية للغزل والنسيج", "sector": "سلع استهلاكية", "price": 14.44, "change": 0.21, "change_pct": 1.48, "volume": 714000000, "high": 14.73, "low": 14.15},
     {"symbol": "MFSC", "name": "مصر للأسواق الحرة", "sector": "سلع استهلاكية", "price": 48.14, "change": 19.99, "change_pct": 71.01, "volume": 135000000, "high": 49.1, "low": 47.18},
     {"symbol": "ZEOT", "name": "المستخلصات الزيتية", "sector": "سلع استهلاكية", "price": 9.5, "change": 1.93, "change_pct": 25.5, "volume": 416000000, "high": 9.69, "low": 9.31},
+    {"symbol": "ADPC", "name": "العربية للألبان - باندا", "sector": "سلع استهلاكية", "price": 3.83, "change": -0.26, "change_pct": -6.36, "volume": 870480000, "high": 3.91, "low": 3.75},
+    {"symbol": "GOUR", "name": "جورميه إيجيبت", "sector": "سلع استهلاكية", "price": 13.34, "change": -2.2, "change_pct": -14.16, "volume": 288000000, "high": 13.61, "low": 13.07},
+    {"symbol": "SCFM", "name": "مطاحن جنوب القاهرة", "sector": "سلع استهلاكية", "price": 282.14, "change": -0.96, "change_pct": -0.34, "volume": 304000000, "high": 287.78, "low": 276.5},
+    {"symbol": "CEFM", "name": "مطاحن مصر الوسطى", "sector": "سلع استهلاكية", "price": 109.44, "change": -1.56, "change_pct": -1.41, "volume": 912000000, "high": 111.63, "low": 107.25},
+    {"symbol": "MILS", "name": "مطاحن شمال القاهرة", "sector": "سلع استهلاكية", "price": 128.71, "change": -1.39, "change_pct": -1.07, "volume": 115000000, "high": 131.28, "low": 126.14},
+    {"symbol": "EDFM", "name": "مطاحن شرق الدلتا", "sector": "سلع استهلاكية", "price": 340.28, "change": -0.23, "change_pct": -0.07, "volume": 897000000, "high": 347.09, "low": 333.47},
+    {"symbol": "AFMC", "name": "مطاحن الإسكندرية", "sector": "سلع استهلاكية", "price": 74.0, "change": -1.84, "change_pct": -2.43, "volume": 394000000, "high": 75.48, "low": 72.52},
+    {"symbol": "UEFM", "name": "مطاحن صعيد مصر", "sector": "سلع استهلاكية", "price": 495.43, "change": -0.2, "change_pct": -0.04, "volume": 254000000, "high": 505.34, "low": 485.52},
+    {"symbol": "WCDF", "name": "مطاحن غرب ووسط الدلتا", "sector": "سلع استهلاكية", "price": 552.34, "change": 0.0, "change_pct": 0.0, "volume": 278000000, "high": 563.39, "low": 541.29},
     {"symbol": "CLHO", "name": "مستشفيات كليوباترا", "sector": "صحة", "price": 14.94, "change": 0.74, "change_pct": 5.21, "volume": 723000000, "high": 15.24, "low": 14.64},
     {"symbol": "PHAR", "name": "أمون للصناعات الدوائية", "sector": "صحة", "price": 89.49, "change": -0.12, "change_pct": -0.13, "volume": 944000000, "high": 91.28, "low": 87.7},
     {"symbol": "ISPH", "name": "ابن سينا فارما", "sector": "صحة", "price": 11.96, "change": 0.25, "change_pct": 2.13, "volume": 7660000000, "high": 12.2, "low": 11.72},
@@ -270,35 +367,93 @@ stocks_data = [
     {"symbol": "CPCI", "name": "القاهرة للأدوية", "sector": "صحة", "price": 357.04, "change": 1.47, "change_pct": 0.41, "volume": 228000000, "high": 364.18, "low": 349.9},
     {"symbol": "RMDA", "name": "راميدا", "sector": "صحة", "price": 5.13, "change": 1.58, "change_pct": 44.51, "volume": 410000000, "high": 5.23, "low": 5.03},
     {"symbol": "OCPH", "name": "أكتوبر فارما", "sector": "صحة", "price": 394.0, "change": 1.77, "change_pct": 0.45, "volume": 146000000, "high": 401.88, "low": 386.12},
+    {"symbol": "BIOC", "name": "جلاكسو سميث كلاين", "sector": "صحة", "price": 76.22, "change": 2.31, "change_pct": 3.13, "volume": 373000000, "high": 77.74, "low": 74.7},
+    {"symbol": "AMES", "name": "الإسكندرية الطبي الجديد", "sector": "صحة", "price": 54.34, "change": -1.0, "change_pct": -1.81, "volume": 226130000, "high": 55.43, "low": 53.25},
+    {"symbol": "NINH", "name": "نزهة الدولي", "sector": "صحة", "price": 23.87, "change": 0.63, "change_pct": 2.71, "volume": 525000000, "high": 24.35, "low": 23.39},
     {"symbol": "HRHO", "name": "EFG هيرمس", "sector": "استثمار", "price": 29.5, "change": -1.47, "change_pct": -4.75, "volume": 2657000000, "high": 30.09, "low": 28.91},
-    {"symbol": "BTFH", "name": "بلتون القابضة", "sector": "استثمار", "price": 3.19, "change": 2.9, "change_pct": 1000.0, "volume": 696000000, "high": 3.25, "low": 3.13},
-    {"symbol": "CCAP", "name": "قلعة للاستثمارات", "sector": "استثمار", "price": 4.67, "change": -1.06, "change_pct": -18.5, "volume": 13617000000, "high": 4.76, "low": 4.58},
+    {"symbol": "BTFH", "name": "بلتون القابضة", "sector": "استثمار", "price": 3.2, "change": 2.9, "change_pct": 966.67, "volume": 696000000, "high": 3.26, "low": 3.14},
+    {"symbol": "CCAP", "name": "قلعة للاستثمارات", "sector": "استثمار", "price": 4.7, "change": -1.06, "change_pct": -18.4, "volume": 13617000000, "high": 4.79, "low": 4.61},
     {"symbol": "CICH", "name": "سي آي كابيتال", "sector": "استثمار", "price": 12.9, "change": 5.31, "change_pct": 69.96, "volume": 451000000, "high": 13.16, "low": 12.64},
     {"symbol": "RAYA", "name": "راية القابضة", "sector": "استثمار", "price": 7.1, "change": -2.47, "change_pct": -25.81, "volume": 6383000000, "high": 7.24, "low": 6.96},
-    {"symbol": "CNFN", "name": "كونتكت للتمويل", "sector": "استثمار", "price": 4.74, "change": 3.04, "change_pct": 178.82, "volume": 541000000, "high": 4.83, "low": 4.65},
-    {"symbol": "BONY", "name": "بنيان للتنمية", "sector": "استثمار", "price": 4.37, "change": -0.68, "change_pct": -13.47, "volume": 758000000, "high": 4.46, "low": 4.28},
-    {"symbol": "BINV", "name": "B للاستثمارات", "sector": "استثمار", "price": 41.19, "change": 0.39, "change_pct": 0.96, "volume": 948000000, "high": 42.01, "low": 40.37},
-    {"symbol": "AMIA", "name": "الملتقى العربي للاستثمار", "sector": "استثمار", "price": 9.25, "change": -0.75, "change_pct": -7.5, "volume": 244000000, "high": 9.44, "low": 9.06},
-    {"symbol": "ACAP", "name": "A كابيتال القابضة", "sector": "استثمار", "price": 7.61, "change": 0.13, "change_pct": 1.74, "volume": 315000000, "high": 7.76, "low": 7.46},
-    {"symbol": "AMER", "name": "أمير القابضة", "sector": "استثمار", "price": 2.41, "change": 2.99, "change_pct": -515.52, "volume": 162000000, "high": 2.46, "low": 2.36},
-    {"symbol": "ARAB", "name": "العربية للتطوير", "sector": "استثمار", "price": 0.204, "change": 0.49, "change_pct": -171.33, "volume": 142000000, "high": 0.21, "low": 0.2},
-    {"symbol": "AIHC", "name": "عربية للاستثمارات", "sector": "استثمار", "price": 0.353, "change": -1.4, "change_pct": -79.86, "volume": 788000000, "high": 0.36, "low": 0.35},
-    {"symbol": "ASPI", "name": "أسباير كابيتال", "sector": "استثمار", "price": 0.309, "change": 1.98, "change_pct": -118.49, "volume": 388000000, "high": 0.32, "low": 0.3},
+    {"symbol": "RACC", "name": "راية لخدمة العملاء", "sector": "استثمار", "price": 10.25, "change": 0.49, "change_pct": 5.02, "volume": 288000000, "high": 10.46, "low": 10.04},
+    {"symbol": "BONY", "name": "بنيان للتنمية", "sector": "استثمار", "price": 4.35, "change": -0.46, "change_pct": -9.56, "volume": 758000000, "high": 4.44, "low": 4.26},
+    {"symbol": "BINV", "name": "B للاستثمارات", "sector": "استثمار", "price": 42.0, "change": 1.65, "change_pct": 4.09, "volume": 948000000, "high": 42.84, "low": 41.16},
+    {"symbol": "AMIA", "name": "الملتقى العربي للاستثمارات", "sector": "استثمار", "price": 9.25, "change": -0.75, "change_pct": -7.5, "volume": 244000000, "high": 9.44, "low": 9.06},
+    {"symbol": "ACAP", "name": "A كابيتال القابضة", "sector": "استثمار", "price": 7.59, "change": -0.26, "change_pct": -3.31, "volume": 315000000, "high": 7.74, "low": 7.44},
+    {"symbol": "AMER", "name": "أمير القابضة", "sector": "استثمار", "price": 2.44, "change": 1.24, "change_pct": 103.33, "volume": 162000000, "high": 2.49, "low": 2.39},
+    {"symbol": "ARAB", "name": "العربية للتطوير", "sector": "استثمار", "price": 0.202, "change": -0.98, "change_pct": -82.91, "volume": 142000000, "high": 0.21, "low": 0.2},
+    {"symbol": "AIHC", "name": "عربية للاستثمارات", "sector": "استثمار", "price": 0.36, "change": 1.98, "change_pct": -122.22, "volume": 788000000, "high": 0.37, "low": 0.35},
+    {"symbol": "ASPI", "name": "أسباير كابيتال", "sector": "استثمار", "price": 0.313, "change": 1.29, "change_pct": -132.04, "volume": 388000000, "high": 0.32, "low": 0.31},
     {"symbol": "PRMH", "name": "برايم القابضة", "sector": "استثمار", "price": 2.18, "change": 0.0, "change_pct": 0.0, "volume": 253000000, "high": 2.22, "low": 2.14},
     {"symbol": "GRCA", "name": "جراند كابيتال", "sector": "استثمار", "price": 54.09, "change": -0.63, "change_pct": -1.15, "volume": 62500000, "high": 55.17, "low": 53.01},
-    {"symbol": "ATLC", "name": "التوفيق للتأجير", "sector": "استثمار", "price": 5.33, "change": 0.76, "change_pct": 16.63, "volume": 207000000, "high": 5.44, "low": 5.22},
-    {"symbol": "DEIN", "name": "دلتا للتأمين", "sector": "استثمار", "price": 11.38, "change": 0.0, "change_pct": 0.0, "volume": 299000000, "high": 11.61, "low": 11.15},
+    {"symbol": "ATLC", "name": "التوفيق للتأجير", "sector": "استثمار", "price": 5.37, "change": 0.75, "change_pct": 16.23, "volume": 207000000, "high": 5.48, "low": 5.26},
     {"symbol": "MOIN", "name": "مهندس للتأمين", "sector": "استثمار", "price": 24.57, "change": 0.49, "change_pct": 2.03, "volume": 141000000, "high": 25.06, "low": 24.08},
+    {"symbol": "NAHO", "name": "نعيم للاستثمارات", "sector": "استثمار", "price": 0.105, "change": 0.96, "change_pct": -112.28, "volume": 303000000, "high": 0.11, "low": 0.1},
     {"symbol": "ODIN", "name": "أودين للاستثمارات", "sector": "استثمار", "price": 2.01, "change": 2.55, "change_pct": -472.22, "volume": 214000000, "high": 2.05, "low": 1.97},
-    {"symbol": "CRST", "name": "كريست مارك", "sector": "استثمار", "price": 0.832, "change": 2.09, "change_pct": -166.14, "volume": 281000000, "high": 0.85, "low": 0.82},
-    {"symbol": "AALR", "name": "العربية لاستصلاح الأراضي", "sector": "استثمار", "price": 217.93, "change": -0.83, "change_pct": -0.38, "volume": 155000000, "high": 222.29, "low": 213.57},
+    {"symbol": "CRST", "name": "كريست مارك", "sector": "استثمار", "price": 0.876, "change": 5.29, "change_pct": -119.85, "volume": 281000000, "high": 0.89, "low": 0.86},
+    {"symbol": "AALR", "name": "العربية لاستصلاح الأراضي", "sector": "استثمار", "price": 224.0, "change": 2.79, "change_pct": 1.26, "volume": 155000000, "high": 228.48, "low": 219.52},
+    {"symbol": "EALR", "name": "العربية للأراضي", "sector": "استثمار", "price": 384.58, "change": 1.93, "change_pct": 0.5, "volume": 170000000, "high": 392.27, "low": 376.89},
     {"symbol": "TANM", "name": "تنمية للاستثمار العقاري", "sector": "استثمار", "price": 5.48, "change": 6.82, "change_pct": -508.96, "volume": 0, "high": 5.59, "low": 5.37},
     {"symbol": "PRDC", "name": "بايونيرز للتطوير", "sector": "استثمار", "price": 5.9, "change": 2.25, "change_pct": 61.64, "volume": 641000000, "high": 6.02, "low": 5.78},
+    {"symbol": "UNIT", "name": "المتحدة للإسكان", "sector": "استثمار", "price": 11.39, "change": 0.0, "change_pct": 0.0, "volume": 366000000, "high": 11.62, "low": 11.16},
     {"symbol": "ELSH", "name": "الشمس للإسكان", "sector": "استثمار", "price": 8.16, "change": 3.03, "change_pct": 59.06, "volume": 172000000, "high": 8.32, "low": 8.0},
     {"symbol": "EHDR", "name": "المصريين للإسكان", "sector": "استثمار", "price": 2.31, "change": 0.0, "change_pct": 0.0, "volume": 242000000, "high": 2.36, "low": 2.26},
+    {"symbol": "IDRE", "name": "الإسماعيلية للتطوير", "sector": "استثمار", "price": 40.5, "change": 0.6, "change_pct": 1.5, "volume": 2420000, "high": 41.31, "low": 39.69},
     {"symbol": "OBRI", "name": "العبور للاستثمار العقاري", "sector": "استثمار", "price": 39.5, "change": -0.13, "change_pct": -0.33, "volume": 129000000, "high": 40.29, "low": 38.71},
     {"symbol": "GIHD", "name": "الغربية الإسلامية للإسكان", "sector": "استثمار", "price": 42.54, "change": 1.46, "change_pct": 3.55, "volume": 622000000, "high": 43.39, "low": 41.69},
     {"symbol": "ELKA", "name": "القاهرة للإسكان", "sector": "استثمار", "price": 1.2, "change": 3.45, "change_pct": -153.33, "volume": 554000000, "high": 1.22, "low": 1.18},
+    {"symbol": "WKOL", "name": "وادي كوم أمبو", "sector": "استثمار", "price": 314.33, "change": -0.52, "change_pct": -0.17, "volume": 207000000, "high": 320.62, "low": 308.04},
+    {"symbol": "MENA", "name": "مينا للاستثمار السياحي", "sector": "استثمار", "price": 5.85, "change": 1.04, "change_pct": 21.62, "volume": 5220000, "high": 5.97, "low": 5.73},
+    {"symbol": "NARE", "name": "نعيم العقارية", "sector": "استثمار", "price": 9.94, "change": 5.63, "change_pct": 130.63, "volume": 242000000, "high": 10.14, "low": 9.74},
+    {"symbol": "RTVC", "name": "ريمكو للقرى السياحية", "sector": "استثمار", "price": 4.12, "change": 0.73, "change_pct": 21.53, "volume": 596000000, "high": 4.2, "low": 4.04},
+    {"symbol": "SDTI", "name": "شرم دريمز", "sector": "استثمار", "price": 44.71, "change": 0.47, "change_pct": 1.06, "volume": 334000000, "high": 45.6, "low": 43.82},
+    {"symbol": "ROTO", "name": "رواد للسياحة", "sector": "استثمار", "price": 33.13, "change": -1.9, "change_pct": -5.42, "volume": 188000000, "high": 33.79, "low": 32.47},
+    {"symbol": "PHTV", "name": "بيراميزا للفنادق", "sector": "استثمار", "price": 206.02, "change": 0.46, "change_pct": 0.22, "volume": 307000000, "high": 210.14, "low": 201.9},
+    {"symbol": "MHOT", "name": "مصر للفنادق", "sector": "استثمار", "price": 26.93, "change": -0.48, "change_pct": -1.75, "volume": 198000000, "high": 27.47, "low": 26.39},
+    {"symbol": "EGTS", "name": "مصر للمنتجعات السياحية", "sector": "استثمار", "price": 13.56, "change": 4.31, "change_pct": 46.59, "volume": 165000000, "high": 13.83, "low": 13.29},
+    {"symbol": "CAED", "name": "القاهرة للخدمات التعليمية", "sector": "استثمار", "price": 80.54, "change": -1.37, "change_pct": -1.67, "volume": 147000000, "high": 82.15, "low": 78.93},
+    {"symbol": "TALM", "name": "تعليم لخدمات الإدارة", "sector": "استثمار", "price": 16.85, "change": 3.69, "change_pct": 28.04, "volume": 223000000, "high": 17.19, "low": 16.51},
+    {"symbol": "CIRA", "name": "سيرا للتعليم", "sector": "استثمار", "price": 26.03, "change": 9.55, "change_pct": 57.95, "volume": 519000000, "high": 26.55, "low": 25.51},
+    {"symbol": "AFDI", "name": "الأهلي للتنمية", "sector": "استثمار", "price": 40.12, "change": -2.38, "change_pct": -5.6, "volume": 175000000, "high": 40.92, "low": 39.32},
+    {"symbol": "ICID", "name": "الدولية للاستثمار", "sector": "استثمار", "price": 4.57, "change": 3.16, "change_pct": 224.11, "volume": 12500000, "high": 4.66, "low": 4.48},
+    {"symbol": "RREI", "name": "العربية للاستثمار العقاري", "sector": "استثمار", "price": 3.73, "change": -1.32, "change_pct": -26.14, "volume": 180000000, "high": 3.8, "low": 3.66},
+    {"symbol": "SEIG", "name": "السعودية المصرية للاستثمار", "sector": "استثمار", "price": 183.07, "change": 0.24, "change_pct": 0.13, "volume": 60300000, "high": 186.73, "low": 179.41},
+    {"symbol": "ANFI", "name": "تايكون القابضة", "sector": "استثمار", "price": 15.44, "change": 14.2, "change_pct": 1145.16, "volume": 5420000, "high": 15.75, "low": 15.13},
+    {"symbol": "KWIN", "name": "القاهرة الوطنية للاستثمار", "sector": "استثمار", "price": 78.86, "change": 3.59, "change_pct": 4.77, "volume": 23000000, "high": 80.44, "low": 77.28},
+    {"symbol": "EASB", "name": "الثمار للسمسرة", "sector": "استثمار", "price": 5.0, "change": -0.2, "change_pct": -3.85, "volume": 52000000, "high": 5.1, "low": 4.9},
+    {"symbol": "EBSC", "name": "أصول للسمسرة", "sector": "استثمار", "price": 1.81, "change": 0.56, "change_pct": 44.8, "volume": 26800000, "high": 1.85, "low": 1.77},
+    {"symbol": "AIDC", "name": "العربية للاستثمار", "sector": "استثمار", "price": 0.59, "change": 9.06, "change_pct": -106.97, "volume": 0, "high": 0.6, "low": 0.58},
+    {"symbol": "ACAMD", "name": "العربية لإدارة الأصول", "sector": "استثمار", "price": 2.19, "change": 4.78, "change_pct": -184.56, "volume": 1380000, "high": 2.23, "low": 2.15},
+    {"symbol": "ACTF", "name": "آكت فايننشال", "sector": "استثمار", "price": 2.9, "change": 0.35, "change_pct": 13.73, "volume": 111000000, "high": 2.96, "low": 2.84},
+    {"symbol": "DAPH", "name": "المستشارون العرب", "sector": "استثمار", "price": 87.08, "change": 2.57, "change_pct": 3.04, "volume": 543000000, "high": 88.82, "low": 85.34},
+    {"symbol": "GSSC", "name": "العامة للصوامع", "sector": "استثمار", "price": 268.41, "change": -0.16, "change_pct": -0.06, "volume": 160000000, "high": 273.78, "low": 263.04},
+    {"symbol": "ELWA", "name": "الوادي للتنمية", "sector": "استثمار", "price": 1.82, "change": -1.09, "change_pct": -37.46, "volume": 726000000, "high": 1.86, "low": 1.78},
+    {"symbol": "UEGC", "name": "السعيد للمقاولات", "sector": "استثمار", "price": 1.39, "change": -0.71, "change_pct": -33.81, "volume": 219000000, "high": 1.42, "low": 1.36},
+    {"symbol": "NEDA", "name": "شمال الصعيد للتنمية", "sector": "استثمار", "price": 2.77, "change": 2.21, "change_pct": 394.64, "volume": 5900000, "high": 2.83, "low": 2.71},
+    {"symbol": "DCCC", "name": "دمياط للحاويات", "sector": "استثمار", "price": 1.818, "change": 0.0, "change_pct": 0.0, "volume": 0, "high": 1.85, "low": 1.78},
+    {"symbol": "TRTO", "name": "ترانس أوشن", "sector": "استثمار", "price": 0.034, "change": 0.0, "change_pct": 0.0, "volume": 27100000, "high": 0.03, "low": 0.03},
+    {"symbol": "GMCI", "name": "GMC القابضة", "sector": "استثمار", "price": 1.71, "change": 1.18, "change_pct": 222.64, "volume": 1080000, "high": 1.74, "low": 1.68},
+    {"symbol": "EOSB", "name": "العروبة للسمسرة", "sector": "استثمار", "price": 1.47, "change": 0.0, "change_pct": 0.0, "volume": 33100000, "high": 1.5, "low": 1.44},
+    {"symbol": "CPME", "name": "كاتاليست بارتنرز", "sector": "استثمار", "price": 22.97, "change": 0.0, "change_pct": 0.0, "volume": 0, "high": 23.43, "low": 22.51},
+    {"symbol": "COPR", "name": "كوبر للاستثمار", "sector": "استثمار", "price": 0.325, "change": 0.31, "change_pct": 2066.67, "volume": 13500000, "high": 0.33, "low": 0.32},
+    {"symbol": "SAIB", "name": "العربية الدولية للصرافة", "sector": "استثمار", "price": 2.11, "change": 0.0, "change_pct": 0.0, "volume": 686000000, "high": 2.15, "low": 2.07},
+    {"symbol": "OFH", "name": "O B القابضة", "sector": "استثمار", "price": 0.631, "change": 0.16, "change_pct": 33.97, "volume": 0, "high": 0.64, "low": 0.62},
+    {"symbol": "MAAL", "name": "مارسيلي الخليجية", "sector": "استثمار", "price": 4.54, "change": -1.94, "change_pct": -29.94, "volume": 0, "high": 4.63, "low": 4.45},
+    {"symbol": "GTEX", "name": "جي تكس", "sector": "استثمار", "price": 0.033, "change": 0.0, "change_pct": 0.0, "volume": 0, "high": 0.03, "low": 0.03},
+    {"symbol": "LUTS", "name": "لوتس كابيتال", "sector": "استثمار", "price": 0.553, "change": -0.18, "change_pct": -24.56, "volume": 0, "high": 0.56, "low": 0.54},
+    {"symbol": "MMAT", "name": "مرسى علم للسياحة", "sector": "استثمار", "price": 3.37, "change": 0.0, "change_pct": 0.0, "volume": 0, "high": 3.44, "low": 3.3},
+    {"symbol": "EPPK", "name": "الأهرام للطباعة", "sector": "استثمار", "price": 12.47, "change": -0.24, "change_pct": -1.89, "volume": 193000000, "high": 12.72, "low": 12.22},
+    {"symbol": "GDWA", "name": "جدوى للتنمية", "sector": "استثمار", "price": 0.809, "change": 0.12, "change_pct": 17.42, "volume": 1577000000, "high": 0.83, "low": 0.79},
+    {"symbol": "KRDI", "name": "الخير ريفر", "sector": "استثمار", "price": 0.353, "change": 0.0, "change_pct": 0.0, "volume": 416000000, "high": 0.36, "low": 0.35},
+    {"symbol": "GGRN", "name": "جو جرين", "sector": "استثمار", "price": 1.93, "change": -2.53, "change_pct": -56.73, "volume": 0, "high": 1.97, "low": 1.89},
+    {"symbol": "GGCC", "name": "الجيزة العامة للمقاولات", "sector": "استثمار", "price": 0.411, "change": 0.49, "change_pct": -620.25, "volume": 113000000, "high": 0.42, "low": 0.4},
+    {"symbol": "MOED", "name": "التعليم العصري", "sector": "استثمار", "price": 0.82, "change": -1.21, "change_pct": -59.61, "volume": 50400000, "high": 0.84, "low": 0.8},
+    {"symbol": "DGTZ", "name": "ديجيتال بيز", "sector": "استثمار", "price": 2.7, "change": -2.17, "change_pct": -44.56, "volume": 0, "high": 2.75, "low": 2.65},
+    {"symbol": "DCRC", "name": "دلتا للإنشاء", "sector": "استثمار", "price": 51.0, "change": 0.0, "change_pct": 0.0, "volume": 9900, "high": 52.02, "low": 49.98},
+    {"symbol": "BIGP", "name": "بي اي جي للتجارة", "sector": "استثمار", "price": 0.183, "change": 0.55, "change_pct": -149.86, "volume": 1810000, "high": 0.19, "low": 0.18},
+    {"symbol": "CFGH", "name": "العرفة القابضة", "sector": "استثمار", "price": 0.106, "change": -0.93, "change_pct": -89.77, "volume": 86390000, "high": 0.11, "low": 0.1},
+    {"symbol": "AMPI", "name": "المؤشر", "sector": "استثمار", "price": 2.6, "change": -1.14, "change_pct": -30.48, "volume": 280670000, "high": 2.65, "low": 2.55},
+    {"symbol": "APSW", "name": "يونيراب", "sector": "استثمار", "price": 9.0, "change": 2.04, "change_pct": 29.31, "volume": 162620000, "high": 9.18, "low": 8.82},
     {"symbol": "AMOC", "name": "Alexandria Mineral Oils", "sector": "طاقة", "price": 8.59, "change": 0.35, "change_pct": 4.25, "volume": 4011000000, "high": 8.76, "low": 8.42},
     {"symbol": "EGAS", "name": "مصر للغاز", "sector": "طاقة", "price": 49.12, "change": -0.41, "change_pct": -0.83, "volume": 900000000, "high": 50.1, "low": 48.14},
     {"symbol": "MOIL", "name": "ماري ديف للخدمات البترولية", "sector": "طاقة", "price": 0.458, "change": 2.46, "change_pct": -122.88, "volume": 1154000000, "high": 0.47, "low": 0.45},
@@ -306,8 +461,9 @@ stocks_data = [
     {"symbol": "MTIE", "name": "MM Group", "sector": "تعليم", "price": 9.42, "change": 1.29, "change_pct": 15.87, "volume": 2116000000, "high": 9.61, "low": 9.23},
     {"symbol": "MPRC", "name": "مدينة الإنتاج الإعلامي", "sector": "إعلام", "price": 31.75, "change": 0.16, "change_pct": 0.51, "volume": 127000000, "high": 32.38, "low": 31.11},
     {"symbol": "ETRS", "name": "النقل والخدمات التجارية", "sector": "نقل", "price": 7.78, "change": 0.26, "change_pct": 3.46, "volume": 1230000000, "high": 7.94, "low": 7.62},
-    {"symbol": "SCFM", "name": "مطاحن جنوب القاهرة", "sector": "غذاء", "price": 282.14, "change": -0.96, "change_pct": -0.34, "volume": 304000000, "high": 287.78, "low": 276.5},
-    {"symbol": "CEFM", "name": "مطاحن مصر الوسطى", "sector": "غذاء", "price": 109.44, "change": -1.56, "change_pct": -1.41, "volume": 912000000, "high": 111.63, "low": 107.25}
+    {"symbol": "EEII", "name": "العربية للصناعات الهندسية", "sector": "تكنولوجيا", "price": 2.35, "change": 0.43, "change_pct": 22.4, "volume": 3110000000, "high": 2.4, "low": 2.3},
+    {"symbol": "EGREF", "name": "المصريين للاستثمار العقاري", "sector": "استثمار", "price": 12.95, "change": -2.04, "change_pct": -13.61, "volume": 10090000, "high": 13.21, "low": 12.69},
+    {"symbol": "EGWA", "name": "الصوامع العامة", "sector": "نقل", "price": 5.0, "change": 0.0, "change_pct": 0.0, "volume": 0, "high": 5.1, "low": 4.9}
 ]
 
 tickers_egypt = ['COMI', 'QNBE', 'ADIB', 'HDBK', 'CANA', 'CIEB', 'FAIT', 'SAUD', 'UBEE', 'EXPA', 'EGBE', 'EFIH', 'FWRY', 'SCTS', 'VALU', 'TMGH', 'EMFD', 'PHDC', 'ORHD', 'OCDI', 'HELI', 'MASR', 'GPPL', 'SWDY', 'EGAL', 'ABUK', 'MFPC', 'ARCC', 'MCQE', 'MBSC', 'SCEM', 'SVCE', 'EGCH', 'FERC', 'MICH', 'ATQA', 'ISMQ', 'IRON', 'ASCM', 'ALCN', 'ALUM', 'ELEC', 'ENGC', 'ETEL', 'EGSA', 'OIH', 'EAST', 'EFID', 'JUFO', 'DOMT', 'SUGR', 'POUL', 'OLFI', 'GBCO', 'ORWE', 'DSCW', 'AJWA', 'COSG', 'MOSC', 'IFAP', 'KABO', 'GTWL', 'ACGC', 'SPIN', 'MFSC', 'ZEOT', 'CLHO', 'PHAR', 'ISPH', 'MIPH', 'NIPH', 'ADCI', 'AXPH', 'CPCI', 'RMDA', 'OCPH', 'HRHO', 'BTFH', 'CCAP', 'CICH', 'RAYA', 'CNFN', 'BONY', 'BINV', 'AMIA', 'ACAP', 'AMER', 'ARAB', 'AIHC', 'ASPI', 'PRMH', 'GRCA', 'ATLC', 'DEIN', 'MOIN', 'ODIN', 'CRST', 'AALR', 'TANM', 'PRDC', 'ELSH', 'EHDR', 'OBRI', 'GIHD', 'ELKA', 'AMOC', 'EGAS', 'MOIL', 'NDRL', 'MTIE', 'MPRC', 'ETRS', 'SCFM', 'CEFM']
@@ -619,7 +775,7 @@ with st.sidebar:
     <div style="text-align: center; margin-bottom: 20px;">
         <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 16px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 28px;">⚡</div>
         <h2 style="margin-top: 12px; font-size: 20px;">EGX Super Analyst</h2>
-        <p style="color: #94a3b8; font-size: 12px;">Pro v15.0 - AI Powered</p>
+        <p style="color: #94a3b8; font-size: 12px;">Pro v19.0 - AI Powered</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -627,26 +783,9 @@ with st.sidebar:
     market = st.radio("", ["🇪🇬 السوق المصري", "🌍 الأسواق العالمية"], label_visibility="collapsed")
     is_egypt = "مصري" in market
 
-    tickers = ["COMI", "FWRY", "TMGH", "ABUK", "SWDY", "EKHO", "ETEL", "ORAS", "AMOC", "PHDC"] if is_egypt else               ["AAPL", "NVDA", "TSLA", "MSFT", "GOOGL", "AMZN", "META", "AMD", "INTC", "NFLX"]
+    tickers = tickers_egypt if is_egypt else               ["AAPL", "NVDA", "TSLA", "MSFT", "GOOGL", "AMZN", "META", "AMD", "INTC", "NFLX"]
 
     st.divider()
-
-    # Portfolio Summary in Sidebar
-    st.header("💼 ملخص المحفظة")
-    port_value = sum(p["quantity"] * p["current_price"] for p in st.session_state.portfolio)
-    port_cost = sum(p["quantity"] * p["buy_price"] for p in st.session_state.portfolio)
-    port_pl = port_value - port_cost
-    port_pl_pct = (port_pl / port_cost) * 100 if port_cost > 0 else 0
-
-    st.markdown(f"""
-    <div class="metric-card">
-        <p style="color: #94a3b8; font-size: 12px; margin-bottom: 4px;">القيمة الحالية</p>
-        <p class="gold-text" style="font-size: 20px;">ج.م {port_value:,.0f}</p>
-        <p style="color: {'#10b981' if port_pl >= 0 else '#ef4444'}; font-size: 14px; margin-top: 4px;">
-            {'+' if port_pl >= 0 else ''}{port_pl:,.0f} ({port_pl_pct:+.2f}%)
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
 
     st.divider()
     st.header("📊 إحصائيات المهام")
@@ -1153,15 +1292,14 @@ def get_risk_alerts(alerts):
     return risk_alerts
 
 # ==================== MAIN TABS ====================
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📈 رادار السوق", 
-    "🔮 التحليل الذكي والتوقعات", 
     "📊 Backtesting متقدم", 
-    "💼 محفظتي", 
     "✅ المهام الذكية", 
     "📰 الأخبار والتحليل",
     "💰 التوزيعات والكوبونات",
-    "🤖 التحليل الآلي والتنبيهات"
+    "🤖 التحليل الآلي والتنبيهات",
+    "🔮 التحليل المفصل"
 ])
 
 # ==================== TAB 1: MARKET RADAR ====================
@@ -1211,48 +1349,49 @@ with tab1:
     )
     st.plotly_chart(fig_treemap, use_container_width=True)
 
-    # Stock Table
-    st.subheader("📋 أسعار الأسهم الرئيسية")
+    # Stock Buttons Grid - Clickable Cards
+    st.subheader("🎯 اضغط على أي سهم للتحليل الفوري")
 
-    search_col, sector_col = st.columns([2, 1])
-    with search_col:
-        search = st.text_input("🔍 البحث في الأسهم", placeholder="ابحث بالرمز أو الاسم...")
-    with sector_col:
-        sector_filter = st.selectbox("القطاع", ["الكل"] + list(df_main['sector'].unique()))
+    # Filter controls
+    filter_col1, filter_col2 = st.columns([2, 1])
+    with filter_col1:
+        search_term = st.text_input("🔍 البحث", placeholder="ابحث بالرمز أو اسم الشركة...", key="market_search")
+    with filter_col2:
+        sector_filter = st.selectbox("القطاع", ["الكل"] + sorted(list(set(s["sector"] for s in stocks_data))), key="market_sector")
 
-    filtered_df = df_main.copy()
-    if search:
-        filtered_df = filtered_df[filtered_df['name'].str.contains(search, case=False) | filtered_df['symbol'].str.contains(search, case=False)]
+    # Filter stocks
+    display_stocks = stocks_data.copy()
+    if search_term:
+        display_stocks = [s for s in display_stocks if search_term.lower() in s["symbol"].lower() or search_term.lower() in s["name"].lower()]
     if sector_filter != "الكل":
-        filtered_df = filtered_df[filtered_df['sector'] == sector_filter]
+        display_stocks = [s for s in display_stocks if s["sector"] == sector_filter]
 
-    def make_styler(df):
-        def color_change(val):
-            if isinstance(val, (int, float)):
-                color = '#10b981' if val >= 0 else '#ef4444'
-                return f'color: {color}; font-weight: bold;'
-            return ''
+    # Render stock buttons in grid (6 per row)
+    stocks_per_row = 6
+    for row_idx in range(0, len(display_stocks), stocks_per_row):
+        row_stocks = display_stocks[row_idx:row_idx + stocks_per_row]
+        btn_cols = st.columns(stocks_per_row)
 
-        styled = df.style
-        for col in ['التغير', 'التغير %']:
-            if col in df.columns:
-                styled = styled.map(color_change, subset=[col])
-        return styled
+        for i, stock in enumerate(row_stocks):
+            with btn_cols[i]:
+                change_class = "up" if stock['change_pct'] >= 0 else "down"
+                change_sign = "+" if stock['change_pct'] >= 0 else ""
 
-    display_df = filtered_df[['symbol', 'name', 'sector', 'price', 'change', 'change_pct', 'volume']].copy()
-    display_df.columns = ['الرمز', 'الشركة', 'القطاع', 'السعر', 'التغير', 'التغير %', 'الحجم']
-    display_df['الحجم'] = (display_df['الحجم'] / 1000000).round(2).astype(str) + 'M'
+                # Use HTML card with on_click via st.button underneath
+                st.markdown(f"""
+                <div class="stock-btn-card">
+                    <div class="stock-btn-glow"></div>
+                    <div class="stock-btn-symbol">{stock['symbol']}</div>
+                    <div class="stock-btn-price">{stock['price']:.2f}</div>
+                    <div class="stock-btn-change {change_class}">{change_sign}{stock['change_pct']:.2f}%</div>
+                    <div class="stock-btn-sector">{stock['sector']}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-    st.dataframe(
-        make_styler(display_df),
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "السعر": st.column_config.NumberColumn(format="%.2f ج.م"),
-            "التغير": st.column_config.NumberColumn(format="%.2f"),
-            "التغير %": st.column_config.NumberColumn(format="%.2f%%"),
-        }
-    )
+                # Hidden button for actual click handling
+                if st.button(f"تحليل {stock['symbol']}", key=f"btn_{stock['symbol']}", use_container_width=True, type="secondary"):
+                    select_stock(stock['symbol'])
+                    st.rerun()
 
     # Top Movers
     st.subheader("🚀 الأكثر نشاطاً")
@@ -1271,9 +1410,10 @@ with tab1:
             """, unsafe_allow_html=True)
 
 
-# ==================== TAB 2: AI ANALYSIS & PREDICTIONS ====================
-with tab2:
-    st.title("🔮 التحليل الذكي والتوقعات المستقبلية")
+
+# ==================== TAB 2: AI ANALYSIS & PREDICTIONS (ENHANCED) ====================
+with tab7:
+    st.title("🔮 التحليل الذكي والتوقعات المستقبلية - شامل")
 
     # Warning
     st.markdown("""
@@ -1287,12 +1427,24 @@ with tab2:
     </div>
     """, unsafe_allow_html=True)
 
-    # Stock Selection
+    # Stock Selection - ALL STOCKS
     analysis_stock = st.selectbox("📌 اختر السهم للتحليل الذكي", tickers, key="ai_stock")
     analysis_period = st.selectbox("📅 الفترة التحليلية", ["1mo", "3mo", "6mo", "1y", "2y"], index=2, key="ai_period")
 
-    if st.button("🔮 تشغيل التحليل الذكي", type="primary", use_container_width=True):
-        with st.spinner("⏳ جاري تحليل البيانات وإنشاء التوقعات..."):
+    # Risk Settings
+    st.subheader("⚙️ إعدادات المخاطرة")
+    risk_col1, risk_col2, risk_col3 = st.columns(3)
+    with risk_col1:
+        max_risk_pct = st.slider("الحد الأقصى للمخاطرة %", 1, 10, 5, key="ai_risk")
+    with risk_col2:
+        prediction_days = st.slider("عدد أيام التوقع", 3, 30, 10, key="ai_days")
+    with risk_col3:
+        confidence_level = st.selectbox("مستوى الثقة", ["منخفض (70%)", "متوسط (85%)", "عالي (95%)"], index=1, key="ai_conf")
+
+    conf_multiplier = {"منخفض (70%)": 1.0, "متوسط (85%)": 1.5, "عالي (95%)": 2.0}[confidence_level]
+
+    if st.button("🔮 تشغيل التحليل الذكي الشامل", type="primary", use_container_width=True):
+        with st.spinner("⏳ جاري تحليل البيانات وإنشاء التوقعات المستقبلية..."):
             try:
                 suffix = ".CA" if is_egypt else ""
                 df = yf.Ticker(f"{analysis_stock}{suffix}").history(period=analysis_period)
@@ -1307,11 +1459,27 @@ with tab2:
                     signals = generate_trading_signals(df)
                     overall_signal, score, signal_text = calculate_overall_signal(signals)
 
-                    # Predictions
-                    predictions = predict_future_prices(df, days=5)
+                    # Predictions with time estimates
+                    predictions = predict_future_prices(df, days=prediction_days)
 
                     # Support/Resistance
                     sr_levels = calculate_support_resistance(df)
+
+                    # Current price and volatility
+                    current_price = df['Close'].iloc[-1]
+                    volatility = df['Close'].pct_change().std()
+                    atr = df['ATR'].iloc[-1] if not pd.isna(df['ATR'].iloc[-1]) else current_price * 0.02
+
+                    # Risk levels
+                    stop_loss = current_price - (atr * 2)
+                    take_profit_1 = current_price + (atr * 2)
+                    take_profit_2 = current_price + (atr * 3.5)
+
+                    # Calculate time estimates based on volatility
+                    avg_daily_move = abs(df['Close'].pct_change()).mean() * 100
+                    days_to_tp1 = int((take_profit_1 - current_price) / (current_price * avg_daily_move / 100)) if avg_daily_move > 0 else 0
+                    days_to_tp2 = int((take_profit_2 - current_price) / (current_price * avg_daily_move / 100)) if avg_daily_move > 0 else 0
+                    days_to_sl = int((current_price - stop_loss) / (current_price * avg_daily_move / 100)) if avg_daily_move > 0 else 0
 
                     # ==================== SIGNAL DISPLAY ====================
                     st.subheader("🎯 إشارة التداول اللحظية")
@@ -1359,6 +1527,51 @@ with tab2:
                                 <p style="color: #94a3b8; font-size: 14px;">درجة الثقة: {abs(score):.1f}/5</p>
                             </div>
                             """, unsafe_allow_html=True)
+
+                    # ==================== RISK MANAGEMENT LEVELS ====================
+                    st.subheader("🛡️ مستويات إدارة المخاطرة والحدود المسموحة")
+
+                    risk_cols = st.columns(4)
+
+                    with risk_cols[0]:
+                        st.markdown(f"""
+                        <div class="indicator-box" style="border: 2px solid #ef4444;">
+                            <p style="color: #94a3b8; font-size: 11px; margin-bottom: 4px;">🛑 Stop Loss</p>
+                            <p style="font-size: 22px; font-weight: bold; color: #ef4444; margin: 4px 0;">{stop_loss:.2f}</p>
+                            <p style="font-size: 10px; color: #ef4444;">خسارة {((current_price-stop_loss)/current_price*100):.1f}%</p>
+                            <p style="font-size: 10px; color: #94a3b8;">⏱️ ~{days_to_sl} يوم</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    with risk_cols[1]:
+                        st.markdown(f"""
+                        <div class="indicator-box" style="border: 2px solid #6366f1;">
+                            <p style="color: #94a3b8; font-size: 11px; margin-bottom: 4px;">📍 السعر الحالي</p>
+                            <p style="font-size: 22px; font-weight: bold; color: #6366f1; margin: 4px 0;">{current_price:.2f}</p>
+                            <p style="font-size: 10px; color: #6366f1;">التقلب اليومي: {avg_daily_move:.2f}%</p>
+                            <p style="font-size: 10px; color: #94a3b8;">ATR: {atr:.2f}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    with risk_cols[2]:
+                        st.markdown(f"""
+                        <div class="indicator-box" style="border: 2px solid #10b981;">
+                            <p style="color: #94a3b8; font-size: 11px; margin-bottom: 4px;">🎯 الهدف 1</p>
+                            <p style="font-size: 22px; font-weight: bold; color: #10b981; margin: 4px 0;">{take_profit_1:.2f}</p>
+                            <p style="font-size: 10px; color: #10b981;">ربح {((take_profit_1-current_price)/current_price*100):.1f}%</p>
+                            <p style="font-size: 10px; color: #94a3b8;">⏱️ ~{days_to_tp1} يوم</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    with risk_cols[3]:
+                        st.markdown(f"""
+                        <div class="indicator-box" style="border: 2px solid #fbbf24;">
+                            <p style="color: #94a3b8; font-size: 11px; margin-bottom: 4px;">🎯🎯 الهدف 2</p>
+                            <p style="font-size: 22px; font-weight: bold; color: #fbbf24; margin: 4px 0;">{take_profit_2:.2f}</p>
+                            <p style="font-size: 10px; color: #fbbf24;">ربح {((take_profit_2-current_price)/current_price*100):.1f}%</p>
+                            <p style="font-size: 10px; color: #94a3b8;">⏱️ ~{days_to_tp2} يوم</p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
                     # ==================== TECHNICAL INDICATORS ====================
                     st.subheader("📊 المؤشرات الفنية الحية")
@@ -1453,75 +1666,123 @@ with tab2:
                     styled_signals = signals_df.style.map(signal_color, subset=["الإشارة"])
                     st.dataframe(styled_signals, use_container_width=True, hide_index=True)
 
-                    # ==================== PRICE PREDICTIONS ====================
-                    st.subheader("🔮 توقعات الأسعار للأيام القادمة")
+                    # ==================== PRICE PREDICTIONS WITH CHART ====================
+                    st.subheader("🔮 توقعات الأسعار المستقبلية مع الحدود والمدد الزمنية")
 
                     if 'combined' in predictions:
                         pred_df = pd.DataFrame(predictions['combined'])
-                        pred_df['اليوم'] = pred_df['day'].apply(lambda x: f"يوم {x}")
-                        pred_df['التوقع'] = pred_df['predicted']
-                        pred_df['الحد الأدنى'] = pred_df['lower_bound']
-                        pred_df['الحد الأقصى'] = pred_df['upper_bound']
-                        pred_df['الثقة'] = pred_df['confidence'].apply(lambda x: f"{x:.0f}%")
 
-                        display_pred = pred_df[['اليوم', 'التوقع', 'الحد الأدنى', 'الحد الأقصى', 'الثقة']].copy()
-
-                        # Color code predictions
-                        current_price = df['Close'].iloc[-1]
-                        def pred_color(val):
-                            if isinstance(val, (int, float)):
-                                return 'color: #10b981;' if val > current_price else 'color: #ef4444;' if val < current_price else 'color: #fbbf24;'
-                            return ''
-
-                        styled_pred = display_pred.style.map(pred_color, subset=['التوقع'])
-                        st.dataframe(styled_pred, use_container_width=True, hide_index=True)
-
-                        # Prediction Chart
+                        # Create enhanced prediction chart with bounds
                         fig_pred = go.Figure()
 
-                        # Historical prices
+                        # Historical prices (last 60 days)
+                        hist_days = min(60, len(df))
                         fig_pred.add_trace(go.Scatter(
-                            x=df.index[-30:],
-                            y=df['Close'].tail(30),
+                            x=df.index[-hist_days:],
+                            y=df['Close'].tail(hist_days),
                             mode='lines',
                             name='السعر الفعلي',
-                            line=dict(color='#6366f1', width=2)
+                            line=dict(color='#6366f1', width=2),
+                            fill='tozeroy',
+                            fillcolor='rgba(99, 102, 241, 0.1)'
                         ))
 
                         # Prediction line
                         last_date = df.index[-1]
-                        future_dates = pd.date_range(start=last_date + timedelta(days=1), periods=5, freq='B')
+                        future_dates = pd.date_range(start=last_date + timedelta(days=1), periods=prediction_days, freq='B')
 
+                        predicted_prices = [p['predicted'] for p in predictions['combined']]
+                        upper_bounds = [p['upper_bound'] for p in predictions['combined']]
+                        lower_bounds = [p['lower_bound'] for p in predictions['combined']]
+
+                        # Main prediction line
                         fig_pred.add_trace(go.Scatter(
                             x=future_dates,
-                            y=[p['predicted'] for p in predictions['combined']],
+                            y=predicted_prices,
                             mode='lines+markers',
-                            name='التوقع',
-                            line=dict(color='#fbbf24', width=2, dash='dash'),
-                            marker=dict(size=8)
+                            name='التوقع المتوسط',
+                            line=dict(color='#fbbf24', width=3),
+                            marker=dict(size=8, color='#fbbf24')
                         ))
 
-                        # Confidence interval
+                        # Upper bound (confidence interval)
                         fig_pred.add_trace(go.Scatter(
                             x=list(future_dates) + list(future_dates)[::-1],
-                            y=[p['upper_bound'] for p in predictions['combined']] + [p['lower_bound'] for p in predictions['combined']][::-1],
-                            fill='toself',
-                            fillcolor='rgba(251, 191, 36, 0.1)',
-                            line=dict(color='rgba(251, 191, 36, 0)'),
-                            name='نطاق الثقة'
+                            y=upper_bounds + list(reversed(predicted_prices)),
+                            fill='tonexty',
+                            fillcolor='rgba(251, 191, 36, 0.15)',
+                            line=dict(color='rgba(251, 191, 36, 0.3)', width=1),
+                            name='الحد الأعلى',
+                            showlegend=True
                         ))
 
+                        # Lower bound (confidence interval)
+                        fig_pred.add_trace(go.Scatter(
+                            x=list(future_dates) + list(future_dates)[::-1],
+                            y=list(reversed(predicted_prices)) + lower_bounds,
+                            fill='tonexty',
+                            fillcolor='rgba(251, 191, 36, 0.15)',
+                            line=dict(color='rgba(251, 191, 36, 0.3)', width=1),
+                            name='الحد الأدنى',
+                            showlegend=True
+                        ))
+
+                        # Add stop loss and take profit lines
+                        fig_pred.add_hline(y=stop_loss, line_dash="dash", line_color="#ef4444", 
+                                          annotation_text="🛑 Stop Loss", annotation_position="right")
+                        fig_pred.add_hline(y=take_profit_1, line_dash="dash", line_color="#10b981", 
+                                          annotation_text="🎯 الهدف 1", annotation_position="right")
+                        fig_pred.add_hline(y=take_profit_2, line_dash="dash", line_color="#fbbf24", 
+                                          annotation_text="🎯🎯 الهدف 2", annotation_position="right")
+
                         fig_pred.update_layout(
+                            title="🔮 توقعات الأسعار مع الحدود والأهداف",
                             paper_bgcolor='rgba(0,0,0,0)',
                             plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(family="Cairo", color="white"),
                             xaxis=dict(gridcolor='rgba(255,255,255,0.1)', title="التاريخ"),
-                            yaxis=dict(gridcolor='rgba(255,255,255,0.1)', title="السعر"),
+                            yaxis=dict(gridcolor='rgba(255,255,255,0.1)', title="السعر (ج.م)"),
                             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                            height=400
+                            height=500,
+                            hovermode='x unified'
                         )
 
                         st.plotly_chart(fig_pred, use_container_width=True)
+
+                        # Predictions table with time estimates
+                        st.subheader("📅 جدول التوقعات مع المدد الزمنية المتوقعة")
+
+                        pred_table = []
+                        for i, p in enumerate(predictions['combined']):
+                            day_date = future_dates[i]
+                            days_from_now = (day_date - last_date).days
+
+                            # Calculate expected days to reach based on volatility
+                            price_diff = abs(p['predicted'] - current_price)
+                            expected_days = int(price_diff / (current_price * avg_daily_move / 100)) if avg_daily_move > 0 else 0
+
+                            pred_table.append({
+                                "اليوم": f"يوم {p['day']}",
+                                "التاريخ": day_date.strftime('%Y-%m-%d'),
+                                "المدة من الآن": f"{days_from_now} يوم",
+                                "التوقع المتوسط": f"{p['predicted']:.2f}",
+                                "الحد الأدنى": f"{p['lower_bound']:.2f}",
+                                "الحد الأعلى": f"{p['upper_bound']:.2f}",
+                                "نطاق الثقة": f"{p['confidence']:.0f}%",
+                                "التغير المتوقع": f"{((p['predicted']-current_price)/current_price*100):+.2f}%"
+                            })
+
+                        pred_table_df = pd.DataFrame(pred_table)
+
+                        def change_color(val):
+                            if "+" in str(val):
+                                return 'color: #10b981; font-weight: bold;'
+                            elif "-" in str(val):
+                                return 'color: #ef4444; font-weight: bold;'
+                            return ''
+
+                        styled_pred_table = pred_table_df.style.map(change_color, subset=["التغير المتوقع"])
+                        st.dataframe(styled_pred_table, use_container_width=True, hide_index=True)
 
                     # ==================== SUPPORT & RESISTANCE ====================
                     st.subheader("🎯 مستويات الدعم والمقاومة الديناميكية")
@@ -1576,7 +1837,7 @@ with tab2:
                                 """, unsafe_allow_html=True)
 
                     # ==================== CANDLESTICK CHART WITH INDICATORS ====================
-                    st.subheader("📈 الرسم البياني التفاعلي مع المؤشرات")
+                    st.subheader("📈 الرسم البياني التفاعلي مع المؤشرات الفنية")
 
                     fig = go.Figure()
 
@@ -1628,6 +1889,12 @@ with tab2:
                         showlegend=False
                     ))
 
+                    # Add stop loss and take profit
+                    fig.add_hline(y=stop_loss, line_dash="dash", line_color="#ef4444", 
+                                 annotation_text="Stop Loss", annotation_position="right")
+                    fig.add_hline(y=take_profit_1, line_dash="dash", line_color="#10b981", 
+                                 annotation_text="Take Profit 1", annotation_position="right")
+
                     fig.update_layout(
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
@@ -1671,13 +1938,106 @@ with tab2:
 
                     st.plotly_chart(fig_vol, use_container_width=True)
 
+                    # ==================== MACD CHART ====================
+                    st.subheader("📊 مؤشر MACD")
+
+                    fig_macd = go.Figure()
+
+                    fig_macd.add_trace(go.Scatter(
+                        x=df.index,
+                        y=df['MACD'],
+                        mode='lines',
+                        name='MACD',
+                        line=dict(color='#6366f1', width=2)
+                    ))
+
+                    fig_macd.add_trace(go.Scatter(
+                        x=df.index,
+                        y=df['MACD_Signal'],
+                        mode='lines',
+                        name='Signal',
+                        line=dict(color='#fbbf24', width=2)
+                    ))
+
+                    colors_macd = ['#10b981' if h >= 0 else '#ef4444' for h in df['MACD_Histogram']]
+                    fig_macd.add_trace(go.Bar(
+                        x=df.index,
+                        y=df['MACD_Histogram'],
+                        marker_color=colors_macd,
+                        name='Histogram'
+                    ))
+
+                    fig_macd.update_layout(
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(family="Cairo", color="white"),
+                        xaxis=dict(gridcolor='rgba(255,255,255,0.1)'),
+                        yaxis=dict(gridcolor='rgba(255,255,255,0.1)', title="MACD"),
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                        height=300
+                    )
+
+                    st.plotly_chart(fig_macd, use_container_width=True)
+
+                    # ==================== RSI CHART ====================
+                    st.subheader("📊 مؤشر القوة النسبية RSI")
+
+                    fig_rsi = go.Figure()
+
+                    fig_rsi.add_trace(go.Scatter(
+                        x=df.index,
+                        y=df['RSI'],
+                        mode='lines',
+                        name='RSI',
+                        line=dict(color='#6366f1', width=2),
+                        fill='tozeroy',
+                        fillcolor='rgba(99, 102, 241, 0.1)'
+                    ))
+
+                    fig_rsi.add_hline(y=70, line_dash="dash", line_color="#ef4444", 
+                                     annotation_text="ذروة شراء (70)", annotation_position="right")
+                    fig_rsi.add_hline(y=30, line_dash="dash", line_color="#10b981", 
+                                     annotation_text="ذروة بيع (30)", annotation_position="right")
+                    fig_rsi.add_hline(y=50, line_dash="dash", line_color="#94a3b8", 
+                                     annotation_text="محايد (50)", annotation_position="right")
+
+                    fig_rsi.update_layout(
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(family="Cairo", color="white"),
+                        xaxis=dict(gridcolor='rgba(255,255,255,0.1)'),
+                        yaxis=dict(gridcolor='rgba(255,255,255,0.1)', title="RSI", range=[0, 100]),
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                        height=300
+                    )
+
+                    st.plotly_chart(fig_rsi, use_container_width=True)
+
+                    # ==================== SUMMARY REPORT ====================
+                    st.subheader("📋 تقرير التحليل الشامل")
+
+                    summary_data = {
+                        "المؤشر": ["السعر الحالي", "إشارة التداول", "درجة الفرصة", "RSI", "MACD", 
+                                  "Bollinger Position", "حجم التداول", "Stop Loss", "الهدف 1", "الهدف 2",
+                                  "التقلب اليومي", "المدة المتوقعة للهدف 1", "المدة المتوقعة للهدف 2"],
+                        "القيمة": [f"{current_price:.2f} ج.م", signal_text, f"{abs(score):.1f}/5", 
+                                  f"{latest['RSI']:.1f}", f"{latest['MACD']:.2f}", 
+                                  f"{latest['BB_Position']:.1%}", f"{latest['Volume_Ratio']:.1f}x",
+                                  f"{stop_loss:.2f} ({((current_price-stop_loss)/current_price*100):.1f}%)",
+                                  f"{take_profit_1:.2f} ({((take_profit_1-current_price)/current_price*100):.1f}%)",
+                                  f"{take_profit_2:.2f} ({((take_profit_2-current_price)/current_price*100):.1f}%)",
+                                  f"{avg_daily_move:.2f}%", f"~{days_to_tp1} يوم", f"~{days_to_tp2} يوم"]
+                    }
+
+                    summary_df = pd.DataFrame(summary_data)
+                    st.dataframe(summary_df, use_container_width=True, hide_index=True)
+
             except Exception as e:
                 st.error(f"❌ خطأ في التحليل: {str(e)}")
                 st.info("💡 تأكد من وجود اتصال بالإنترنت وصحة رمز السهم")
 
-
 # ==================== TAB 3: BACKTESTING ====================
-with tab3:
+with tab2:
     st.title("📊 محرك Backtesting متقدم")
 
     bt_col1, bt_col2 = st.columns([1, 3])
@@ -1799,100 +2159,7 @@ with tab3:
             st.info("👈 اختر السهم والاستراتيجية واضغط 'تشغيل الاختبار'")
 
 # ==================== TAB 4: PORTFOLIO ====================
-with tab4:
-    st.title("💼 محفظتي الاستثمارية")
-
-    # Portfolio Metrics
-    port_value = sum(p["quantity"] * p["current_price"] for p in st.session_state.portfolio)
-    port_cost = sum(p["quantity"] * p["buy_price"] for p in st.session_state.portfolio)
-    port_pl = port_value - port_cost
-    port_pl_pct = (port_pl / port_cost) * 100 if port_cost > 0 else 0
-
-    p1, p2, p3, p4 = st.columns(4)
-    p1.metric("💰 القيمة الحالية", f"ج.م {port_value:,.0f}")
-    p2.metric("📈 إجمالي الربح/الخسارة", f"ج.م {port_pl:+,.0f}", f"{port_pl_pct:+.2f}%")
-    p3.metric("📊 عدد الأسهم", len(st.session_state.portfolio))
-    p4.metric("💵 رأس المال المستثمر", f"ج.م {port_cost:,.0f}")
-
-    # Portfolio Chart & Table
-    pt_col1, pt_col2 = st.columns([2, 3])
-
-    with pt_col1:
-        st.subheader("📊 توزيع المحفظة")
-        fig_pie = px.pie(
-            names=[p["symbol"] for p in st.session_state.portfolio],
-            values=[p["quantity"] * p["current_price"] for p in st.session_state.portfolio],
-            color_discrete_sequence=['#6366f1', '#8b5cf6', '#06b6d4', '#fbbf24', '#10b981'],
-            hole=0.6
-        )
-        fig_pie.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Cairo", color="white"),
-            showlegend=True,
-            legend=dict(orientation="h", yanchor="bottom", y=-0.1)
-        )
-        fig_pie.update_traces(textinfo='label+percent', textfont_size=12)
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-    with pt_col2:
-        st.subheader("📋 تفاصيل الأسهم")
-        portfolio_df = pd.DataFrame(st.session_state.portfolio)
-        portfolio_df['القيمة'] = portfolio_df['quantity'] * portfolio_df['current_price']
-        portfolio_df['التكلفة'] = portfolio_df['quantity'] * portfolio_df['buy_price']
-        portfolio_df['الربح'] = portfolio_df['القيمة'] - portfolio_df['التكلفة']
-        portfolio_df['العائد %'] = (portfolio_df['الربح'] / portfolio_df['التكلفة']) * 100
-
-        display_df = portfolio_df[['symbol', 'name', 'quantity', 'buy_price', 'current_price', 'القيمة', 'الربح', 'العائد %']].copy()
-        display_df.columns = ['الرمز', 'السهم', 'الكمية', 'سعر الشراء', 'السعر الحالي', 'القيمة', 'الربح/خسارة', 'العائد %']
-
-        def highlight_profit(val):
-            if isinstance(val, (int, float)):
-                color = '#10b981' if val >= 0 else '#ef4444'
-                return f'color: {color}; font-weight: bold;'
-            return ''
-
-        styled_port = display_df.style
-        for col in ['الربح/خسارة', 'العائد %']:
-            styled_port = styled_port.map(highlight_profit, subset=[col])
-
-        st.dataframe(
-            styled_port,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "سعر الشراء": st.column_config.NumberColumn(format="%.2f ج.م"),
-                "السعر الحالي": st.column_config.NumberColumn(format="%.2f ج.م"),
-                "القيمة": st.column_config.NumberColumn(format="%,.0f ج.م"),
-                "الربح/خسارة": st.column_config.NumberColumn(format="%,.0f ج.م"),
-                "العائد %": st.column_config.NumberColumn(format="%.2f%%"),
-            }
-        )
-
-    # Add Stock to Portfolio
-    st.subheader("➕ إضافة سهم للمحفظة")
-    ap_col1, ap_col2, ap_col3, ap_col4 = st.columns([2, 1, 1, 1])
-    with ap_col1:
-        new_stock = st.selectbox("السهم", [s["symbol"] + " - " + s["name"] for s in stocks_data])
-    with ap_col2:
-        new_qty = st.number_input("الكمية", min_value=1, value=100)
-    with ap_col3:
-        new_price = st.number_input("سعر الشراء", min_value=0.01, value=10.0, step=0.5)
-    with ap_col4:
-        st.write("")
-        st.write("")
-        if st.button("✅ إضافة", use_container_width=True):
-            symbol = new_stock.split(" - ")[0]
-            name = new_stock.split(" - ")[1]
-            st.session_state.portfolio.append({
-                "symbol": symbol, "name": name, "quantity": new_qty,
-                "buy_price": new_price, "current_price": new_price
-            })
-            st.success(f"تمت إضافة {symbol}")
-            st.rerun()
-
-# ==================== TAB 5: SMART TASKS ====================
-with tab5:
+with tab3:
     st.title("✅ المهام الذكية")
 
     # Add Task
@@ -1989,7 +2256,7 @@ with tab5:
                 st.rerun()
 
 # ==================== TAB 6: NEWS & ANALYSIS ====================
-with tab6:
+with tab4:
     st.title("📰 أخبار السوق والتحليلات")
 
     # News Feed
@@ -2057,7 +2324,7 @@ with tab6:
 
 
 # ==================== TAB 7: DIVIDENDS & COUPONS ====================
-with tab7:
+with tab5:
     st.title("💰 توزيعات الشركات والكوبونات")
 
     # Warning
@@ -2303,7 +2570,7 @@ with tab7:
 
 
 # ==================== TAB 8: AUTOMATED ANALYSIS & ALERTS ====================
-with tab8:
+with tab6:
     st.title("🤖 التحليل الآلي والتنبيهات اللحظية")
 
     # Warning
@@ -2499,18 +2766,9 @@ with tab8:
                                 # Quick Action
                                 action_cols = st.columns([3, 1])
                                 with action_cols[1]:
-                                    if st.button(f"➕ إضافة للمحفظة", key=f"add_alert_{alert['symbol']}", use_container_width=True):
-                                        # Add to portfolio with stop loss
-                                        st.session_state.portfolio.append({
-                                            "symbol": alert['symbol'],
-                                            "name": alert['name'],
-                                            "quantity": 100,
-                                            "buy_price": alert['price'],
-                                            "current_price": alert['price'],
-                                            "stop_loss": alert['stop_loss'],
-                                            "take_profit": alert['take_profit_1']
-                                        })
-                                        st.success(f"✅ تمت إضافة {alert['symbol']} للمحفظة مع Stop Loss عند {alert['stop_loss']}")
+                                    if st.button(f"🔮 تحليل مفصل", key=f"analyze_alert_{alert['symbol']}", use_container_width=True):
+                                        select_stock(alert['symbol'])
+                                        st.rerun()
 
                                 # Divider
                                 st.divider()
@@ -2628,9 +2886,9 @@ with tab8:
 best_stock = max(stocks_data, key=lambda x: x["change_pct"])
 st.markdown(f"""
 <div style="text-align: center; padding: 30px; margin-top: 40px; background: linear-gradient(90deg, #0a0a0a, #1a1a2e); color: #00ffaa; border-top: 3px solid #6366f1; border-radius: 16px;">
-    <p style="font-size: 18px; margin-bottom: 8px;">⚡ EGX Super Analyst Pro v15.0</p>
+    <p style="font-size: 18px; margin-bottom: 8px;">⚡ EGX Super Analyst Pro v19.0</p>
     <p style="color: #94a3b8; font-size: 14px;">
-        نظام تحليلي ذكي متكامل | Backtesting متقدم | توقعات AI | إدارة المهام والمحافظ
+        نظام تحليلي ذكي متكامل | Backtesting متقدم | توقعات AI | إدارة المهام
     </p>
     <p style="color: #fbbf24; font-size: 14px; margin-top: 8px;">
         🏆 أقوى سهم اليوم: <b>{best_stock['symbol']}</b> ({best_stock['name']}) — +{best_stock['change_pct']:.2f}%
