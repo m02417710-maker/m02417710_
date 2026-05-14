@@ -2973,3 +2973,4 @@ with footer_cols[2]:
         <p style="color: #475569; font-size: 12px; margin: 0;">© 2026 | جميع البيانات للتوضيح | التوقعات للأغراض التعليمية فقط</p>
         <p style="color: #475569; font-size: 11px; margin: 6px 0;">صناديق استثمار | توزيعات | تحليل فني | إدارة مخاطر | توصيات ذكية</p>
     </div>
+    """, unsafe_allow_html=True)
