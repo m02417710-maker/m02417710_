@@ -1180,6 +1180,319 @@ fundamental_engine = FundamentalDataEngine()
 funds_engine = FundsEngine()
 dividends_engine = DividendsEngine()
 
+
+# ==================== END OF SESSION RECOMMENDATION SYSTEM ====================
+class EndOfSessionEngine:
+    """
+    نظام التوصيات الذكي لنهاية الجلسة
+    يقوم بتحليل جميع الأسهم وإصدار توصيات شراء/بيع/انتظار
+    مع تقييم شامل للسوق وإشعارات فورية
+    """
+
+    RECOMMENDATION_HISTORY = []
+
+    @staticmethod
+    def is_market_closed() -> bool:
+        """Check if Egyptian market is closed (after 2:30 PM Cairo time)"""
+        now = datetime.now()
+        # EGX closes at 2:30 PM (14:30)
+        return now.hour >= 14 and now.minute >= 30
+
+    @staticmethod
+    def get_market_session_status() -> dict:
+        """Get current market session status"""
+        now = datetime.now()
+        hour = now.hour
+
+        if hour < 10:
+            return {"status": "مغلق", "phase": "قبل الافتتاح", "color": "#64748b", "icon": "🌙"}
+        elif hour < 10 or (hour == 10 and now.minute < 30):
+            return {"status": "افتتاح", "phase": "جلسة الافتتاح", "color": "#fbbf24", "icon": "🌅"}
+        elif hour < 14 or (hour == 14 and now.minute < 30):
+            return {"status": "مفتوح", "phase": "الجلسة العادية", "color": "#10b981", "icon": "☀️"}
+        elif hour == 14 and now.minute >= 30 and now.minute < 45:
+            return {"status": "ختام", "phase": "جلسة الختام", "color": "#f59e0b", "icon": "🌇"}
+        else:
+            return {"status": "مغلق", "phase": "بعد الإغلاق", "color": "#6366f1", "icon": "🌙"}
+
+    @staticmethod
+    def generate_session_summary(stocks_data: List[dict]) -> dict:
+        """Generate comprehensive end-of-session market summary"""
+        try:
+            if not stocks_data:
+                return {}
+
+            # Market breadth
+            advancers = [s for s in stocks_data if s['change_pct'] > 0]
+            decliners = [s for s in stocks_data if s['change_pct'] < 0]
+            unchanged = [s for s in stocks_data if s['change_pct'] == 0]
+
+            # Volume analysis
+            total_volume = sum(s['volume'] for s in stocks_data)
+            avg_volume = total_volume / len(stocks_data) if stocks_data else 0
+            high_volume = [s for s in stocks_data if s['volume'] > avg_volume * 2]
+
+            # Best/Worst performers
+            top_gainer = max(stocks_data, key=lambda x: x['change_pct'])
+            top_loser = min(stocks_data, key=lambda x: x['change_pct'])
+
+            # Sector performance
+            sectors = {}
+            for s in stocks_data:
+                sector = s['sector']
+                if sector not in sectors:
+                    sectors[sector] = []
+                sectors[sector].append(s['change_pct'])
+            sector_perf = {k: round(sum(v)/len(v), 2) for k, v in sectors.items()}
+            best_sector = max(sector_perf.items(), key=lambda x: x[1]) if sector_perf else ("N/A", 0)
+            worst_sector = min(sector_perf.items(), key=lambda x: x[1]) if sector_perf else ("N/A", 0)
+
+            # Market sentiment
+            advancer_pct = len(advancers) / len(stocks_data) * 100 if stocks_data else 0
+            if advancer_pct >= 60:
+                sentiment = "إيجابي قوي"; sentiment_color = "#10b981"; sentiment_icon = "🟢"
+            elif advancer_pct >= 50:
+                sentiment = "إيجابي"; sentiment_color = "#34d399"; sentiment_icon = "🟢"
+            elif advancer_pct >= 40:
+                sentiment = "محايد"; sentiment_color = "#fbbf24"; sentiment_icon = "🟡"
+            elif advancer_pct >= 30:
+                sentiment = "سلبي"; sentiment_color = "#f87171"; sentiment_icon = "🔴"
+            else:
+                sentiment = "سلبي قوي"; sentiment_color = "#ef4444"; sentiment_icon = "🔴"
+
+            return {
+                "advancers": len(advancers), "decliners": len(decliners), "unchanged": len(unchanged),
+                "advancer_pct": round(advancer_pct, 1), "total_volume": total_volume,
+                "high_volume_count": len(high_volume), "top_gainer": top_gainer,
+                "top_loser": top_loser, "sector_perf": sector_perf,
+                "best_sector": best_sector, "worst_sector": worst_sector,
+                "sentiment": sentiment, "sentiment_color": sentiment_color, "sentiment_icon": sentiment_icon,
+                "timestamp": datetime.now().strftime("%H:%M:%S")
+            }
+        except Exception:
+            return {}
+
+    @staticmethod
+    def generate_end_of_session_recommendations(stocks_data: List[dict], alerts: List[dict] = None) -> List[dict]:
+        """Generate end-of-session buy/sell/hold recommendations"""
+        try:
+            recommendations = []
+
+            # Get market summary first
+            market_summary = EndOfSessionEngine.generate_session_summary(stocks_data)
+
+            for stock in stocks_data:
+                try:
+                    symbol = stock['symbol']
+                    df = data_engine.get_stock_history(symbol, "3mo")
+                    if df is None or len(df) < 30:
+                        continue
+
+                    df = ta_engine.calculate_all(df)
+                    if df is None:
+                        continue
+
+                    latest = df.iloc[-1]
+                    signals = ta_engine.generate_signals(df)
+                    overall_signal, score, signal_text, trend, reasons = ta_engine.calculate_overall(signals)
+
+                    # End-of-session specific analysis
+                    daily_change = stock['change_pct']
+                    daily_volume_ratio = stock['volume'] / (stock['market_cap'] / (stock['price'] * 100)) if stock['price'] > 0 else 1
+
+                    # Calculate proximity to support/resistance
+                    sr_levels = ai_engine.calculate_support_resistance(df)
+                    current_price = stock['price']
+                    supports = sr_levels.get('supports', [])
+                    resistances = sr_levels.get('resistances', [])
+
+                    nearest_support = max([s for s in supports if s < current_price], default=current_price * 0.95)
+                    nearest_resistance = min([r for r in resistances if r > current_price], default=current_price * 1.05)
+
+                    support_distance = (current_price - nearest_support) / current_price * 100
+                    resistance_distance = (nearest_resistance - current_price) / current_price * 100
+
+                    # End-of-session scoring (enhanced from intraday)
+                    eod_score = 50
+
+                    # Factor 1: Technical signal strength
+                    if overall_signal == "STRONG_BUY": eod_score += 20
+                    elif overall_signal == "BUY": eod_score += 15
+                    elif overall_signal == "STRONG_SELL": eod_score -= 20
+                    elif overall_signal == "SELL": eod_score -= 15
+
+                    # Factor 2: Daily performance
+                    if daily_change > 5: eod_score -= 10  # Overbought after big move
+                    elif daily_change > 3: eod_score -= 5
+                    elif daily_change < -5: eod_score += 10  # Oversold after big drop
+                    elif daily_change < -3: eod_score += 5
+                    elif 0 < daily_change < 2: eod_score += 5  # Healthy gradual move
+
+                    # Factor 3: Volume confirmation
+                    if daily_volume_ratio > 2: 
+                        if daily_change > 0: eod_score += 8
+                        else: eod_score -= 8
+                    elif daily_volume_ratio > 1.5:
+                        if daily_change > 0: eod_score += 5
+                        else: eod_score -= 5
+
+                    # Factor 4: Support/Resistance proximity
+                    if support_distance < 2: eod_score += 10  # Near support = good entry
+                    elif resistance_distance < 2: eod_score -= 10  # Near resistance = consider selling
+
+                    # Factor 5: Market sentiment alignment
+                    market_sentiment = market_summary.get('sentiment', 'محايد')
+                    if market_sentiment in ['إيجابي قوي', 'إيجابي'] and overall_signal in ['BUY', 'STRONG_BUY']:
+                        eod_score += 5
+                    elif market_sentiment in ['سلبي قوي', 'سلبي'] and overall_signal in ['SELL', 'STRONG_SELL']:
+                        eod_score += 5
+
+                    # Factor 6: Candlestick pattern (simplified)
+                    open_price = stock['open']
+                    close_price = stock['price']
+                    high_price = stock['high']
+                    low_price = stock['low']
+
+                    body = abs(close_price - open_price)
+                    upper_shadow = high_price - max(open_price, close_price)
+                    lower_shadow = min(open_price, close_price) - low_price
+
+                    # Bullish patterns
+                    if close_price > open_price and lower_shadow > body * 2:  # Hammer
+                        eod_score += 8
+                    if close_price > open_price and body > (high_price - low_price) * 0.6:  # Strong bullish candle
+                        eod_score += 5
+
+                    # Bearish patterns
+                    if close_price < open_price and upper_shadow > body * 2:  # Shooting star
+                        eod_score -= 8
+                    if close_price < open_price and body > (high_price - low_price) * 0.6:  # Strong bearish candle
+                        eod_score -= 5
+
+                    eod_score = max(0, min(100, eod_score))
+
+                    # Determine final recommendation
+                    if eod_score >= 80:
+                        rec_action = "شراء قوي"; rec_icon = "🟢"; rec_color = "#10b981"; rec_type = "STRONG_BUY"
+                        urgency = "فوري"; hold_period = "1-3 أيام"
+                    elif eod_score >= 65:
+                        rec_action = "شراء"; rec_icon = "🟢"; rec_color = "#34d399"; rec_type = "BUY"
+                        urgency = "قريب"; hold_period = "2-5 أيام"
+                    elif eod_score >= 50:
+                        rec_action = "شراء محتمل"; rec_icon = "🟡"; rec_color = "#fbbf24"; rec_type = "WEAK_BUY"
+                        urgency = "مراقبة"; hold_period = "3-7 أيام"
+                    elif eod_score <= 20:
+                        rec_action = "بيع قوي"; rec_icon = "🔴"; rec_color = "#ef4444"; rec_type = "STRONG_SELL"
+                        urgency = "فوري"; hold_period = "تصفية"
+                    elif eod_score <= 35:
+                        rec_action = "بيع"; rec_icon = "🔴"; rec_color = "#f87171"; rec_type = "SELL"
+                        urgency = "قريب"; hold_period = "تصفية"
+                    elif eod_score <= 45:
+                        rec_action = "بيع محتمل"; rec_icon = "🟠"; rec_color = "#f59e0b"; rec_type = "WEAK_SELL"
+                        urgency = "مراقبة"; hold_period = "تصفية تدريجية"
+                    else:
+                        rec_action = "انتظار"; rec_icon = "⚪"; rec_color = "#94a3b8"; rec_type = "HOLD"
+                        urgency = "-"; hold_period = "-"
+
+                    # Calculate targets
+                    atr = latest.get('ATR') if pd.notna(latest.get('ATR')) else current_price * 0.02
+                    if rec_type in ['STRONG_BUY', 'BUY', 'WEAK_BUY']:
+                        entry = current_price
+                        stop = current_price - (atr * 2)
+                        target1 = current_price + (atr * 2)
+                        target2 = current_price + (atr * 3.5)
+                    elif rec_type in ['STRONG_SELL', 'SELL', 'WEAK_SELL']:
+                        entry = current_price
+                        stop = current_price + (atr * 2)
+                        target1 = current_price - (atr * 2)
+                        target2 = current_price - (atr * 3.5)
+                    else:
+                        entry = current_price
+                        stop = current_price * 0.95
+                        target1 = current_price * 1.05
+                        target2 = current_price * 1.10
+
+                    recommendations.append({
+                        "symbol": symbol, "name": stock['name'], "sector": stock['sector'],
+                        "price": current_price, "change_pct": daily_change,
+                        "eod_score": round(eod_score, 1), "rec_action": rec_action,
+                        "rec_icon": rec_icon, "rec_color": rec_color, "rec_type": rec_type,
+                        "urgency": urgency, "hold_period": hold_period,
+                        "entry": round(entry, 2), "stop_loss": round(stop, 2),
+                        "target1": round(target1, 2), "target2": round(target2, 2),
+                        "support": round(nearest_support, 2), "resistance": round(nearest_resistance, 2),
+                        "volume_ratio": round(daily_volume_ratio, 1),
+                        "technical_signal": signal_text, "score": score,
+                        "rsi": round(latest.get('RSI'), 1) if pd.notna(latest.get('RSI')) else 50,
+                        "adx": round(latest.get('ADX'), 1) if pd.notna(latest.get('ADX')) else 0,
+                        "reasons": reasons[:3], "timestamp": datetime.now().strftime("%H:%M:%S")
+                    })
+                except Exception:
+                    continue
+
+            # Sort by score (highest first for buys, lowest first for sells)
+            recommendations.sort(key=lambda x: (
+                0 if x['rec_type'] in ['STRONG_BUY', 'BUY'] else
+                1 if x['rec_type'] == 'WEAK_BUY' else
+                2 if x['rec_type'] == 'HOLD' else
+                3 if x['rec_type'] == 'WEAK_SELL' else 4,
+                -x['eod_score'] if x['rec_type'] in ['STRONG_BUY', 'BUY', 'WEAK_BUY'] else x['eod_score']
+            ))
+
+            # Store in history
+            EndOfSessionEngine.RECOMMENDATION_HISTORY.append({
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "time": datetime.now().strftime("%H:%M:%S"),
+                "recommendations": recommendations,
+                "market_summary": market_summary
+            })
+
+            return recommendations
+        except Exception as e:
+            st.error(f"خطأ في توليد التوصيات: {str(e)}")
+            return []
+
+    @staticmethod
+    def get_recommendation_stats(recommendations: List[dict]) -> dict:
+        """Get statistics about recommendations"""
+        try:
+            if not recommendations:
+                return {}
+
+            buy_recs = [r for r in recommendations if r['rec_type'] in ['STRONG_BUY', 'BUY']]
+            sell_recs = [r for r in recommendations if r['rec_type'] in ['STRONG_SELL', 'SELL']]
+            hold_recs = [r for r in recommendations if r['rec_type'] == 'HOLD']
+            weak_buy = [r for r in recommendations if r['rec_type'] == 'WEAK_BUY']
+            weak_sell = [r for r in recommendations if r['rec_type'] == 'WEAK_SELL']
+
+            avg_buy_score = sum(r['eod_score'] for r in buy_recs) / len(buy_recs) if buy_recs else 0
+            avg_sell_score = sum(r['eod_score'] for r in sell_recs) / len(sell_recs) if sell_recs else 0
+
+            sectors_buy = {}
+            sectors_sell = {}
+            for r in buy_recs:
+                s = r['sector']
+                sectors_buy[s] = sectors_buy.get(s, 0) + 1
+            for r in sell_recs:
+                s = r['sector']
+                sectors_sell[s] = sectors_sell.get(s, 0) + 1
+
+            return {
+                "total": len(recommendations), "strong_buy": len([r for r in buy_recs if r['rec_type'] == 'STRONG_BUY']),
+                "buy": len([r for r in buy_recs if r['rec_type'] == 'BUY']), "weak_buy": len(weak_buy),
+                "hold": len(hold_recs), "weak_sell": len(weak_sell),
+                "sell": len([r for r in sell_recs if r['rec_type'] == 'SELL']),
+                "strong_sell": len([r for r in sell_recs if r['rec_type'] == 'STRONG_SELL']),
+                "avg_buy_score": round(avg_buy_score, 1), "avg_sell_score": round(avg_sell_score, 1),
+                "top_buy_sector": max(sectors_buy.items(), key=lambda x: x[1])[0] if sectors_buy else "N/A",
+                "top_sell_sector": max(sectors_sell.items(), key=lambda x: x[1])[0] if sectors_sell else "N/A"
+            }
+        except Exception:
+            return {}
+
+# Initialize end of session engine
+eos_engine = EndOfSessionEngine()
+
 # ==================== CALLBACKS ====================
 def select_stock_callback(symbol):
     st.session_state.selected_stock = symbol
@@ -1304,6 +1617,7 @@ with st.sidebar:
         ("fundamental", "📊", "التحليل المالي"),
         ("funds", "💰", "صناديق الاستثمار"),
         ("dividends", "🎁", "التوزيعات النقدية"),
+        ("eod_recommendations", "🎯", "توصيات نهاية الجلسة"),
         ("ai_scan", "🤖", "الماسح الآلي"),
         ("backtest", "📉", "Backtesting"),
         ("tasks", "✅", "المهام الذكية"),
@@ -2384,6 +2698,221 @@ elif st.session_state.active_section == 'tasks':
             st.checkbox("تم", value=task["completed"], key=f"check_{task['id']}", on_change=toggle_task, args=(task['id'],), label_visibility="collapsed")
         with act_col2:
             st.button("🗑️", key=f"del_{task['id']}", on_click=delete_task, args=(task['id'],), help="حذف")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ==================== SECTION: END OF SESSION RECOMMENDATIONS ====================
+elif st.session_state.active_section == 'eod_recommendations':
+    st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🎯 توصيات نهاية الجلسة - End of Session Signals</span></div>', unsafe_allow_html=True)
+
+    # Market session status
+    session_status = eos_engine.get_market_session_status()
+    st.markdown(f"""
+    <div style="padding: 16px; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05)); border-radius: 12px; border: 1px solid rgba(99,102,241,0.2); margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="margin: 0; font-size: 20px; font-weight: 700;">{session_status['icon']} حالة السوق: {session_status['status']}</h2>
+                <p style="color: {session_status['color']}; margin: 4px 0; font-size: 14px; font-weight: 600;">{session_status['phase']}</p>
+            </div>
+            <div style="text-align: center; padding: 12px 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                <p style="margin: 0; color: #64748b; font-size: 11px;">الوقت الحالي</p>
+                <p style="margin: 4px 0 0 0; font-size: 24px; font-weight: 700; color: #f1f5f9;">{datetime.now().strftime("%H:%M")}</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Warning if market still open
+    if not eos_engine.is_market_closed():
+        st.warning("⚠️ السوق ما زال مفتوحاً. التوصيات تُحسب بناءً على البيانات الحالية وقد تتغير عند الإغلاق.")
+    else:
+        st.success("✅ السوق مغلق. التوصيات نهائية للجلسة الحالية.")
+
+    # Generate recommendations button
+    col_gen1, col_gen2 = st.columns([3, 1])
+    with col_gen1:
+        st.markdown("<p style='color: #94a3b8; font-size: 13px;'>يحلل النظام جميع الأسهم ويولد توصيات شراء/بيع/انتظار بناءً على:</p>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+            <span class="badge badge-blue">📊 المؤشرات الفنية</span>
+            <span class="badge badge-green">📈 أداء الجلسة</span>
+            <span class="badge badge-yellow">📊 حجم التداول</span>
+            <span class="badge badge-purple">🎯 الدعم والمقاومة</span>
+            <span class="badge badge-blue">🕯️ نماذج الشموع</span>
+            <span class="badge badge-green">🌍 مزاج السوق</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_gen2:
+        if st.button("🎯 توليد التوصيات", type="primary", use_container_width=True):
+            with st.spinner("جاري تحليل جميع الأسهم وإنشاء التوصيات..."):
+                prices = data_engine.get_live_prices()
+                st.session_state.eod_recommendations = eos_engine.generate_end_of_session_recommendations(prices)
+                st.session_state.eod_timestamp = datetime.now()
+                st.toast("✅ تم إنشاء التوصيات بنجاح!")
+
+    # Display recommendations if available
+    if st.session_state.get('eod_recommendations') is not None:
+        recs = st.session_state.eod_recommendations
+        stats = eos_engine.get_recommendation_stats(recs)
+
+        # Summary dashboard
+        st.subheader("📊 ملخص توصيات الجلسة")
+        sum_cols = st.columns(6)
+        summary_items = [
+            ("🟢 شراء قوي", stats.get('strong_buy', 0), "#10b981"),
+            ("🟢 شراء", stats.get('buy', 0), "#34d399"),
+            ("🟡 شراء ضعيف", stats.get('weak_buy', 0), "#fbbf24"),
+            ("⚪ انتظار", stats.get('hold', 0), "#94a3b8"),
+            ("🔴 بيع", stats.get('sell', 0), "#f87171"),
+            ("🔴 بيع قوي", stats.get('strong_sell', 0), "#ef4444"),
+        ]
+        for i, (label, value, color) in enumerate(summary_items):
+            with sum_cols[i]:
+                st.markdown(f"""
+                <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {color}30;">
+                    <p style="color: #64748b; font-size: 10px; margin: 0;">{label}</p>
+                    <p style="font-size: 22px; font-weight: 700; color: {color}; margin: 4px 0;">{value}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Top sectors
+        if stats.get('top_buy_sector') != "N/A" or stats.get('top_sell_sector') != "N/A":
+            sec_cols = st.columns(2)
+            with sec_cols[0]:
+                st.markdown(f"""
+                <div style="padding: 12px; background: rgba(16,185,129,0.05); border-radius: 8px; border: 1px solid rgba(16,185,129,0.2);">
+                    <p style="color: #64748b; font-size: 11px; margin: 0;">🏆 أفضل قطاع للشراء</p>
+                    <p style="color: #10b981; font-size: 16px; font-weight: 700; margin: 4px 0;">{stats.get('top_buy_sector', 'N/A')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            with sec_cols[1]:
+                st.markdown(f"""
+                <div style="padding: 12px; background: rgba(239,68,68,0.05); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2);">
+                    <p style="color: #64748b; font-size: 11px; margin: 0;">⚠️ قطاع يحتاج بيع</p>
+                    <p style="color: #ef4444; font-size: 16px; font-weight: 700; margin: 4px 0;">{stats.get('top_sell_sector', 'N/A')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Top Buy Recommendations
+        buy_recs = [r for r in recs if r['rec_type'] in ['STRONG_BUY', 'BUY']]
+        if buy_recs:
+            st.subheader("🟢 توصيات الشراء القوية")
+            for i, rec in enumerate(buy_recs[:10]):
+                with st.expander(f"{rec['rec_icon']} {rec['name']} ({rec['symbol']}) - درجة: {rec['eod_score']} | {rec['rec_action']}", expanded=i < 3):
+                    rec_cols = st.columns([1, 2, 1])
+                    with rec_cols[0]:
+                        st.markdown(f"""
+                        <div style="text-align: center; padding: 12px; background: {rec['rec_color']}15; border: 1px solid {rec['rec_color']}40; border-radius: 10px;">
+                            <p style="margin: 0; color: {rec['rec_color']}; font-size: 32px; font-weight: 800;">{rec['eod_score']}</p>
+                            <p style="margin: 4px 0 0 0; color: {rec['rec_color']}; font-size: 11px;">درجة التوصية</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with rec_cols[1]:
+                        st.markdown(f"""
+                        <div>
+                            <p style="margin: 0; font-weight: 600; font-size: 16px;">{rec['name']} | {rec['sector']}</p>
+                            <p style="color: #64748b; font-size: 13px; margin: 4px 0;">
+                                السعر: <b style="color: #f1f5f9;">{rec['price']:.2f}</b> | 
+                                تغيير اليوم: <b style="color: {'#10b981' if rec['change_pct'] >= 0 else '#ef4444'};">{rec['change_pct']:+.2f}%</b> |
+                                RSI: <b>{rec['rsi']}</b>
+                            </p>
+                            <p style="color: #10b981; font-size: 12px; margin: 4px 0;">{' | '.join(rec.get('reasons', []))}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with rec_cols[2]:
+                        st.markdown(f"""
+                        <div style="text-align: center; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                            <p style="color: #64748b; font-size: 10px; margin: 0;">الإلحاح</p>
+                            <p style="color: {rec['rec_color']}; font-size: 13px; font-weight: 600; margin: 2px 0;">{rec['urgency']}</p>
+                            <p style="color: #64748b; font-size: 10px; margin: 4px 0 0 0;">مدة الاحتفاظ</p>
+                            <p style="color: #818cf8; font-size: 12px; font-weight: 600; margin: 2px 0;">{rec['hold_period']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    # Trading levels
+                    level_cols = st.columns(5)
+                    levels = [
+                        ("🎯 دخول", rec['entry'], "#6366f1"),
+                        ("🛑 وقف الخسارة", rec['stop_loss'], "#ef4444"),
+                        ("🎯 الهدف 1", rec['target1'], "#10b981"),
+                        ("🎯🎯 الهدف 2", rec['target2'], "#fbbf24"),
+                        ("📊 الدعم", rec['support'], "#94a3b8"),
+                    ]
+                    for j, (label, value, color) in enumerate(levels):
+                        with level_cols[j]:
+                            st.markdown(f"""
+                            <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {color}30;">
+                                <p style="color: #64748b; font-size: 10px; margin: 0;">{label}</p>
+                                <p style="font-size: 16px; font-weight: 700; color: {color}; margin: 4px 0;">{value:.2f}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                    # Action buttons
+                    btn_cols = st.columns([1, 1])
+                    with btn_cols[0]:
+                        st.button(f"🔮 تحليل فني تفصيلي", key=f"eod_tech_{rec['symbol']}", on_click=select_stock_callback, args=(rec['symbol'],), use_container_width=True)
+                    with btn_cols[1]:
+                        st.button(f"📊 التحليل المالي", key=f"eod_fund_{rec['symbol']}", on_click=edit_company_callback, args=(rec['symbol'],), use_container_width=True)
+
+        # Sell Recommendations
+        sell_recs = [r for r in recs if r['rec_type'] in ['STRONG_SELL', 'SELL']]
+        if sell_recs:
+            st.subheader("🔴 توصيات البيع")
+            for rec in sell_recs[:8]:
+                with st.expander(f"{rec['rec_icon']} {rec['name']} ({rec['symbol']}) - درجة: {rec['eod_score']} | {rec['rec_action']}"):
+                    st.markdown(f"""
+                    <div style="padding: 12px; background: rgba(239,68,68,0.05); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <p style="margin: 0; font-weight: 600; color: #f1f5f9;">{rec['name']} | {rec['sector']}</p>
+                                <p style="color: #64748b; font-size: 13px; margin: 4px 0;">
+                                    السعر: <b>{rec['price']:.2f}</b> | تغيير: <b>{rec['change_pct']:+.2f}%</b> | RSI: <b>{rec['rsi']}</b>
+                                </p>
+                            </div>
+                            <div style="text-align: center; padding: 8px 16px; background: {rec['rec_color']}15; border-radius: 8px;">
+                                <p style="margin: 0; color: {rec['rec_color']}; font-size: 20px; font-weight: 700;">{rec['eod_score']}</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px; margin-top: 8px;">
+                            <span style="color: #94a3b8; font-size: 12px;">🛑 SL: {rec['stop_loss']:.2f}</span>
+                            <span style="color: #94a3b8; font-size: 12px;">📊 مقاومة: {rec['resistance']:.2f}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        # Watch list (HOLD + WEAK signals)
+        watch_recs = [r for r in recs if r['rec_type'] in ['HOLD', 'WEAK_BUY', 'WEAK_SELL']]
+        if watch_recs:
+            st.subheader("👁️ قائمة المراقبة")
+            watch_df = pd.DataFrame([{
+                "الرمز": r['symbol'], "الشركة": r['name'], "القطاع": r['sector'],
+                "السعر": r['price'], "التغيير %": f"{r['change_pct']:+.2f}%",
+                "الدرجة": r['eod_score'], "التوصية": r['rec_action'],
+                "الدعم": r['support'], "المقاومة": r['resistance']
+            } for r in watch_recs[:15]])
+            st.dataframe(watch_df, use_container_width=True, hide_index=True)
+
+        # Export recommendations
+        if recs:
+            export_df = pd.DataFrame([{
+                "الرمز": r['symbol'], "الشركة": r['name'], "القطاع": r['sector'],
+                "السعر": r['price'], "التغيير %": r['change_pct'],
+                "التوصية": r['rec_action'], "الدرجة": r['eod_score'],
+                "الدخول": r['entry'], "وقف الخسارة": r['stop_loss'],
+                "الهدف 1": r['target1'], "الهدف 2": r['target2'],
+                "الإلحاح": r['urgency'], "مدة الاحتفاظ": r['hold_period']
+            } for r in recs])
+
+            st.download_button(
+                label="📥 تصدير التوصيات CSV",
+                data=export_df.to_csv(index=False).encode('utf-8-sig'),
+                file_name=f"eod_recommendations_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv", use_container_width=True
+            )
+    else:
+        st.info("👈 اضغط 'توليد التوصيات' لتحليل جميع الأسهم وإنشاء التوصيات لنهاية الجلسة")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
