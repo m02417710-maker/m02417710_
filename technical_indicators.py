@@ -39,13 +39,97 @@ st.markdown("""
     .badge-purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
     .live-pulse { display: inline-block; width: 6px; height: 6px; background: #10b981; border-radius: 50%; animation: pulse-live 2s infinite; margin-left: 6px; }
     @keyframes pulse-live { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
-    .stock-card { background: linear-gradient(145deg, rgba(25,25,35,0.9), rgba(20,20,30,0.95)); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; }
-    .stock-card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.15); }
-    .stock-card-symbol { font-size: 14px; font-weight: 700; color: #fbbf24; margin-bottom: 4px; }
-    .stock-card-price { font-size: 20px; font-weight: 700; color: #f1f5f9; margin: 4px 0; }
-    .stock-card-change { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 12px; display: inline-block; }
-    .stock-card-change.up { background: rgba(16,185,129,0.15); color: #10b981; }
-    .stock-card-change.down { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+    /* ===== RECTANGULAR STOCK CARDS WITH SIGNALS ===== */
+    .stock-card-rect {
+        background: linear-gradient(145deg, rgba(25,25,35,0.9), rgba(20,20,30,0.95));
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        position: relative;
+        overflow: hidden;
+    }
+    .stock-card-rect:hover {
+        border-color: rgba(99,102,241,0.3);
+        transform: translateX(4px);
+        box-shadow: 0 4px 16px rgba(99,102,241,0.1);
+    }
+    .stock-card-rect::before {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: transparent;
+        transition: all 0.2s;
+    }
+    .stock-card-rect.buy-signal::before { background: #10b981; }
+    .stock-card-rect.sell-signal::before { background: #ef4444; }
+    .stock-card-rect.hold-signal::before { background: #f59e0b; }
+    .stock-card-rect.neutral-signal::before { background: #94a3b8; }
+
+    .stock-rect-info { display: flex; flex-direction: column; gap: 4px; }
+    .stock-rect-symbol { font-size: 15px; font-weight: 700; color: #fbbf24; }
+    .stock-rect-name { font-size: 12px; color: #64748b; }
+    .stock-rect-sector { font-size: 10px; color: #475569; }
+    .stock-rect-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stock-mini-signal {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+    }
+    .mini-buy { background: rgba(16,185,129,0.15); color: #10b981; }
+    .mini-sell { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .mini-hold { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .mini-neutral { background: rgba(148,163,184,0.15); color: #94a3b8; }
+    .mini-trend-up { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .mini-trend-down { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+    .stock-rect-price-section { text-align: left; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .stock-rect-price { font-size: 18px; font-weight: 700; color: #f1f5f9; }
+    .stock-rect-change { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 12px; display: inline-block; }
+    .stock-rect-change.up { background: rgba(16,185,129,0.15); color: #10b981; }
+    .stock-rect-change.down { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+    .btn-rect {
+        width: 100%;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid rgba(99,102,241,0.3);
+        background: rgba(99,102,241,0.1);
+        color: #818cf8;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 6px;
+        text-align: center;
+    }
+    .btn-rect:hover {
+        background: rgba(99,102,241,0.2);
+        border-color: rgba(99,102,241,0.5);
+        color: #a5b4fc;
+    }
+    .btn-rect-danger {
+        border-color: rgba(239,68,68,0.3);
+        background: rgba(239,68,68,0.08);
+        color: #f87171;
+    }
+    .btn-rect-danger:hover {
+        background: rgba(239,68,68,0.15);
+        border-color: rgba(239,68,68,0.4);
+    }
+
     .signal-box { border-radius: 8px; padding: 16px; text-align: center; border: 1px solid; }
     .signal-buy { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02)); border-color: rgba(16,185,129,0.3); }
     .signal-sell { background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.02)); border-color: rgba(239,68,68,0.3); }
@@ -68,6 +152,32 @@ st.markdown("""
     .indicator-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
     .analysis-detail { padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px; border-right: 3px solid; }
     .metric-box { padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+
+    /* ===== FINANCIAL HEALTH SCORE ===== */
+    .financial-score-ring {
+        width: 120px; height: 120px; border-radius: 50%;
+        background: conic-gradient(#10b981 var(--score), rgba(255,255,255,0.05) 0);
+        display: flex; align-items: center; justify-content: center;
+        position: relative; margin: 0 auto;
+    }
+    .financial-score-ring::before {
+        content: ''; position: absolute; width: 100px; height: 100px;
+        border-radius: 50%; background: #12121a;
+    }
+    .financial-score-value {
+        position: relative; z-index: 1;
+        font-size: 28px; font-weight: 800; color: #f1f5f9;
+    }
+
+    .pillar-card {
+        padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
+        background: rgba(255,255,255,0.02); transition: all 0.2s;
+    }
+    .pillar-card:hover { border-color: rgba(99,102,241,0.2); transform: translateY(-2px); }
+    .pillar-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .pillar-score { font-size: 24px; font-weight: 800; }
+    .pillar-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.05); overflow: hidden; margin-top: 8px; }
+    .pillar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -90,6 +200,8 @@ def init_session_state():
             {"id": 5, "title": "تحديث بيانات المحفظة الاستثمارية", "priority": "medium", "category": "personal", "due": "2026-05-13", "completed": False},
         ],
         'active_tab': 0,
+        'company_fundamental_data': {},
+        'edit_company_symbol': None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -336,7 +448,197 @@ class EGXDataEngine:
         except Exception as e:
             return None
 
+# ==================== FUNDAMENTAL DATA ENGINE ====================
+class FundamentalDataEngine:
+    """Generate realistic fundamental financial data for Egyptian stocks"""
+
+    SECTOR_PROFILES = {
+        "بنوك": {"margin": 0.25, "current_ratio": 1.1, "debt_eq": 0.8, "asset_turn": 0.05, "ccc": -30, "int_cov": 4.0},
+        "تكنولوجيا مالية": {"margin": 0.18, "current_ratio": 1.8, "debt_eq": 0.3, "asset_turn": 0.6, "ccc": 20, "int_cov": 8.0},
+        "عقارات": {"margin": 0.22, "current_ratio": 1.5, "debt_eq": 0.9, "asset_turn": 0.25, "ccc": 180, "int_cov": 2.5},
+        "صناعة": {"margin": 0.12, "current_ratio": 1.4, "debt_eq": 0.6, "asset_turn": 0.7, "ccc": 60, "int_cov": 5.0},
+        "اتصالات": {"margin": 0.28, "current_ratio": 1.2, "debt_eq": 0.5, "asset_turn": 0.5, "ccc": 45, "int_cov": 6.0},
+        "سلع استهلاكية": {"margin": 0.08, "current_ratio": 1.3, "debt_eq": 0.4, "asset_turn": 1.2, "ccc": 30, "int_cov": 7.0},
+        "صحة": {"margin": 0.15, "current_ratio": 2.0, "debt_eq": 0.2, "asset_turn": 0.8, "ccc": 75, "int_cov": 9.0},
+        "استثمار": {"margin": 0.35, "current_ratio": 1.6, "debt_eq": 0.5, "asset_turn": 0.3, "ccc": 10, "int_cov": 5.5},
+        "طاقة": {"margin": 0.10, "current_ratio": 1.3, "debt_eq": 0.7, "asset_turn": 0.6, "ccc": 25, "int_cov": 4.5},
+        "تعليم": {"margin": 0.20, "current_ratio": 1.4, "debt_eq": 0.4, "asset_turn": 0.4, "ccc": 15, "int_cov": 6.5},
+        "إعلام": {"margin": 0.14, "current_ratio": 1.2, "debt_eq": 0.5, "asset_turn": 0.5, "ccc": 40, "int_cov": 5.0},
+        "نقل": {"margin": 0.11, "current_ratio": 1.1, "debt_eq": 0.8, "asset_turn": 0.8, "ccc": 20, "int_cov": 3.5},
+        "تكنولوجيا": {"margin": 0.16, "current_ratio": 1.7, "debt_eq": 0.3, "asset_turn": 0.9, "ccc": 35, "int_cov": 8.5},
+    }
+
+    def __init__(self):
+        self.user_edits = st.session_state.get('company_fundamental_data', {})
+
+    def generate_fundamentals(self, stock_info: dict) -> dict:
+        symbol = stock_info['symbol']
+        sector = stock_info.get('sector', 'صناعة')
+        market_cap = stock_info.get('market_cap', 1e9)
+        base_price = stock_info.get('base_price', 10)
+
+        # Check user edits first
+        if symbol in self.user_edits:
+            return self.user_edits[symbol]
+
+        profile = self.SECTOR_PROFILES.get(sector, self.SECTOR_PROFILES["صناعة"])
+        np.random.seed(hash(symbol) % 10000)
+
+        # Revenue estimation based on market cap and asset turnover
+        revenue = market_cap * np.random.uniform(0.5, 2.0) * (1 / max(profile['asset_turn'], 0.1))
+
+        # Margins with realistic noise
+        net_margin = profile['margin'] * np.random.uniform(0.7, 1.3)
+        operating_margin = net_margin * np.random.uniform(1.2, 1.8)
+        gross_margin = operating_margin * np.random.uniform(1.1, 1.4)
+
+        # Cap margins realistically
+        gross_margin = min(gross_margin, 0.65)
+        operating_margin = min(operating_margin, 0.45)
+        net_margin = max(min(net_margin, 0.35), 0.02)
+
+        # Income Statement
+        cogs = revenue * (1 - gross_margin)
+        operating_income = revenue * operating_margin
+        net_income = revenue * net_margin
+
+        # Balance Sheet
+        total_assets = revenue / max(profile['asset_turn'], 0.1)
+        equity = market_cap / np.random.uniform(1.0, 2.5)
+        total_debt = equity * profile['debt_eq'] * np.random.uniform(0.8, 1.2)
+        current_assets = total_assets * np.random.uniform(0.25, 0.45)
+        current_liabilities = current_assets / (profile['current_ratio'] * np.random.uniform(0.8, 1.2))
+        cash = current_assets * np.random.uniform(0.15, 0.35)
+        inventory = current_assets * np.random.uniform(0.2, 0.4) if sector not in ["بنوك", "استثمار", "اتصالات"] else current_assets * 0.05
+        receivables = revenue * np.random.uniform(0.08, 0.20)
+        payables = cogs * np.random.uniform(0.15, 0.30)
+
+        # Interest
+        interest_expense = total_debt * np.random.uniform(0.04, 0.12)
+
+        # Working Capital
+        working_capital = current_assets - current_liabilities
+
+        # Liquidity Ratios
+        quick_assets = current_assets - inventory
+        current_ratio = current_assets / current_liabilities if current_liabilities > 0 else 1.5
+        quick_ratio = quick_assets / current_liabilities if current_liabilities > 0 else 1.0
+        cash_ratio = cash / current_liabilities if current_liabilities > 0 else 0.5
+
+        # Profitability
+        roa = net_income / total_assets if total_assets > 0 else 0
+        roe = net_income / equity if equity > 0 else 0
+
+        # Efficiency
+        inventory_turnover = cogs / inventory if inventory > 0 else 0
+        inventory_days = 365 / inventory_turnover if inventory_turnover > 0 else 0
+        receivables_days = (receivables / revenue) * 365 if revenue > 0 else 0
+        payables_days = (payables / cogs) * 365 if cogs > 0 else 0
+        asset_turnover = revenue / total_assets if total_assets > 0 else 0
+
+        # Cash Conversion Cycle
+        ccc = inventory_days + receivables_days - payables_days
+
+        # Leverage
+        debt_ratio = total_debt / total_assets if total_assets > 0 else 0
+        debt_to_equity = total_debt / equity if equity > 0 else 0
+        interest_coverage = operating_income / interest_expense if interest_expense > 0 else 999
+
+        # Scoring (0-100) for each pillar
+        profitability_score = min(100, (
+            (gross_margin / 0.4) * 20 +
+            (operating_margin / 0.25) * 20 +
+            (net_margin / 0.20) * 20 +
+            (roa / 0.10) * 20 +
+            (roe / 0.15) * 20
+        ))
+
+        liquidity_score = min(100, (
+            (current_ratio / 2.0) * 30 +
+            (quick_ratio / 1.5) * 30 +
+            (cash_ratio / 1.0) * 20 +
+            (1 if working_capital > 0 else 0) * 20
+        ))
+
+        efficiency_score = min(100, (
+            (asset_turnover / 1.0) * 25 +
+            (100 if ccc < 0 else max(0, 100 - ccc)) * 25 +
+            (inventory_turnover / 6) * 25 +
+            (25 if receivables_days < 45 else max(0, 25 - (receivables_days - 45) / 2))
+        ))
+
+        leverage_score = min(100, (
+            (1 - debt_ratio) * 30 +
+            max(0, (1 - debt_to_equity / 1.5)) * 30 +
+            min(interest_coverage / 5, 1) * 40
+        ))
+
+        overall_financial = (profitability_score + liquidity_score + efficiency_score + leverage_score) / 4
+
+        return {
+            "symbol": symbol,
+            "name": stock_info['name'],
+            "sector": sector,
+            "market_cap": market_cap,
+            # Income Statement
+            "revenue": round(revenue, 0),
+            "cogs": round(cogs, 0),
+            "operating_income": round(operating_income, 0),
+            "net_income": round(net_income, 0),
+            "gross_margin": round(gross_margin * 100, 2),
+            "operating_margin": round(operating_margin * 100, 2),
+            "net_margin": round(net_margin * 100, 2),
+            # Balance Sheet
+            "total_assets": round(total_assets, 0),
+            "total_equity": round(equity, 0),
+            "total_debt": round(total_debt, 0),
+            "current_assets": round(current_assets, 0),
+            "current_liabilities": round(current_liabilities, 0),
+            "cash": round(cash, 0),
+            "inventory": round(inventory, 0),
+            "receivables": round(receivables, 0),
+            "payables": round(payables, 0),
+            "working_capital": round(working_capital, 0),
+            "interest_expense": round(interest_expense, 0),
+            # Ratios
+            "current_ratio": round(current_ratio, 2),
+            "quick_ratio": round(quick_ratio, 2),
+            "cash_ratio": round(cash_ratio, 2),
+            "roa": round(roa * 100, 2),
+            "roe": round(roe * 100, 2),
+            "inventory_turnover": round(inventory_turnover, 2),
+            "inventory_days": round(inventory_days, 1),
+            "receivables_days": round(receivables_days, 1),
+            "payables_days": round(payables_days, 1),
+            "asset_turnover": round(asset_turnover, 2),
+            "ccc": round(ccc, 1),
+            "debt_ratio": round(debt_ratio * 100, 2),
+            "debt_to_equity": round(debt_to_equity, 2),
+            "interest_coverage": round(interest_coverage, 2),
+            # Scores
+            "profitability_score": round(profitability_score, 1),
+            "liquidity_score": round(liquidity_score, 1),
+            "efficiency_score": round(efficiency_score, 1),
+            "leverage_score": round(leverage_score, 1),
+            "overall_score": round(overall_financial, 1),
+            "source": "simulated"
+        }
+
+    def get_fundamentals(self, symbol: str) -> Optional[dict]:
+        stock = next((s for s in EGXDataEngine.EGYPTIAN_STOCKS if s['symbol'] == symbol), None)
+        if not stock:
+            return None
+        return self.generate_fundamentals(stock)
+
+    def save_user_data(self, symbol: str, data: dict):
+        if 'company_fundamental_data' not in st.session_state:
+            st.session_state.company_fundamental_data = {}
+        st.session_state.company_fundamental_data[symbol] = data
+        self.user_edits = st.session_state.company_fundamental_data
+
+# Initialize engines
 data_engine = EGXDataEngine()
+fundamental_engine = FundamentalDataEngine()
 
 # ==================== ADVANCED TECHNICAL ANALYSIS ENGINE ====================
 class TechnicalAnalyzer:
@@ -1357,6 +1659,71 @@ def delete_task(task_id):
     except Exception:
         pass
 
+def edit_company_callback(symbol):
+    st.session_state.edit_company_symbol = symbol
+    st.session_state.selected_stock = symbol
+
+def save_company_data(symbol):
+    try:
+        data = {
+            "symbol": symbol,
+            "revenue": st.session_state.get(f"edit_rev_{symbol}", 0),
+            "cogs": st.session_state.get(f"edit_cogs_{symbol}", 0),
+            "operating_income": st.session_state.get(f"edit_op_{symbol}", 0),
+            "net_income": st.session_state.get(f"edit_net_{symbol}", 0),
+            "total_assets": st.session_state.get(f"edit_assets_{symbol}", 0),
+            "total_equity": st.session_state.get(f"edit_eq_{symbol}", 0),
+            "total_debt": st.session_state.get(f"edit_debt_{symbol}", 0),
+            "current_assets": st.session_state.get(f"edit_ca_{symbol}", 0),
+            "current_liabilities": st.session_state.get(f"edit_cl_{symbol}", 0),
+            "cash": st.session_state.get(f"edit_cash_{symbol}", 0),
+            "inventory": st.session_state.get(f"edit_inv_{symbol}", 0),
+            "receivables": st.session_state.get(f"edit_rec_{symbol}", 0),
+            "payables": st.session_state.get(f"edit_pay_{symbol}", 0),
+            "interest_expense": st.session_state.get(f"edit_int_{symbol}", 0),
+            "source": "user_edited"
+        }
+        # Recalculate ratios
+        revenue = data['revenue']
+        cogs = data['cogs']
+        op_income = data['operating_income']
+        net_income = data['net_income']
+        total_assets = data['total_assets']
+        equity = data['total_equity']
+        debt = data['total_debt']
+        ca = data['current_assets']
+        cl = data['current_liabilities']
+        cash = data['cash']
+        inventory = data['inventory']
+        rec = data['receivables']
+        pay = data['payables']
+        interest = data['interest_expense']
+
+        data['gross_margin'] = round(((revenue - cogs) / revenue * 100), 2) if revenue else 0
+        data['operating_margin'] = round((op_income / revenue * 100), 2) if revenue else 0
+        data['net_margin'] = round((net_income / revenue * 100), 2) if revenue else 0
+        data['roa'] = round((net_income / total_assets * 100), 2) if total_assets else 0
+        data['roe'] = round((net_income / equity * 100), 2) if equity else 0
+        data['current_ratio'] = round(ca / cl, 2) if cl else 0
+        data['quick_ratio'] = round((ca - inventory) / cl, 2) if cl else 0
+        data['cash_ratio'] = round(cash / cl, 2) if cl else 0
+        data['working_capital'] = round(ca - cl, 0)
+        data['inventory_turnover'] = round(cogs / inventory, 2) if inventory else 0
+        data['inventory_days'] = round(365 / data['inventory_turnover'], 1) if data['inventory_turnover'] else 0
+        data['receivables_days'] = round((rec / revenue) * 365, 1) if revenue else 0
+        data['payables_days'] = round((pay / cogs) * 365, 1) if cogs else 0
+        data['ccc'] = round(data['inventory_days'] + data['receivables_days'] - data['payables_days'], 1)
+        data['asset_turnover'] = round(revenue / total_assets, 2) if total_assets else 0
+        data['debt_ratio'] = round(debt / total_assets * 100, 2) if total_assets else 0
+        data['debt_to_equity'] = round(debt / equity, 2) if equity else 0
+        data['interest_coverage'] = round(op_income / interest, 2) if interest else 999
+
+        fundamental_engine.save_user_data(symbol, data)
+        st.session_state.edit_company_symbol = None
+        st.toast(f"✅ تم حفظ بيانات {symbol}")
+    except Exception as e:
+        st.error(f"خطأ في الحفظ: {str(e)}")
+
 # ==================== SIDEBAR ====================
 with st.sidebar:
     try:
@@ -1375,32 +1742,65 @@ with st.sidebar:
 
         st.divider()
 
-        st.header("📊 إحصائيات المهام")
-        total_tasks = len(st.session_state.tasks)
-        completed = sum(1 for t in st.session_state.tasks if t["completed"])
-        pending = total_tasks - completed
-        high_priority = sum(1 for t in st.session_state.tasks if t["priority"] == "high" and not t["completed"])
+        # Company Data Entry Mode
+        if st.session_state.edit_company_symbol:
+            st.header(f"✏️ بيانات {st.session_state.edit_company_symbol}")
+            sym = st.session_state.edit_company_symbol
+            existing = fundamental_engine.get_fundamentals(sym) or {}
 
-        c1, c2 = st.columns(2)
-        c1.metric("الكل", total_tasks)
-        c2.metric("مكتمل", completed)
-        c1.metric("قيد التنفيذ", pending)
-        c2.metric("عالية الأولوية", high_priority, delta_color="inverse")
+            with st.form(f"edit_form_{sym}"):
+                st.number_input("الإيرادات", value=float(existing.get('revenue', 0)), step=1e6, key=f"edit_rev_{sym}")
+                st.number_input("تكلفة البضاعة", value=float(existing.get('cogs', 0)), step=1e6, key=f"edit_cogs_{sym}")
+                st.number_input("الدخل التشغيلي", value=float(existing.get('operating_income', 0)), step=1e6, key=f"edit_op_{sym}")
+                st.number_input("صافي الدخل", value=float(existing.get('net_income', 0)), step=1e6, key=f"edit_net_{sym}")
+                st.number_input("إجمالي الأصول", value=float(existing.get('total_assets', 0)), step=1e6, key=f"edit_assets_{sym}")
+                st.number_input("حقوق الملكية", value=float(existing.get('total_equity', 0)), step=1e6, key=f"edit_eq_{sym}")
+                st.number_input("إجمالي الديون", value=float(existing.get('total_debt', 0)), step=1e6, key=f"edit_debt_{sym}")
+                st.number_input("الأصول المتداولة", value=float(existing.get('current_assets', 0)), step=1e6, key=f"edit_ca_{sym}")
+                st.number_input("الالتزامات المتداولة", value=float(existing.get('current_liabilities', 0)), step=1e6, key=f"edit_cl_{sym}")
+                st.number_input("النقدية", value=float(existing.get('cash', 0)), step=1e6, key=f"edit_cash_{sym}")
+                st.number_input("المخزون", value=float(existing.get('inventory', 0)), step=1e6, key=f"edit_inv_{sym}")
+                st.number_input("المدينون", value=float(existing.get('receivables', 0)), step=1e6, key=f"edit_rec_{sym}")
+                st.number_input("الدائنون", value=float(existing.get('payables', 0)), step=1e6, key=f"edit_pay_{sym}")
+                st.number_input("مصاريف الفائدة", value=float(existing.get('interest_expense', 0)), step=1e6, key=f"edit_int_{sym}")
 
-        st.divider()
-        st.header("⚡ إجراءات سريعة")
-        if st.button("🔄 تحديث البيانات", use_container_width=True):
-            st.session_state.market_data_cache = {}
-            st.session_state.alerts_cache = None
-            st.session_state.price_history_sim = {}
-            st.toast("✅ تم تحديث البيانات")
-        if st.button("📊 تحليل فوري", use_container_width=True, type="primary"):
-            run_analysis_callback()
-            st.toast("✅ تم إكمال التحليل")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.form_submit_button("💾 حفظ", on_click=save_company_data, args=(sym,))
+                with c2:
+                    if st.form_submit_button("❌ إلغاء"):
+                        st.session_state.edit_company_symbol = None
+                        st.rerun()
+        else:
+            st.header("📊 إحصائيات المهام")
+            total_tasks = len(st.session_state.tasks)
+            completed = sum(1 for t in st.session_state.tasks if t["completed"])
+            pending = total_tasks - completed
+            high_priority = sum(1 for t in st.session_state.tasks if t["priority"] == "high" and not t["completed"])
+
+            c1, c2 = st.columns(2)
+            c1.metric("الكل", total_tasks)
+            c2.metric("مكتمل", completed)
+            c1.metric("قيد التنفيذ", pending)
+            c2.metric("عالية الأولوية", high_priority, delta_color="inverse")
+
+            st.divider()
+            st.header("⚡ إجراءات سريعة")
+            if st.button("🔄 تحديث البيانات", use_container_width=True):
+                st.session_state.market_data_cache = {}
+                st.session_state.alerts_cache = None
+                st.session_state.price_history_sim = {}
+                st.toast("✅ تم تحديث البيانات")
+            if st.button("📊 تحليل فوري", use_container_width=True, type="primary"):
+                run_analysis_callback()
+                st.toast("✅ تم إكمال التحليل")
     except Exception as e:
         st.error(f"خطأ في الشريط الجانبي: {str(e)}")
 
 # ==================== HEADER ====================
+best_stock = {"symbol": "N/A", "change_pct": 0}
+worst_stock = {"symbol": "N/A", "change_pct": 0}
+
 try:
     stocks_live = data_engine.get_live_prices()
     df_live = pd.DataFrame(stocks_live)
@@ -1408,9 +1808,6 @@ try:
     if not df_live.empty:
         best_stock = max(stocks_live, key=lambda x: x["change_pct"])
         worst_stock = min(stocks_live, key=lambda x: x["change_pct"])
-    else:
-        best_stock = {"symbol": "N/A", "change_pct": 0}
-        worst_stock = {"symbol": "N/A", "change_pct": 0}
 
     st.markdown(f"""
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 16px; background: linear-gradient(90deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05)); border-radius: 12px; border: 1px solid rgba(99,102,241,0.1);">
@@ -1444,7 +1841,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🤖 التحليل الآلي", 
     "📊 Backtesting", 
     "✅ المهام الذكية",
-    "🏢 واجهة الشركات",
+    "📊 التحليل المالي",
     "📰 الأخبار والمزاج",
     "🔮 التحليل المفصل"
 ])
@@ -1528,7 +1925,7 @@ with tab1:
                     st.error(f"خطأ في الأكثر نشاطاً: {str(e)}")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-            # Stock Grid
+            # Stock Grid - RECTANGULAR WITH SIGNALS
             st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
             st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🎯 الأسهم المتاحة - اضغط للتحليل المفصل</span></div>', unsafe_allow_html=True)
 
@@ -1546,35 +1943,81 @@ with tab1:
             if sector_filter != "الكل":
                 display_stocks = display_stocks[display_stocks['sector'] == sector_filter]
 
-            stocks_per_row = 6
             stock_list = display_stocks.to_dict('records')
 
-            for row_idx in range(0, len(stock_list), stocks_per_row):
-                row_stocks = stock_list[row_idx:row_idx + stocks_per_row]
-                btn_cols = st.columns(stocks_per_row)
+            # Get quick signals for display
+            quick_signals = {}
+            for stock in stock_list[:20]:  # Limit for performance
+                try:
+                    df_q = data_engine.get_stock_history(stock['symbol'], "1mo")
+                    if df_q is not None and len(df_q) > 20:
+                        df_q = ta_engine.calculate_all(df_q)
+                        if df_q is not None:
+                            sigs = ta_engine.generate_signals(df_q)
+                            overall, _, text, trend, _ = ta_engine.calculate_overall(sigs)
+                            quick_signals[stock['symbol']] = {"signal": overall, "trend": trend, "text": text}
+                except:
+                    quick_signals[stock['symbol']] = {"signal": "HOLD", "trend": "neutral", "text": "محايد"}
 
-                for i, stock in enumerate(row_stocks):
-                    with btn_cols[i]:
-                        change_class = "up" if stock['change_pct'] >= 0 else "down"
-                        change_sign = "+" if stock['change_pct'] >= 0 else ""
+            for stock in stock_list:
+                signal_info = quick_signals.get(stock['symbol'], {"signal": "HOLD", "trend": "neutral", "text": "محايد"})
+                signal_class = "buy-signal" if signal_info['signal'] in ['BUY', 'STRONG_BUY'] else "sell-signal" if signal_info['signal'] in ['SELL', 'STRONG_SELL'] else "hold-signal" if signal_info['trend'] in ['weak_bullish', 'weak_bearish'] else "neutral-signal"
 
-                        st.markdown(f"""
-                        <div class="stock-card">
-                            <div class="stock-card-symbol">{stock['symbol']}</div>
-                            <div class="stock-card-price">{stock['price']:.2f}</div>
-                            <div class="stock-card-change {change_class}">{change_sign}{stock['change_pct']:.2f}%</div>
-                            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">{stock['sector']}</div>
+                change_class = "up" if stock['change_pct'] >= 0 else "down"
+                change_sign = "+" if stock['change_pct'] >= 0 else ""
+
+                mini_signal_class = "mini-buy" if signal_info['signal'] in ['BUY', 'STRONG_BUY'] else "mini-sell" if signal_info['signal'] in ['SELL', 'STRONG_SELL'] else "mini-hold"
+                trend_class = "mini-trend-up" if stock['change_pct'] >= 0 else "mini-trend-down"
+
+                st.markdown(f"""
+                <div class="stock-card-rect {signal_class}">
+                    <div class="stock-rect-info">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="stock-rect-symbol">{stock['symbol']}</span>
+                            <div class="stock-rect-badges">
+                                <span class="stock-mini-signal {mini_signal_class}">{signal_info['text']}</span>
+                                <span class="stock-mini-signal {trend_class}">{'▲ صاعد' if stock['change_pct'] >= 0 else '▼ هابط'}</span>
+                            </div>
                         </div>
-                        """, unsafe_allow_html=True)
+                        <span class="stock-rect-name">{stock['name']}</span>
+                        <span class="stock-rect-sector">{stock['sector']}</span>
+                    </div>
+                    <div class="stock-rect-price-section">
+                        <span class="stock-rect-price">{stock['price']:.2f}</span>
+                        <span class="stock-rect-change {change_class}">{change_sign}{stock['change_pct']:.2f}%</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
-                        st.button(
-                            f"تحليل {stock['symbol']}", 
-                            key=f"analyze_{stock['symbol']}_{row_idx}",
-                            on_click=select_stock_callback,
-                            args=(stock['symbol'],),
-                            use_container_width=True,
-                            type="secondary"
-                        )
+                btn_cols = st.columns([1, 1, 1])
+                with btn_cols[0]:
+                    st.button(
+                        f"🔮 تحليل فني", 
+                        key=f"analyze_{stock['symbol']}_rect",
+                        on_click=select_stock_callback,
+                        args=(stock['symbol'],),
+                        use_container_width=True,
+                        type="secondary"
+                    )
+                with btn_cols[1]:
+                    st.button(
+                        f"📊 تحليل مالي",
+                        key=f"fund_{stock['symbol']}_rect",
+                        on_click=select_stock_callback,
+                        args=(stock['symbol'],),
+                        use_container_width=True,
+                        type="secondary"
+                    )
+                with btn_cols[2]:
+                    st.button(
+                        f"✏️ بيانات الشركة",
+                        key=f"edit_{stock['symbol']}_rect",
+                        on_click=edit_company_callback,
+                        args=(stock['symbol'],),
+                        use_container_width=True,
+                        type="secondary"
+                    )
+                st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -2053,16 +2496,194 @@ with tab4:
     except Exception as e:
         st.error(f"خطأ في المهام: {str(e)}")
 
-# ==================== TAB 5: CORPORATE INTERFACE ====================
+# ==================== TAB 5: FUNDAMENTAL ANALYSIS ====================
 with tab5:
     try:
         st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-        st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🏢 واجهة الشركات - التوزيعات والإجراءات</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">📊 التحليل المالي الأساسي - 4 محاور</span></div>', unsafe_allow_html=True)
 
-        st.info("📌 بيانات الشركات والتوزيعات يتم تحديثها دورياً من مصادر البورصة المصرية")
+        st.markdown("""
+        <div style="padding: 12px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; margin-bottom: 16px;">
+            <p style="color: #818cf8; font-weight: 600; margin: 0; font-size: 13px;">📌 التحليل المالي</p>
+            <p style="color: #a5b4fc; font-size: 12px; margin-top: 4px;">تقييم صحة الشركة عبر 4 محاور: الربحية، السيولة، الكفاءة، الملاءة. البيانات محاكاة واقعية يمكن تعديلها من زر "بيانات الشركة".</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        fa_symbols = df_live['symbol'].tolist() if not df_live.empty else ["COMI"]
+        fa_stock = st.selectbox("اختر السهم", fa_symbols, key="fa_stock_select")
+
+        if fa_stock:
+            fund_data = fundamental_engine.get_fundamentals(fa_stock)
+            if fund_data:
+                # Financial Health Score Header
+                score = fund_data.get('overall_score', 0)
+                score_color = "#10b981" if score >= 70 else "#f59e0b" if score >= 50 else "#ef4444"
+
+                st.markdown(f"""
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 20px; background: linear-gradient(90deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05)); border-radius: 12px; border: 1px solid rgba(99,102,241,0.1);">
+                    <div>
+                        <h2 style="margin: 0; font-size: 22px; font-weight: 700;">{fund_data['name']} ({fund_data['symbol']})</h2>
+                        <p style="color: #64748b; margin: 4px 0; font-size: 13px;">{fund_data['sector']} | القيمة السوقية: {fund_data['market_cap']:,.0f} ج.م</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="width: 100px; height: 100px; border-radius: 50%; background: conic-gradient({score_color} {score}%, rgba(255,255,255,0.05) 0); display: flex; align-items: center; justify-content: center; position: relative;">
+                            <div style="width: 82px; height: 82px; border-radius: 50%; background: #12121a; display: flex; align-items: center; justify-content: center;">
+                                <span style="font-size: 24px; font-weight: 800; color: {score_color};">{score:.0f}</span>
+                            </div>
+                        </div>
+                        <p style="color: #64748b; font-size: 11px; margin-top: 6px;">التقييم المالي</p>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # 4 Pillars
+                pillar_cols = st.columns(4)
+                pillars = [
+                    ("🟢 الربحية", fund_data.get('profitability_score', 0), [
+                        ("هامش الربح الإجمالي", f"{fund_data.get('gross_margin', 0):.1f}%", fund_data.get('gross_margin', 0) > 20),
+                        ("هامش الربح التشغيلي", f"{fund_data.get('operating_margin', 0):.1f}%", fund_data.get('operating_margin', 0) > 10),
+                        ("هامش صافي الربح", f"{fund_data.get('net_margin', 0):.1f}%", fund_data.get('net_margin', 0) > 8),
+                        ("العائد على الأصول ROA", f"{fund_data.get('roa', 0):.1f}%", fund_data.get('roa', 0) > 5),
+                        ("العائد على حقوق الملكية ROE", f"{fund_data.get('roe', 0):.1f}%", fund_data.get('roe', 0) > 10),
+                    ], "#10b981"),
+                    ("🔵 السيولة", fund_data.get('liquidity_score', 0), [
+                        ("نسبة السيولة الحالية", f"{fund_data.get('current_ratio', 0):.2f}x", fund_data.get('current_ratio', 0) > 1.5),
+                        ("نسبة السيولة السريعة", f"{fund_data.get('quick_ratio', 0):.2f}x", fund_data.get('quick_ratio', 0) > 1.0),
+                        ("نسبة السيولة النقدية", f"{fund_data.get('cash_ratio', 0):.2f}x", fund_data.get('cash_ratio', 0) > 0.5),
+                        ("رأس المال العامل", f"{fund_data.get('working_capital', 0):,.0f}", fund_data.get('working_capital', 0) > 0),
+                    ], "#3b82f6"),
+                    ("🟡 الكفاءة", fund_data.get('efficiency_score', 0), [
+                        ("دورة المخزون", f"{fund_data.get('inventory_turnover', 0):.1f}x", fund_data.get('inventory_turnover', 0) > 4),
+                        ("أيام المخزون", f"{fund_data.get('inventory_days', 0):.0f}", fund_data.get('inventory_days', 0) < 60),
+                        ("أيام المدينون", f"{fund_data.get('receivables_days', 0):.0f}", fund_data.get('receivables_days', 0) < 45),
+                        ("أيام الدائنون", f"{fund_data.get('payables_days', 0):.0f}", fund_data.get('payables_days', 0) > 30),
+                        ("دورة التحويل النقدي CCC", f"{fund_data.get('ccc', 0):.0f} يوم", fund_data.get('ccc', 0) < 60),
+                        ("دورة الأصول", f"{fund_data.get('asset_turnover', 0):.2f}x", fund_data.get('asset_turnover', 0) > 0.5),
+                    ], "#f59e0b"),
+                    ("🔴 الملاءة", fund_data.get('leverage_score', 0), [
+                        ("نسبة الدين", f"{fund_data.get('debt_ratio', 0):.1f}%", fund_data.get('debt_ratio', 0) < 50),
+                        ("الدين/حقوق الملكية", f"{fund_data.get('debt_to_equity', 0):.2f}x", fund_data.get('debt_to_equity', 0) < 1.0),
+                        ("تغطية الفائدة", f"{fund_data.get('interest_coverage', 0):.1f}x", fund_data.get('interest_coverage', 0) > 3),
+                    ], "#ef4444"),
+                ]
+
+                for i, (title, pscore, metrics, color) in enumerate(pillars):
+                    with pillar_cols[i]:
+                        st.markdown(f"""
+                        <div class="pillar-card" style="border-top: 3px solid {color};">
+                            <p class="pillar-title" style="color: {color};">{title}</p>
+                            <p class="pillar-score" style="color: {color};">{pscore:.0f}<span style="font-size: 14px; color: #64748b;">/100</span></p>
+                            <div class="pillar-bar"><div class="pillar-fill" style="width: {pscore}%; background: {color};"></div></div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        for metric_name, metric_value, good in metrics:
+                            metric_color = "#10b981" if good else "#ef4444"
+                            st.markdown(f"""
+                            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                <span style="color: #94a3b8; font-size: 11px;">{metric_name}</span>
+                                <span style="color: {metric_color}; font-size: 12px; font-weight: 600;">{metric_value}</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                # CCC Calculator Interactive
+                st.subheader("🧮 حاسبة دورة التحويل النقدي (CCC)")
+                ccc_cols = st.columns(3)
+                with ccc_cols[0]:
+                    inv_days = st.number_input("أيام المخزون", value=float(fund_data.get('inventory_days', 0)), step=1.0, key="ccc_inv")
+                with ccc_cols[1]:
+                    rec_days = st.number_input("أيام المدينون", value=float(fund_data.get('receivables_days', 0)), step=1.0, key="ccc_rec")
+                with ccc_cols[2]:
+                    pay_days = st.number_input("أيام الدائنون", value=float(fund_data.get('payables_days', 0)), step=1.0, key="ccc_pay")
+
+                ccc_calc = inv_days + rec_days - pay_days
+                ccc_status = "ممتاز" if ccc_calc < 0 else "جيد" if ccc_calc < 30 else "مقبول" if ccc_calc < 60 else "يحتاج تحسين"
+                ccc_color = "#10b981" if ccc_calc < 30 else "#f59e0b" if ccc_calc < 60 else "#ef4444"
+
+                st.markdown(f"""
+                <div style="padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {ccc_color}30; margin-top: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <p style="margin: 0; color: #64748b; font-size: 13px;">دورة التحويل النقدي المحسوبة</p>
+                            <p style="margin: 4px 0 0 0; font-size: 24px; font-weight: 700; color: {ccc_color};">{ccc_calc:.0f} يوم</p>
+                        </div>
+                        <span style="padding: 6px 12px; background: {ccc_color}15; color: {ccc_color}; border-radius: 6px; font-weight: 600; font-size: 13px;">{ccc_status}</span>
+                    </div>
+                    <p style="color: #64748b; font-size: 11px; margin-top: 8px;">CCC = {inv_days:.0f} + {rec_days:.0f} - {pay_days:.0f} = {ccc_calc:.0f} يوم. كلما قلّت الدورة، كانت السيولة أفضل.</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Financial vs Technical Integration
+                st.subheader("🔗 الربط مع التحليل الفني")
+                df_fa = data_engine.get_stock_history(fa_stock, "3mo")
+                if df_fa is not None and len(df_fa) > 30:
+                    df_fa = ta_engine.calculate_all(df_fa)
+                    if df_fa is not None:
+                        sigs = ta_engine.generate_signals(df_fa)
+                        tech_signal, tech_score, tech_text, tech_trend, _ = ta_engine.calculate_overall(sigs)
+
+                        tech_color = "#10b981" if tech_signal in ['BUY', 'STRONG_BUY'] else "#ef4444" if tech_signal in ['SELL', 'STRONG_SELL'] else "#f59e0b"
+                        fin_color = "#10b981" if score >= 70 else "#f59e0b" if score >= 50 else "#ef4444"
+
+                        # Combined recommendation
+                        if tech_signal in ['BUY', 'STRONG_BUY'] and score >= 70:
+                            combined = "شراء قوي مؤكد"
+                            combined_color = "#10b981"
+                            combined_desc = "إشارة فنية إيجابية + صحة مالية ممتازة. فرصة استثمارية قوية."
+                        elif tech_signal in ['BUY', 'STRONG_BUY'] and score >= 50:
+                            combined = "شراء مع مراقبة"
+                            combined_color = "#34d399"
+                            combined_desc = "إشارة فنية إيجابية + صحة مالية مقبولة. يفضل مراقبة التطورات."
+                        elif tech_signal in ['BUY', 'STRONG_BUY'] and score < 50:
+                            combined = "تحذير - ضعف مالي"
+                            combined_color = "#f59e0b"
+                            combined_desc = "إشارة فنية إيجابية لكن صحة الشركة المالية ضعيفة. احترس!"
+                        elif tech_signal in ['SELL', 'STRONG_SELL'] and score < 50:
+                            combined = "بيع/تجنب"
+                            combined_color = "#ef4444"
+                            combined_desc = "إشارة فنية سلبية + صحة مالية ضعيفة. تجنب الاستثمار."
+                        else:
+                            combined = "انتظار"
+                            combined_color = "#94a3b8"
+                            combined_desc = "لا توجد توافق واضح بين المؤشرات الفنية والمالية."
+
+                        int_cols = st.columns(3)
+                        with int_cols[0]:
+                            st.markdown(f"""
+                            <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {tech_color}30;">
+                                <p style="color: #64748b; font-size: 11px; margin: 0;">التقييم الفني</p>
+                                <p style="font-size: 20px; font-weight: 700; color: {tech_color}; margin: 4px 0;">{tech_text}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        with int_cols[1]:
+                            st.markdown(f"""
+                            <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {fin_color}30;">
+                                <p style="color: #64748b; font-size: 11px; margin: 0;">التقييم المالي</p>
+                                <p style="font-size: 20px; font-weight: 700; color: {fin_color}; margin: 4px 0;">{score:.0f}/100</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        with int_cols[2]:
+                            st.markdown(f"""
+                            <div style="text-align: center; padding: 16px; background: {combined_color}10; border-radius: 8px; border: 1px solid {combined_color}40;">
+                                <p style="color: #64748b; font-size: 11px; margin: 0;">التوصية المدمجة</p>
+                                <p style="font-size: 20px; font-weight: 700; color: {combined_color}; margin: 4px 0;">{combined}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                        st.info(combined_desc)
+
+                # Data source indicator
+                source = fund_data.get('source', 'simulated')
+                if source == 'user_edited':
+                    st.success("✅ هذه البيانات تم إدخالها يدوياً من المستخدم")
+                else:
+                    st.caption("ℹ️ البيانات المالية محاكاة واقعية بناءً على قطاع وحجم الشركة. اضغط 'بيانات الشركة' في رادار السوق لتعديلها.")
+            else:
+                st.error("لا توجد بيانات مالية لهذا السهم")
+
         st.markdown('</div>', unsafe_allow_html=True)
     except Exception as e:
-        st.error(f"خطأ في واجهة الشركات: {str(e)}")
+        st.error(f"خطأ في التحليل المالي: {str(e)}")
 
 # ==================== TAB 6: NEWS & SENTIMENT ====================
 with tab6:
@@ -2168,6 +2789,44 @@ with tab7:
                             take_profit_2 = current_price + (atr * 3.5)
 
                             risk_profile = risk_engine.analyze_risk_profile(df, current_price, stop_loss, take_profit_1, account_balance)
+
+                            # ===== INTEGRATED FINANCIAL HEALTH =====
+                            fund_data = fundamental_engine.get_fundamentals(analysis_stock)
+                            fin_score = fund_data.get('overall_score', 50) if fund_data else 50
+                            fin_color = "#10b981" if fin_score >= 70 else "#f59e0b" if fin_score >= 50 else "#ef4444"
+
+                            st.subheader("🏛️ التقييم المالي المتكامل")
+                            fin_cols = st.columns(4)
+                            with fin_cols[0]:
+                                st.metric("الصحة المالية", f"{fin_score:.0f}/100", delta_color="normal" if fin_score >= 50 else "inverse")
+                            with fin_cols[1]:
+                                st.metric("الربحية", f"{fund_data.get('net_margin', 0):.1f}%" if fund_data else "N/A")
+                            with fin_cols[2]:
+                                st.metric("السيولة", f"{fund_data.get('current_ratio', 0):.2f}x" if fund_data else "N/A")
+                            with fin_cols[3]:
+                                st.metric("الملاءة", f"{fund_data.get('debt_to_equity', 0):.2f}x" if fund_data else "N/A")
+
+                            # Financial-Technical Consensus
+                            tech_weight = 0.6
+                            fin_weight = 0.4
+                            consensus_score = (score * tech_weight) + ((fin_score - 50) * fin_weight)
+
+                            if overall_signal in ['BUY', 'STRONG_BUY'] and fin_score >= 60:
+                                consensus = "شراء مؤكد (فني + مالي)"
+                                consensus_color = "#10b981"
+                            elif overall_signal in ['SELL', 'STRONG_SELL'] or fin_score < 40:
+                                consensus = "تجنب/بيع (ضعف مالي أو فني)"
+                                consensus_color = "#ef4444"
+                            else:
+                                consensus = "مراقبة (عدم توافق تام)"
+                                consensus_color = "#f59e0b"
+
+                            st.markdown(f"""
+                            <div style="padding: 12px; background: {consensus_color}10; border: 1px solid {consensus_color}40; border-radius: 8px; margin-bottom: 16px;">
+                                <p style="margin: 0; font-weight: 700; color: {consensus_color}; font-size: 16px;">📊 التوافق الفني-المالي: {consensus}</p>
+                                <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px;">درجة التوافق: {consensus_score:.1f} | التقييم الفني: {score} | التقييم المالي: {fin_score:.0f}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
 
                             # SIGNAL DISPLAY
                             st.subheader("🎯 إشارة التداول الرئيسية")
