@@ -12,66 +12,91 @@ warnings.filterwarnings('ignore')
 
 # ==================== ADVANCED CONFIGURATION ====================
 st.set_page_config(
-    page_title="⚡ EGX Pro Terminal v23", 
+    page_title="⚡ EGX Pro Terminal v24 | نظام التوصيات الذكي", 
     layout="wide", 
     page_icon="⚡",
     initial_sidebar_state="expanded"
 )
 
-# ==================== PROFESSIONAL DARK THEME CSS ====================
+# ==================== PROFESSIONAL DARK THEME CSS v24 ====================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;600;700;800&display=swap');
     * { font-family: 'Inter', 'Cairo', sans-serif !important; letter-spacing: -0.01em; }
-    .main { background: linear-gradient(180deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%); color: #e2e8f0; }
+    .main { background: linear-gradient(180deg, #07070d 0%, #0f0f1a 50%, #07070d 100%); color: #e2e8f0; }
 
-    /* ===== SIDEBAR NAVIGATION ===== */
+    /* ===== ENHANCED SIDEBAR ===== */
     .nav-item {
-        padding: 10px 14px;
-        border-radius: 8px;
-        margin-bottom: 4px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-bottom: 6px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
         font-size: 13px;
         font-weight: 500;
         color: #94a3b8;
         border: 1px solid transparent;
-    }
-    .nav-item:hover {
-        background: rgba(99,102,241,0.08);
-        color: #e2e8f0;
-        border-color: rgba(99,102,241,0.15);
-    }
-    .nav-item.active {
-        background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
-        color: #818cf8;
-        border-color: rgba(99,102,241,0.3);
-        font-weight: 600;
-    }
-    .nav-icon { font-size: 16px; width: 24px; text-align: center; }
-
-    /* ===== COMPACT STOCK CARDS ===== */
-    .stock-card-rect {
-        background: linear-gradient(145deg, rgba(25,25,35,0.9), rgba(20,20,30,0.95));
-        border: 1px solid rgba(255,255,255,0.05);
-        border-radius: 10px;
-        padding: 14px 16px;
-        cursor: pointer;
-        transition: all 0.25s ease;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
         position: relative;
         overflow: hidden;
     }
-    .stock-card-rect:hover {
+    .nav-item:hover {
+        background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08));
+        color: #e2e8f0;
         border-color: rgba(99,102,241,0.25);
-        transform: translateX(3px);
-        box-shadow: 0 4px 20px rgba(99,102,241,0.08);
+        transform: translateX(4px);
+    }
+    .nav-item.active {
+        background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15));
+        color: #818cf8;
+        border-color: rgba(99,102,241,0.4);
+        font-weight: 700;
+        box-shadow: 0 4px 15px rgba(99,102,241,0.15);
+    }
+    .nav-item.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, #6366f1, #8b5cf6);
+        border-radius: 0 3px 3px 0;
+    }
+    .nav-icon { font-size: 18px; width: 28px; text-align: center; }
+    .nav-badge {
+        margin-right: auto;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 700;
+        background: rgba(16,185,129,0.2);
+        color: #34d399;
+        border: 1px solid rgba(16,185,129,0.3);
+    }
+
+    /* ===== ENHANCED STOCK CARDS ===== */
+    .stock-card-rect {
+        background: linear-gradient(145deg, rgba(20,20,30,0.95), rgba(15,15,25,0.98));
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 14px;
+        padding: 16px 18px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+    .stock-card-rect:hover {
+        border-color: rgba(99,102,241,0.3);
+        transform: translateX(5px) translateY(-2px);
+        box-shadow: 0 8px 32px rgba(99,102,241,0.12);
     }
     .stock-card-rect::before {
         content: '';
@@ -79,39 +104,58 @@ st.markdown("""
         right: 0;
         top: 0;
         bottom: 0;
-        width: 3px;
+        width: 4px;
         background: transparent;
-        transition: all 0.2s;
+        transition: all 0.3s;
+        border-radius: 0 14px 14px 0;
     }
-    .stock-card-rect.buy-signal::before { background: #10b981; }
-    .stock-card-rect.sell-signal::before { background: #ef4444; }
-    .stock-card-rect.hold-signal::before { background: #f59e0b; }
-    .stock-card-rect.neutral-signal::before { background: #64748b; }
+    .stock-card-rect.buy-signal::before { background: linear-gradient(180deg, #10b981, #059669); }
+    .stock-card-rect.sell-signal::before { background: linear-gradient(180deg, #ef4444, #dc2626); }
+    .stock-card-rect.hold-signal::before { background: linear-gradient(180deg, #f59e0b, #d97706); }
+    .stock-card-rect.neutral-signal::before { background: linear-gradient(180deg, #64748b, #475569); }
 
-    .stock-rect-info { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-    .stock-rect-symbol { font-size: 15px; font-weight: 700; color: #fbbf24; }
-    .stock-rect-name { font-size: 11px; color: #64748b; }
-    .stock-rect-sector { font-size: 10px; color: #475569; }
+    .stock-rect-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .stock-rect-symbol { font-size: 16px; font-weight: 800; color: #fbbf24; letter-spacing: 0.02em; }
+    .stock-rect-name { font-size: 12px; color: #64748b; }
+    .stock-rect-sector { font-size: 11px; color: #475569; }
 
-    .stock-rect-price-section { text-align: left; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 80px; }
-    .stock-rect-price { font-size: 17px; font-weight: 700; color: #f1f5f9; }
-    .stock-rect-change { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; display: inline-block; }
+    .stock-rect-price-section { text-align: left; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 90px; }
+    .stock-rect-price { font-size: 19px; font-weight: 800; color: #f1f5f9; }
+    .stock-rect-change { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; display: inline-block; }
     .stock-rect-change.up { background: rgba(16,185,129,0.15); color: #10b981; }
     .stock-rect-change.down { background: rgba(239,68,68,0.15); color: #ef4444; }
 
-    /* ===== COMPACT BUTTONS INSIDE CARDS ===== */
+    /* ===== RECOMMENDATION BADGES ===== */
+    .rec-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        gap: 4px;
+    }
+    .rec-strong-buy { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05)); color: #10b981; border: 1px solid rgba(16,185,129,0.3); box-shadow: 0 2px 8px rgba(16,185,129,0.15); }
+    .rec-buy { background: linear-gradient(135deg, rgba(52,211,153,0.15), rgba(52,211,153,0.05)); color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
+    .rec-hold { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .rec-sell { background: linear-gradient(135deg, rgba(248,113,113,0.15), rgba(248,113,113,0.05)); color: #f87171; border: 1px solid rgba(248,113,113,0.25); }
+    .rec-strong-sell { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05)); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); box-shadow: 0 2px 8px rgba(239,68,68,0.15); }
+    .rec-watch { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05)); color: #818cf8; border: 1px solid rgba(99,102,241,0.25); }
+
+    /* ===== COMPACT BUTTONS ===== */
     .card-actions {
         display: flex;
-        gap: 6px;
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px solid rgba(255,255,255,0.04);
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255,255,255,0.05);
     }
     .btn-compact {
         flex: 1;
-        border-radius: 6px;
-        padding: 6px 8px;
-        font-size: 11px;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 12px;
         font-weight: 600;
         border: 1px solid rgba(99,102,241,0.25);
         background: rgba(99,102,241,0.08);
@@ -128,113 +172,109 @@ st.markdown("""
         background: rgba(99,102,241,0.15);
         border-color: rgba(99,102,241,0.4);
         color: #a5b4fc;
-    }
-    .btn-compact-danger {
-        border-color: rgba(239,68,68,0.25);
-        background: rgba(239,68,68,0.06);
-        color: #f87171;
-    }
-    .btn-compact-danger:hover {
-        background: rgba(239,68,68,0.12);
-        border-color: rgba(239,68,68,0.35);
-    }
-    .btn-compact-success {
-        border-color: rgba(16,185,129,0.25);
-        background: rgba(16,185,129,0.06);
-        color: #34d399;
-    }
-    .btn-compact-success:hover {
-        background: rgba(16,185,129,0.12);
-        border-color: rgba(16,185,129,0.35);
+        transform: translateY(-1px);
     }
 
-    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
-    .badge-green { background: rgba(16,185,129,0.15); color: #10b981; }
-    .badge-red { background: rgba(239,68,68,0.15); color: #ef4444; }
-    .badge-yellow { background: rgba(245,158,11,0.15); color: #f59e0b; }
-    .badge-blue { background: rgba(99,102,241,0.15); color: #818cf8; }
-    .badge-purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+    .badge-red { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+    .badge-yellow { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+    .badge-blue { background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.2); }
+    .badge-purple { background: rgba(139,92,246,0.12); color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
 
-    .pro-panel { background: linear-gradient(145deg, rgba(20,20,30,0.95), rgba(15,15,25,0.98)); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.4); margin-bottom: 16px; transition: all 0.2s ease; }
-    .pro-panel:hover { border-color: rgba(99,102,241,0.12); }
-    .pro-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .pro-panel-title { font-size: 14px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .pro-panel { 
+        background: linear-gradient(145deg, rgba(20,20,30,0.95), rgba(15,15,25,0.98)); 
+        border: 1px solid rgba(255,255,255,0.06); 
+        border-radius: 16px; 
+        padding: 24px; 
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5); 
+        margin-bottom: 20px; 
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+    .pro-panel:hover { border-color: rgba(99,102,241,0.15); }
+    .pro-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .pro-panel-title { font-size: 15px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; }
 
     .status-up { color: #10b981; } .status-down { color: #ef4444; } .status-neutral { color: #94a3b8; } .status-warning { color: #f59e0b; }
-    .live-pulse { display: inline-block; width: 6px; height: 6px; background: #10b981; border-radius: 50%; animation: pulse-live 2s infinite; margin-left: 6px; }
+    .live-pulse { display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulse-live 2s infinite; margin-left: 8px; box-shadow: 0 0 8px #10b981; }
     @keyframes pulse-live { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
 
-    .signal-box { border-radius: 10px; padding: 20px; text-align: center; border: 1px solid; }
-    .signal-buy { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02)); border-color: rgba(16,185,129,0.3); }
-    .signal-sell { background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.02)); border-color: rgba(239,68,68,0.3); }
-    .signal-hold { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.02)); border-color: rgba(245,158,11,0.3); }
+    .signal-box { border-radius: 14px; padding: 28px; text-align: center; border: 1px solid; transition: all 0.3s ease; }
+    .signal-box:hover { transform: translateY(-2px); }
+    .signal-buy { background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.02)); border-color: rgba(16,185,129,0.4); }
+    .signal-sell { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.02)); border-color: rgba(239,68,68,0.4); }
+    .signal-hold { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.02)); border-color: rgba(245,158,11,0.4); }
 
-    .indicator-card { padding: 16px; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; }
-    .indicator-value { font-size: 24px; font-weight: 800; margin: 6px 0; }
-    .indicator-desc { font-size: 11px; color: #64748b; line-height: 1.5; }
+    .indicator-card { padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; transition: all 0.2s; }
+    .indicator-card:hover { border-color: rgba(99,102,241,0.15); transform: translateY(-1px); }
+    .indicator-value { font-size: 28px; font-weight: 800; margin: 8px 0; }
+    .indicator-desc { font-size: 12px; color: #64748b; line-height: 1.6; }
 
-    .pillar-card { padding: 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); transition: all 0.2s; }
-    .pillar-card:hover { border-color: rgba(99,102,241,0.2); transform: translateY(-2px); }
-    .pillar-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
-    .pillar-score { font-size: 22px; font-weight: 800; }
-    .pillar-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.05); overflow: hidden; margin-top: 6px; }
-    .pillar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+    .pillar-card { padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); transition: all 0.3s; }
+    .pillar-card:hover { border-color: rgba(99,102,241,0.25); transform: translateY(-3px); box-shadow: 0 4px 20px rgba(99,102,241,0.08); }
+    .pillar-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .pillar-score { font-size: 26px; font-weight: 800; }
+    .pillar-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.05); overflow: hidden; margin-top: 8px; }
+    .pillar-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
 
-    .task-item { padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px; border-right: 3px solid; transition: all 0.2s; }
-    .task-item:hover { background: rgba(255,255,255,0.04); }
+    .task-item { padding: 14px; background: rgba(255,255,255,0.02); border-radius: 10px; margin-bottom: 10px; border-right: 3px solid; transition: all 0.2s; }
+    .task-item:hover { background: rgba(255,255,255,0.04); transform: translateX(2px); }
 
     .fund-card {
-        padding: 16px;
+        padding: 20px;
         background: linear-gradient(145deg, rgba(25,25,35,0.9), rgba(20,20,30,0.95));
         border: 1px solid rgba(255,255,255,0.05);
-        border-radius: 10px;
-        margin-bottom: 10px;
-        transition: all 0.2s;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        transition: all 0.3s;
     }
-    .fund-card:hover { border-color: rgba(99,102,241,0.2); transform: translateY(-2px); }
+    .fund-card:hover { border-color: rgba(99,102,241,0.2); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 
     .dividend-card {
-        padding: 14px;
+        padding: 16px;
         background: rgba(16,185,129,0.03);
         border: 1px solid rgba(16,185,129,0.1);
-        border-radius: 10px;
-        margin-bottom: 8px;
+        border-radius: 12px;
+        margin-bottom: 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        transition: all 0.2s;
     }
+    .dividend-card:hover { border-color: rgba(16,185,129,0.25); transform: translateX(3px); }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-    div[data-testid="stMetricValue"] { font-size: 20px !important; font-weight: 700 !important; color: #f1f5f9 !important; }
-    [data-testid="stSidebar"] { background: linear-gradient(180deg, #0c0c14 0%, #16162a 100%); border-right: 1px solid rgba(255,255,255,0.05); }
+    div[data-testid="stMetricValue"] { font-size: 22px !important; font-weight: 700 !important; color: #f1f5f9 !important; }
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, #0a0a14 0%, #131326 100%); border-right: 1px solid rgba(255,255,255,0.05); }
 
     .section-title {
-        font-size: 18px;
-        font-weight: 700;
+        font-size: 20px;
+        font-weight: 800;
         color: #f1f5f9;
-        margin-bottom: 16px;
-        padding-bottom: 8px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
         border-bottom: 1px solid rgba(255,255,255,0.08);
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
     }
 
     .sub-nav {
         display: flex;
         gap: 8px;
-        margin-bottom: 20px;
-        padding: 6px;
+        margin-bottom: 24px;
+        padding: 8px;
         background: rgba(255,255,255,0.02);
-        border-radius: 10px;
+        border-radius: 12px;
         border: 1px solid rgba(255,255,255,0.05);
     }
     .sub-nav-item {
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-size: 12px;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 13px;
         font-weight: 600;
         color: #64748b;
         cursor: pointer;
@@ -246,6 +286,111 @@ st.markdown("""
     }
     .sub-nav-item:hover { color: #e2e8f0; background: rgba(255,255,255,0.03); }
     .sub-nav-item.active { background: rgba(99,102,241,0.15); color: #818cf8; }
+
+    /* ===== RECOMMENDATION PANEL ===== */
+    .rec-panel {
+        background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.04));
+        border: 1px solid rgba(99,102,241,0.2);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    .rec-panel::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4);
+    }
+    .rec-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    .rec-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .rec-count {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        background: rgba(16,185,129,0.15);
+        color: #34d399;
+        border: 1px solid rgba(16,185,129,0.3);
+    }
+
+    /* ===== TRENDING TICKER ===== */
+    .ticker-wrap {
+        width: 100%;
+        overflow: hidden;
+        background: rgba(99,102,241,0.05);
+        border: 1px solid rgba(99,102,241,0.1);
+        border-radius: 8px;
+        padding: 10px 0;
+        margin-bottom: 20px;
+        white-space: nowrap;
+    }
+    .ticker {
+        display: inline-block;
+        animation: ticker 30s linear infinite;
+    }
+    @keyframes ticker {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+    }
+    .ticker-item {
+        display: inline-block;
+        padding: 0 24px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    /* ===== SCORE RING ===== */
+    .score-ring {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        font-weight: 800;
+        font-size: 18px;
+    }
+    .score-ring::before {
+        content: '';
+        position: absolute;
+        inset: 4px;
+        border-radius: 50%;
+        background: #12121a;
+    }
+    .score-ring span {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ===== HEATMAP CELL ===== */
+    .heatmap-cell {
+        padding: 8px;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .heatmap-cell:hover { transform: scale(1.05); z-index: 10; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -271,6 +416,12 @@ def init_session_state():
         'active_subsection': None,
         'company_fundamental_data': {},
         'edit_company_symbol': None,
+        'eod_recommendations': None,
+        'eod_timestamp': None,
+        'global_recommendations': None,
+        'last_scan_time': None,
+        'watchlist': [],
+        'notification_queue': [],
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -571,198 +722,8 @@ class EGXDataEngine:
         except Exception:
             return None
 
-# ==================== INVESTMENT FUNDS DATA ====================
-class FundsEngine:
-    """Egyptian Investment Funds & ETFs simulation"""
-
-    FUNDS = [
-        {"name": "صندوق الأهرام لأسهم النيل", "type": "أسهم", "nav": 18.45, "change": 1.24, "aum": 850000000, "ytd": 12.5, "risk": "عالي", "top_holdings": ["COMI", "TMGH", "EAST"]},
-        {"name": "صندوق مصر للاستثمار", "type": "أسهم", "nav": 22.30, "change": 0.89, "aum": 1200000000, "ytd": 8.2, "risk": "عالي", "top_holdings": ["COMI", "ETEL", "SWDY"]},
-        {"name": "صندوق CIB للاستثمار", "type": "أسهم", "nav": 15.80, "change": -0.45, "aum": 650000000, "ytd": 5.1, "risk": "عالي", "top_holdings": ["COMI", "QNBE", "FWRY"]},
-        {"name": "صندوق النيل للاستثمار", "type": "أسهم", "nav": 12.60, "change": 1.85, "aum": 420000000, "ytd": 15.3, "risk": "عالي", "top_holdings": ["TMGH", "PHDC", "ORHD"]},
-        {"name": "صندوق القاهرة للاستثمار", "type": "أسهم", "nav": 9.40, "change": 0.65, "aum": 280000000, "ytd": 6.8, "risk": "عالي", "top_holdings": ["EAST", "EFID", "JUFO"]},
-        {"name": "صندوق المؤشر المصري", "type": "ETF", "nav": 248.50, "change": 1.24, "aum": 2500000000, "ytd": 10.2, "risk": "متوسط", "top_holdings": ["COMI", "ETEL", "TMGH"]},
-        {"name": "صندوق EGX30 ETF", "type": "ETF", "nav": 12.42, "change": 1.24, "aum": 1800000000, "ytd": 10.2, "risk": "متوسط", "top_holdings": ["COMI", "ETEL", "TMGH", "SWDY"]},
-        {"name": "صندوق الدخل الثابت", "type": "دخل ثابت", "nav": 10.85, "change": 0.15, "aum": 950000000, "ytd": 4.2, "risk": "منخفض", "top_holdings": ["HDBK", "QNBE", "ADIB"]},
-        {"name": "صندوق أدوات الدخل", "type": "دخل ثابت", "nav": 11.20, "change": 0.22, "aum": 720000000, "ytd": 3.8, "risk": "منخفض", "top_holdings": ["CIEB", "CANA", "FAIT"]},
-        {"name": "صندوق النقد المصري", "type": "نقد", "nav": 1.00, "change": 0.01, "aum": 3500000000, "ytd": 2.1, "risk": "منخفض جداً", "top_holdings": []},
-        {"name": "صندودق العقاري المصري", "type": "عقاري", "nav": 8.90, "change": 0.75, "aum": 450000000, "ytd": 7.5, "risk": "متوسط", "top_holdings": ["TMGH", "EMFD", "PHDC"]},
-        {"name": "صندوق الطاقة المتجددة", "type": "قطاعي", "nav": 6.40, "change": 1.45, "aum": 320000000, "ytd": 18.2, "risk": "عالي", "top_holdings": ["EGAS", "AMOC", "TAQA"]},
-        {"name": "صندوق الصحة المصري", "type": "قطاعي", "nav": 14.20, "change": 0.95, "aum": 280000000, "ytd": 9.5, "risk": "متوسط", "top_holdings": ["MIPH", "PHAR", "AXPH"]},
-        {"name": "صندوق التكنولوجيا", "type": "قطاعي", "nav": 11.80, "change": 2.10, "aum": 380000000, "ytd": 22.5, "risk": "عالي", "top_holdings": ["EFIH", "FWRY", "SCTS"]},
-        {"name": "صندوق الاستثمار الإسلامي", "type": "إسلامي", "nav": 13.50, "change": 0.55, "aum": 550000000, "ytd": 6.8, "risk": "متوسط", "top_holdings": ["ADIB", "FAIT", "SAUD"]},
-    ]
-
-    @staticmethod
-    def get_all_funds() -> List[dict]:
-        return FundsEngine.FUNDS
-
-    @staticmethod
-    def get_fund_by_type(fund_type: str) -> List[dict]:
-        return [f for f in FundsEngine.FUNDS if f['type'] == fund_type]
-
-# ==================== DIVIDENDS ENGINE ====================
-class DividendsEngine:
-    """Egyptian companies dividends simulation"""
-
-    DIVIDENDS = [
-        {"symbol": "COMI", "name": "CIB", "sector": "بنوك", "dividend_date": "2026-04-15", "amount": 4.50, "share_price": 140.01, "yield": 3.21, "frequency": "سنوي", "status": "تم التوزيع"},
-        {"symbol": "QNBE", "name": "QNB مصر", "sector": "بنوك", "dividend_date": "2026-03-20", "amount": 2.80, "share_price": 58.14, "yield": 4.82, "frequency": "سنوي", "status": "تم التوزيع"},
-        {"symbol": "ETEL", "name": "المصرية للاتصالات", "sector": "اتصالات", "dividend_date": "2026-05-10", "amount": 3.20, "share_price": 98.49, "yield": 3.25, "frequency": "نصف سنوي", "status": "قريب"},
-        {"symbol": "EAST", "name": "الشرقية للدخان", "sector": "سلع استهلاكية", "dividend_date": "2026-05-25", "amount": 5.50, "share_price": 40.31, "yield": 13.64, "frequency": "ربع سنوي", "status": "قريب"},
-        {"symbol": "ABUK", "name": "أبو قير للأسمدة", "sector": "صناعة", "dividend_date": "2026-04-28", "amount": 4.20, "share_price": 87.19, "yield": 4.82, "frequency": "سنوي", "status": "تم التوزيع"},
-        {"symbol": "SWDY", "name": "السويدي إلكتريك", "sector": "صناعة", "dividend_date": "2026-06-05", "amount": 3.80, "share_price": 89.51, "yield": 4.25, "frequency": "سنوي", "status": "معلن"},
-        {"symbol": "TMGH", "name": "طلعت مصطفى", "sector": "عقارات", "dividend_date": "2026-05-18", "amount": 2.40, "share_price": 98.25, "yield": 2.44, "frequency": "نصف سنوي", "status": "قريب"},
-        {"symbol": "MIPH", "name": "مينافارم", "sector": "صحة", "dividend_date": "2026-04-10", "amount": 12.50, "share_price": 687.72, "yield": 1.82, "frequency": "سنوي", "status": "تم التوزيع"},
-        {"symbol": "SUGR", "name": "دلتا للسكر", "sector": "سلع استهلاكية", "dividend_date": "2026-06-20", "amount": 2.20, "share_price": 48.81, "yield": 4.51, "frequency": "سنوي", "status": "معلن"},
-        {"symbol": "EGAL", "name": "مصر للألومنيوم", "sector": "صناعة", "dividend_date": "2026-05-30", "amount": 8.50, "share_price": 317.00, "yield": 2.68, "frequency": "سنوي", "status": "معلن"},
-        {"symbol": "HRHO", "name": "EFG هيرمس", "sector": "استثمار", "dividend_date": "2026-04-22", "amount": 1.80, "share_price": 29.50, "yield": 6.10, "frequency": "سنوي", "status": "تم التوزيع"},
-        {"symbol": "HDBK", "name": "بنك الإسكان", "sector": "بنوك", "dividend_date": "2026-05-12", "amount": 5.20, "share_price": 147.26, "yield": 3.53, "frequency": "سنوي", "status": "قريب"},
-        {"symbol": "ADIB", "name": "أبوظبي الإسلامي", "sector": "بنوك", "dividend_date": "2026-03-15", "amount": 1.90, "share_price": 47.49, "yield": 4.00, "frequency": "سنوي", "status": "تم التوزيع"},
-        {"symbol": "ORHD", "name": "أوراسكوم للتنمية", "sector": "عقارات", "dividend_date": "2026-06-15", "amount": 1.50, "share_price": 33.35, "yield": 4.50, "frequency": "نصف سنوي", "status": "معلن"},
-        {"symbol": "PHDC", "name": "بالم هيلز", "sector": "عقارات", "dividend_date": "2026-05-22", "amount": 0.80, "share_price": 14.00, "yield": 5.71, "frequency": "نصف سنوي", "status": "قريب"},
-        {"symbol": "CANA", "name": "قناة السويس", "sector": "بنوك", "dividend_date": "2026-04-05", "amount": 1.20, "share_price": 33.88, "yield": 3.54, "frequency": "سنوي", "status": "تم التوزيع"},
-        {"symbol": "MFPC", "name": "موبكو", "sector": "صناعة", "dividend_date": "2026-06-10", "amount": 2.50, "share_price": 45.15, "yield": 5.54, "frequency": "سنوي", "status": "معلن"},
-        {"symbol": "ARCC", "name": "الأسمنت العربية", "sector": "صناعة", "dividend_date": "2026-05-08", "amount": 2.80, "share_price": 58.00, "yield": 4.83, "frequency": "سنوي", "status": "قريب"},
-        {"symbol": "EFID", "name": "إيديتا", "sector": "سلع استهلاكية", "dividend_date": "2026-04-18", "amount": 1.40, "share_price": 28.60, "yield": 4.90, "frequency": "سنوي", "status": "تم التوزيع"},
-        {"symbol": "JUFO", "name": "جهينة", "sector": "سلع استهلاكية", "dividend_date": "2026-05-05", "amount": 1.30, "share_price": 28.90, "yield": 4.50, "frequency": "سنوي", "status": "قريب"},
-    ]
-
-    @staticmethod
-    def get_all_dividends() -> List[dict]:
-        return DividendsEngine.DIVIDENDS
-
-    @staticmethod
-    def get_upcoming_dividends() -> List[dict]:
-        today = datetime.now().strftime("%Y-%m-%d")
-        return [d for d in DividendsEngine.DIVIDENDS if d['dividend_date'] >= today and d['status'] in ['قريب', 'معلن']]
-
-    @staticmethod
-    def get_sector_yields() -> dict:
-        sectors = {}
-        for d in DividendsEngine.DIVIDENDS:
-            sector = d['sector']
-            if sector not in sectors:
-                sectors[sector] = []
-            sectors[sector].append(d['yield'])
-        return {k: round(sum(v)/len(v), 2) for k, v in sectors.items()}
-
-# ==================== FUNDAMENTAL DATA ENGINE ====================
-class FundamentalDataEngine:
-    SECTOR_PROFILES = {
-        "بنوك": {"margin": 0.25, "current_ratio": 1.1, "debt_eq": 0.8, "asset_turn": 0.05, "ccc": -30, "int_cov": 4.0},
-        "تكنولوجيا مالية": {"margin": 0.18, "current_ratio": 1.8, "debt_eq": 0.3, "asset_turn": 0.6, "ccc": 20, "int_cov": 8.0},
-        "عقارات": {"margin": 0.22, "current_ratio": 1.5, "debt_eq": 0.9, "asset_turn": 0.25, "ccc": 180, "int_cov": 2.5},
-        "صناعة": {"margin": 0.12, "current_ratio": 1.4, "debt_eq": 0.6, "asset_turn": 0.7, "ccc": 60, "int_cov": 5.0},
-        "اتصالات": {"margin": 0.28, "current_ratio": 1.2, "debt_eq": 0.5, "asset_turn": 0.5, "ccc": 45, "int_cov": 6.0},
-        "سلع استهلاكية": {"margin": 0.08, "current_ratio": 1.3, "debt_eq": 0.4, "asset_turn": 1.2, "ccc": 30, "int_cov": 7.0},
-        "صحة": {"margin": 0.15, "current_ratio": 2.0, "debt_eq": 0.2, "asset_turn": 0.8, "ccc": 75, "int_cov": 9.0},
-        "استثمار": {"margin": 0.35, "current_ratio": 1.6, "debt_eq": 0.5, "asset_turn": 0.3, "ccc": 10, "int_cov": 5.5},
-        "طاقة": {"margin": 0.10, "current_ratio": 1.3, "debt_eq": 0.7, "asset_turn": 0.6, "ccc": 25, "int_cov": 4.5},
-        "تعليم": {"margin": 0.20, "current_ratio": 1.4, "debt_eq": 0.4, "asset_turn": 0.4, "ccc": 15, "int_cov": 6.5},
-        "إعلام": {"margin": 0.14, "current_ratio": 1.2, "debt_eq": 0.5, "asset_turn": 0.5, "ccc": 40, "int_cov": 5.0},
-        "نقل": {"margin": 0.11, "current_ratio": 1.1, "debt_eq": 0.8, "asset_turn": 0.8, "ccc": 20, "int_cov": 3.5},
-        "تكنولوجيا": {"margin": 0.16, "current_ratio": 1.7, "debt_eq": 0.3, "asset_turn": 0.9, "ccc": 35, "int_cov": 8.5},
-        "سياحة": {"margin": 0.18, "current_ratio": 1.3, "debt_eq": 0.6, "asset_turn": 0.4, "ccc": 30, "int_cov": 4.0},
-        "تأمين": {"margin": 0.12, "current_ratio": 1.4, "debt_eq": 0.4, "asset_turn": 0.3, "ccc": 15, "int_cov": 6.0},
-        "أغذية": {"margin": 0.10, "current_ratio": 1.5, "debt_eq": 0.4, "asset_turn": 1.0, "ccc": 40, "int_cov": 7.0},
-        "مواد بناء": {"margin": 0.14, "current_ratio": 1.4, "debt_eq": 0.6, "asset_turn": 0.8, "ccc": 50, "int_cov": 5.0},
-        "خدمات": {"margin": 0.15, "current_ratio": 1.3, "debt_eq": 0.5, "asset_turn": 0.6, "ccc": 25, "int_cov": 5.5},
-    }
-
-    def __init__(self):
-        self.user_edits = st.session_state.get('company_fundamental_data', {})
-
-    def generate_fundamentals(self, stock_info: dict) -> dict:
-        symbol = stock_info['symbol']
-        sector = stock_info.get('sector', 'صناعة')
-        market_cap = stock_info.get('market_cap', 1e9)
-        base_price = stock_info.get('base_price', 10)
-
-        if symbol in self.user_edits:
-            return self.user_edits[symbol]
-
-        profile = self.SECTOR_PROFILES.get(sector, self.SECTOR_PROFILES["صناعة"])
-        np.random.seed(hash(symbol) % 10000)
-
-        revenue = market_cap * np.random.uniform(0.5, 2.0) * (1 / max(profile['asset_turn'], 0.1))
-        net_margin = profile['margin'] * np.random.uniform(0.7, 1.3)
-        operating_margin = net_margin * np.random.uniform(1.2, 1.8)
-        gross_margin = operating_margin * np.random.uniform(1.1, 1.4)
-        gross_margin = min(gross_margin, 0.65)
-        operating_margin = min(operating_margin, 0.45)
-        net_margin = max(min(net_margin, 0.35), 0.02)
-
-        cogs = revenue * (1 - gross_margin)
-        operating_income = revenue * operating_margin
-        net_income = revenue * net_margin
-
-        total_assets = revenue / max(profile['asset_turn'], 0.1)
-        equity = market_cap / np.random.uniform(1.0, 2.5)
-        total_debt = equity * profile['debt_eq'] * np.random.uniform(0.8, 1.2)
-        current_assets = total_assets * np.random.uniform(0.25, 0.45)
-        current_liabilities = current_assets / (profile['current_ratio'] * np.random.uniform(0.8, 1.2))
-        cash = current_assets * np.random.uniform(0.15, 0.35)
-        inventory = current_assets * np.random.uniform(0.2, 0.4) if sector not in ["بنوك", "استثمار", "اتصالات"] else current_assets * 0.05
-        receivables = revenue * np.random.uniform(0.08, 0.20)
-        payables = cogs * np.random.uniform(0.15, 0.30)
-        interest_expense = total_debt * np.random.uniform(0.04, 0.12)
-        working_capital = current_assets - current_liabilities
-
-        quick_assets = current_assets - inventory
-        current_ratio = current_assets / current_liabilities if current_liabilities > 0 else 1.5
-        quick_ratio = quick_assets / current_liabilities if current_liabilities > 0 else 1.0
-        cash_ratio = cash / current_liabilities if current_liabilities > 0 else 0.5
-        roa = net_income / total_assets if total_assets > 0 else 0
-        roe = net_income / equity if equity > 0 else 0
-        inventory_turnover = cogs / inventory if inventory > 0 else 0
-        inventory_days = 365 / inventory_turnover if inventory_turnover > 0 else 0
-        receivables_days = (receivables / revenue) * 365 if revenue > 0 else 0
-        payables_days = (payables / cogs) * 365 if cogs > 0 else 0
-        asset_turnover = revenue / total_assets if total_assets > 0 else 0
-        ccc = inventory_days + receivables_days - payables_days
-        debt_ratio = total_debt / total_assets if total_assets > 0 else 0
-        debt_to_equity = total_debt / equity if equity > 0 else 0
-        interest_coverage = operating_income / interest_expense if interest_expense > 0 else 999
-
-        profitability_score = min(100, ((gross_margin / 0.4) * 20 + (operating_margin / 0.25) * 20 + (net_margin / 0.20) * 20 + (roa / 0.10) * 20 + (roe / 0.15) * 20))
-        liquidity_score = min(100, ((current_ratio / 2.0) * 30 + (quick_ratio / 1.5) * 30 + (cash_ratio / 1.0) * 20 + (1 if working_capital > 0 else 0) * 20))
-        efficiency_score = min(100, ((asset_turnover / 1.0) * 25 + (100 if ccc < 0 else max(0, 100 - ccc)) * 25 + (inventory_turnover / 6) * 25 + (25 if receivables_days < 45 else max(0, 25 - (receivables_days - 45) / 2))))
-        leverage_score = min(100, ((1 - debt_ratio) * 30 + max(0, (1 - debt_to_equity / 1.5)) * 30 + min(interest_coverage / 5, 1) * 40))
-        overall_financial = (profitability_score + liquidity_score + efficiency_score + leverage_score) / 4
-
-        return {
-            "symbol": symbol, "name": stock_info['name'], "sector": sector, "market_cap": market_cap,
-            "revenue": round(revenue, 0), "cogs": round(cogs, 0), "operating_income": round(operating_income, 0),
-            "net_income": round(net_income, 0), "gross_margin": round(gross_margin * 100, 2),
-            "operating_margin": round(operating_margin * 100, 2), "net_margin": round(net_margin * 100, 2),
-            "total_assets": round(total_assets, 0), "total_equity": round(equity, 0), "total_debt": round(total_debt, 0),
-            "current_assets": round(current_assets, 0), "current_liabilities": round(current_liabilities, 0),
-            "cash": round(cash, 0), "inventory": round(inventory, 0), "receivables": round(receivables, 0),
-            "payables": round(payables, 0), "working_capital": round(working_capital, 0),
-            "interest_expense": round(interest_expense, 0), "current_ratio": round(current_ratio, 2),
-            "quick_ratio": round(quick_ratio, 2), "cash_ratio": round(cash_ratio, 2), "roa": round(roa * 100, 2),
-            "roe": round(roe * 100, 2), "inventory_turnover": round(inventory_turnover, 2),
-            "inventory_days": round(inventory_days, 1), "receivables_days": round(receivables_days, 1),
-            "payables_days": round(payables_days, 1), "asset_turnover": round(asset_turnover, 2),
-            "ccc": round(ccc, 1), "debt_ratio": round(debt_ratio * 100, 2), "debt_to_equity": round(debt_to_equity, 2),
-            "interest_coverage": round(interest_coverage, 2), "profitability_score": round(profitability_score, 1),
-            "liquidity_score": round(liquidity_score, 1), "efficiency_score": round(efficiency_score, 1),
-            "leverage_score": round(leverage_score, 1), "overall_score": round(overall_financial, 1),
-            "source": "simulated"
-        }
-
-    def get_fundamentals(self, symbol: str) -> Optional[dict]:
-        stock = next((s for s in EGXDataEngine.EGYPTIAN_STOCKS if s['symbol'] == symbol), None)
-        if not stock:
-            return None
-        return self.generate_fundamentals(stock)
-
-    def save_user_data(self, symbol: str, data: dict):
-        if 'company_fundamental_data' not in st.session_state:
-            st.session_state.company_fundamental_data = {}
-        st.session_state.company_fundamental_data[symbol] = data
-        self.user_edits = st.session_state.company_fundamental_data
+# Initialize data engine
+data_engine = EGXDataEngine()
 
 # ==================== TECHNICAL ANALYSIS ENGINE ====================
 class TechnicalAnalyzer:
@@ -937,6 +898,201 @@ class TechnicalAnalyzer:
 
 ta_engine = TechnicalAnalyzer()
 
+# ==================== FUNDAMENTAL DATA ENGINE ====================
+class FundamentalDataEngine:
+    SECTOR_PROFILES = {
+        "بنوك": {"margin": 0.25, "current_ratio": 1.1, "debt_eq": 0.8, "asset_turn": 0.05, "ccc": -30, "int_cov": 4.0},
+        "تكنولوجيا مالية": {"margin": 0.18, "current_ratio": 1.8, "debt_eq": 0.3, "asset_turn": 0.6, "ccc": 20, "int_cov": 8.0},
+        "عقارات": {"margin": 0.22, "current_ratio": 1.5, "debt_eq": 0.9, "asset_turn": 0.25, "ccc": 180, "int_cov": 2.5},
+        "صناعة": {"margin": 0.12, "current_ratio": 1.4, "debt_eq": 0.6, "asset_turn": 0.7, "ccc": 60, "int_cov": 5.0},
+        "اتصالات": {"margin": 0.28, "current_ratio": 1.2, "debt_eq": 0.5, "asset_turn": 0.5, "ccc": 45, "int_cov": 6.0},
+        "سلع استهلاكية": {"margin": 0.08, "current_ratio": 1.3, "debt_eq": 0.4, "asset_turn": 1.2, "ccc": 30, "int_cov": 7.0},
+        "صحة": {"margin": 0.15, "current_ratio": 2.0, "debt_eq": 0.2, "asset_turn": 0.8, "ccc": 75, "int_cov": 9.0},
+        "استثمار": {"margin": 0.35, "current_ratio": 1.6, "debt_eq": 0.5, "asset_turn": 0.3, "ccc": 10, "int_cov": 5.5},
+        "طاقة": {"margin": 0.10, "current_ratio": 1.3, "debt_eq": 0.7, "asset_turn": 0.6, "ccc": 25, "int_cov": 4.5},
+        "تعليم": {"margin": 0.20, "current_ratio": 1.4, "debt_eq": 0.4, "asset_turn": 0.4, "ccc": 15, "int_cov": 6.5},
+        "إعلام": {"margin": 0.14, "current_ratio": 1.2, "debt_eq": 0.5, "asset_turn": 0.5, "ccc": 40, "int_cov": 5.0},
+        "نقل": {"margin": 0.11, "current_ratio": 1.1, "debt_eq": 0.8, "asset_turn": 0.8, "ccc": 20, "int_cov": 3.5},
+        "تكنولوجيا": {"margin": 0.16, "current_ratio": 1.7, "debt_eq": 0.3, "asset_turn": 0.9, "ccc": 35, "int_cov": 8.5},
+        "سياحة": {"margin": 0.18, "current_ratio": 1.3, "debt_eq": 0.6, "asset_turn": 0.4, "ccc": 30, "int_cov": 4.0},
+        "تأمين": {"margin": 0.12, "current_ratio": 1.4, "debt_eq": 0.4, "asset_turn": 0.3, "ccc": 15, "int_cov": 6.0},
+        "أغذية": {"margin": 0.10, "current_ratio": 1.5, "debt_eq": 0.4, "asset_turn": 1.0, "ccc": 40, "int_cov": 7.0},
+        "مواد بناء": {"margin": 0.14, "current_ratio": 1.4, "debt_eq": 0.6, "asset_turn": 0.8, "ccc": 50, "int_cov": 5.0},
+        "خدمات": {"margin": 0.15, "current_ratio": 1.3, "debt_eq": 0.5, "asset_turn": 0.6, "ccc": 25, "int_cov": 5.5},
+    }
+
+    def __init__(self):
+        self.user_edits = st.session_state.get('company_fundamental_data', {})
+
+    def generate_fundamentals(self, stock_info: dict) -> dict:
+        symbol = stock_info['symbol']
+        sector = stock_info.get('sector', 'صناعة')
+        market_cap = stock_info.get('market_cap', 1e9)
+        base_price = stock_info.get('base_price', 10)
+
+        if symbol in self.user_edits:
+            return self.user_edits[symbol]
+
+        profile = self.SECTOR_PROFILES.get(sector, self.SECTOR_PROFILES["صناعة"])
+        np.random.seed(hash(symbol) % 10000)
+
+        revenue = market_cap * np.random.uniform(0.5, 2.0) * (1 / max(profile['asset_turn'], 0.1))
+        net_margin = profile['margin'] * np.random.uniform(0.7, 1.3)
+        operating_margin = net_margin * np.random.uniform(1.2, 1.8)
+        gross_margin = operating_margin * np.random.uniform(1.1, 1.4)
+        gross_margin = min(gross_margin, 0.65)
+        operating_margin = min(operating_margin, 0.45)
+        net_margin = max(min(net_margin, 0.35), 0.02)
+
+        cogs = revenue * (1 - gross_margin)
+        operating_income = revenue * operating_margin
+        net_income = revenue * net_margin
+
+        total_assets = revenue / max(profile['asset_turn'], 0.1)
+        equity = market_cap / np.random.uniform(1.0, 2.5)
+        total_debt = equity * profile['debt_eq'] * np.random.uniform(0.8, 1.2)
+        current_assets = total_assets * np.random.uniform(0.25, 0.45)
+        current_liabilities = current_assets / (profile['current_ratio'] * np.random.uniform(0.8, 1.2))
+        cash = current_assets * np.random.uniform(0.15, 0.35)
+        inventory = current_assets * np.random.uniform(0.2, 0.4) if sector not in ["بنوك", "استثمار", "اتصالات"] else current_assets * 0.05
+        receivables = revenue * np.random.uniform(0.08, 0.20)
+        payables = cogs * np.random.uniform(0.15, 0.30)
+        interest_expense = total_debt * np.random.uniform(0.04, 0.12)
+        working_capital = current_assets - current_liabilities
+
+        quick_assets = current_assets - inventory
+        current_ratio = current_assets / current_liabilities if current_liabilities > 0 else 1.5
+        quick_ratio = quick_assets / current_liabilities if current_liabilities > 0 else 1.0
+        cash_ratio = cash / current_liabilities if current_liabilities > 0 else 0.5
+        roa = net_income / total_assets if total_assets > 0 else 0
+        roe = net_income / equity if equity > 0 else 0
+        inventory_turnover = cogs / inventory if inventory > 0 else 0
+        inventory_days = 365 / inventory_turnover if inventory_turnover > 0 else 0
+        receivables_days = (receivables / revenue) * 365 if revenue > 0 else 0
+        payables_days = (payables / cogs) * 365 if cogs > 0 else 0
+        asset_turnover = revenue / total_assets if total_assets > 0 else 0
+        ccc = inventory_days + receivables_days - payables_days
+        debt_ratio = total_debt / total_assets if total_assets > 0 else 0
+        debt_to_equity = total_debt / equity if equity > 0 else 0
+        interest_coverage = operating_income / interest_expense if interest_expense > 0 else 999
+
+        profitability_score = min(100, ((gross_margin / 0.4) * 20 + (operating_margin / 0.25) * 20 + (net_margin / 0.20) * 20 + (roa / 0.10) * 20 + (roe / 0.15) * 20))
+        liquidity_score = min(100, ((current_ratio / 2.0) * 30 + (quick_ratio / 1.5) * 30 + (cash_ratio / 1.0) * 20 + (1 if working_capital > 0 else 0) * 20))
+        efficiency_score = min(100, ((asset_turnover / 1.0) * 25 + (100 if ccc < 0 else max(0, 100 - ccc)) * 25 + (inventory_turnover / 6) * 25 + (25 if receivables_days < 45 else max(0, 25 - (receivables_days - 45) / 2))))
+        leverage_score = min(100, ((1 - debt_ratio) * 30 + max(0, (1 - debt_to_equity / 1.5)) * 30 + min(interest_coverage / 5, 1) * 40))
+        overall_financial = (profitability_score + liquidity_score + efficiency_score + leverage_score) / 4
+
+        return {
+            "symbol": symbol, "name": stock_info['name'], "sector": sector, "market_cap": market_cap,
+            "revenue": round(revenue, 0), "cogs": round(cogs, 0), "operating_income": round(operating_income, 0),
+            "net_income": round(net_income, 0), "gross_margin": round(gross_margin * 100, 2),
+            "operating_margin": round(operating_margin * 100, 2), "net_margin": round(net_margin * 100, 2),
+            "total_assets": round(total_assets, 0), "total_equity": round(equity, 0), "total_debt": round(total_debt, 0),
+            "current_assets": round(current_assets, 0), "current_liabilities": round(current_liabilities, 0),
+            "cash": round(cash, 0), "inventory": round(inventory, 0), "receivables": round(receivables, 0),
+            "payables": round(payables, 0), "working_capital": round(working_capital, 0),
+            "interest_expense": round(interest_expense, 0), "current_ratio": round(current_ratio, 2),
+            "quick_ratio": round(quick_ratio, 2), "cash_ratio": round(cash_ratio, 2), "roa": round(roa * 100, 2),
+            "roe": round(roe * 100, 2), "inventory_turnover": round(inventory_turnover, 2),
+            "inventory_days": round(inventory_days, 1), "receivables_days": round(receivables_days, 1),
+            "payables_days": round(payables_days, 1), "asset_turnover": round(asset_turnover, 2),
+            "ccc": round(ccc, 1), "debt_ratio": round(debt_ratio * 100, 2), "debt_to_equity": round(debt_to_equity, 2),
+            "interest_coverage": round(interest_coverage, 2), "profitability_score": round(profitability_score, 1),
+            "liquidity_score": round(liquidity_score, 1), "efficiency_score": round(efficiency_score, 1),
+            "leverage_score": round(leverage_score, 1), "overall_score": round(overall_financial, 1),
+            "source": "simulated"
+        }
+
+    def get_fundamentals(self, symbol: str) -> Optional[dict]:
+        stock = next((s for s in EGXDataEngine.EGYPTIAN_STOCKS if s['symbol'] == symbol), None)
+        if not stock:
+            return None
+        return self.generate_fundamentals(stock)
+
+    def save_user_data(self, symbol: str, data: dict):
+        if 'company_fundamental_data' not in st.session_state:
+            st.session_state.company_fundamental_data = {}
+        st.session_state.company_fundamental_data[symbol] = data
+        self.user_edits = st.session_state.company_fundamental_data
+
+fundamental_engine = FundamentalDataEngine()
+
+# ==================== INVESTMENT FUNDS DATA ====================
+class FundsEngine:
+    FUNDS = [
+        {"name": "صندوق الأهرام لأسهم النيل", "type": "أسهم", "nav": 18.45, "change": 1.24, "aum": 850000000, "ytd": 12.5, "risk": "عالي", "top_holdings": ["COMI", "TMGH", "EAST"]},
+        {"name": "صندوق مصر للاستثمار", "type": "أسهم", "nav": 22.30, "change": 0.89, "aum": 1200000000, "ytd": 8.2, "risk": "عالي", "top_holdings": ["COMI", "ETEL", "SWDY"]},
+        {"name": "صندوق CIB للاستثمار", "type": "أسهم", "nav": 15.80, "change": -0.45, "aum": 650000000, "ytd": 5.1, "risk": "عالي", "top_holdings": ["COMI", "QNBE", "FWRY"]},
+        {"name": "صندوق النيل للاستثمار", "type": "أسهم", "nav": 12.60, "change": 1.85, "aum": 420000000, "ytd": 15.3, "risk": "عالي", "top_holdings": ["TMGH", "PHDC", "ORHD"]},
+        {"name": "صندوق القاهرة للاستثمار", "type": "أسهم", "nav": 9.40, "change": 0.65, "aum": 280000000, "ytd": 6.8, "risk": "عالي", "top_holdings": ["EAST", "EFID", "JUFO"]},
+        {"name": "صندوق المؤشر المصري", "type": "ETF", "nav": 248.50, "change": 1.24, "aum": 2500000000, "ytd": 10.2, "risk": "متوسط", "top_holdings": ["COMI", "ETEL", "TMGH"]},
+        {"name": "صندوق EGX30 ETF", "type": "ETF", "nav": 12.42, "change": 1.24, "aum": 1800000000, "ytd": 10.2, "risk": "متوسط", "top_holdings": ["COMI", "ETEL", "TMGH", "SWDY"]},
+        {"name": "صندوق الدخل الثابت", "type": "دخل ثابت", "nav": 10.85, "change": 0.15, "aum": 950000000, "ytd": 4.2, "risk": "منخفض", "top_holdings": ["HDBK", "QNBE", "ADIB"]},
+        {"name": "صندوق أدوات الدخل", "type": "دخل ثابت", "nav": 11.20, "change": 0.22, "aum": 720000000, "ytd": 3.8, "risk": "منخفض", "top_holdings": ["CIEB", "CANA", "FAIT"]},
+        {"name": "صندوق النقد المصري", "type": "نقد", "nav": 1.00, "change": 0.01, "aum": 3500000000, "ytd": 2.1, "risk": "منخفض جداً", "top_holdings": []},
+        {"name": "صندودق العقاري المصري", "type": "عقاري", "nav": 8.90, "change": 0.75, "aum": 450000000, "ytd": 7.5, "risk": "متوسط", "top_holdings": ["TMGH", "EMFD", "PHDC"]},
+        {"name": "صندوق الطاقة المتجددة", "type": "قطاعي", "nav": 6.40, "change": 1.45, "aum": 320000000, "ytd": 18.2, "risk": "عالي", "top_holdings": ["EGAS", "AMOC", "TAQA"]},
+        {"name": "صندوق الصحة المصري", "type": "قطاعي", "nav": 14.20, "change": 0.95, "aum": 280000000, "ytd": 9.5, "risk": "متوسط", "top_holdings": ["MIPH", "PHAR", "AXPH"]},
+        {"name": "صندوق التكنولوجيا", "type": "قطاعي", "nav": 11.80, "change": 2.10, "aum": 380000000, "ytd": 22.5, "risk": "عالي", "top_holdings": ["EFIH", "FWRY", "SCTS"]},
+        {"name": "صندوق الاستثمار الإسلامي", "type": "إسلامي", "nav": 13.50, "change": 0.55, "aum": 550000000, "ytd": 6.8, "risk": "متوسط", "top_holdings": ["ADIB", "FAIT", "SAUD"]},
+    ]
+
+    @staticmethod
+    def get_all_funds() -> List[dict]:
+        return FundsEngine.FUNDS
+
+    @staticmethod
+    def get_fund_by_type(fund_type: str) -> List[dict]:
+        return [f for f in FundsEngine.FUNDS if f['type'] == fund_type]
+
+funds_engine = FundsEngine()
+
+# ==================== DIVIDENDS ENGINE ====================
+class DividendsEngine:
+    DIVIDENDS = [
+        {"symbol": "COMI", "name": "CIB", "sector": "بنوك", "dividend_date": "2026-04-15", "amount": 4.50, "share_price": 140.01, "yield": 3.21, "frequency": "سنوي", "status": "تم التوزيع"},
+        {"symbol": "QNBE", "name": "QNB مصر", "sector": "بنوك", "dividend_date": "2026-03-20", "amount": 2.80, "share_price": 58.14, "yield": 4.82, "frequency": "سنوي", "status": "تم التوزيع"},
+        {"symbol": "ETEL", "name": "المصرية للاتصالات", "sector": "اتصالات", "dividend_date": "2026-05-10", "amount": 3.20, "share_price": 98.49, "yield": 3.25, "frequency": "نصف سنوي", "status": "قريب"},
+        {"symbol": "EAST", "name": "الشرقية للدخان", "sector": "سلع استهلاكية", "dividend_date": "2026-05-25", "amount": 5.50, "share_price": 40.31, "yield": 13.64, "frequency": "ربع سنوي", "status": "قريب"},
+        {"symbol": "ABUK", "name": "أبو قير للأسمدة", "sector": "صناعة", "dividend_date": "2026-04-28", "amount": 4.20, "share_price": 87.19, "yield": 4.82, "frequency": "سنوي", "status": "تم التوزيع"},
+        {"symbol": "SWDY", "name": "السويدي إلكتريك", "sector": "صناعة", "dividend_date": "2026-06-05", "amount": 3.80, "share_price": 89.51, "yield": 4.25, "frequency": "سنوي", "status": "معلن"},
+        {"symbol": "TMGH", "name": "طلعت مصطفى", "sector": "عقارات", "dividend_date": "2026-05-18", "amount": 2.40, "share_price": 98.25, "yield": 2.44, "frequency": "نصف سنوي", "status": "قريب"},
+        {"symbol": "MIPH", "name": "مينافارم", "sector": "صحة", "dividend_date": "2026-04-10", "amount": 12.50, "share_price": 687.72, "yield": 1.82, "frequency": "سنوي", "status": "تم التوزيع"},
+        {"symbol": "SUGR", "name": "دلتا للسكر", "sector": "سلع استهلاكية", "dividend_date": "2026-06-20", "amount": 2.20, "share_price": 48.81, "yield": 4.51, "frequency": "سنوي", "status": "معلن"},
+        {"symbol": "EGAL", "name": "مصر للألومنيوم", "sector": "صناعة", "dividend_date": "2026-05-30", "amount": 8.50, "share_price": 317.00, "yield": 2.68, "frequency": "سنوي", "status": "معلن"},
+        {"symbol": "HRHO", "name": "EFG هيرمس", "sector": "استثمار", "dividend_date": "2026-04-22", "amount": 1.80, "share_price": 29.50, "yield": 6.10, "frequency": "سنوي", "status": "تم التوزيع"},
+        {"symbol": "HDBK", "name": "بنك الإسكان", "sector": "بنوك", "dividend_date": "2026-05-12", "amount": 5.20, "share_price": 147.26, "yield": 3.53, "frequency": "سنوي", "status": "قريب"},
+        {"symbol": "ADIB", "name": "أبوظبي الإسلامي", "sector": "بنوك", "dividend_date": "2026-03-15", "amount": 1.90, "share_price": 47.49, "yield": 4.00, "frequency": "سنوي", "status": "تم التوزيع"},
+        {"symbol": "ORHD", "name": "أوراسكوم للتنمية", "sector": "عقارات", "dividend_date": "2026-06-15", "amount": 1.50, "share_price": 33.35, "yield": 4.50, "frequency": "نصف سنوي", "status": "معلن"},
+        {"symbol": "PHDC", "name": "بالم هيلز", "sector": "عقارات", "dividend_date": "2026-05-22", "amount": 0.80, "share_price": 14.00, "yield": 5.71, "frequency": "نصف سنوي", "status": "قريب"},
+        {"symbol": "CANA", "name": "قناة السويس", "sector": "بنوك", "dividend_date": "2026-04-05", "amount": 1.20, "share_price": 33.88, "yield": 3.54, "frequency": "سنوي", "status": "تم التوزيع"},
+        {"symbol": "MFPC", "name": "موبكو", "sector": "صناعة", "dividend_date": "2026-06-10", "amount": 2.50, "share_price": 45.15, "yield": 5.54, "frequency": "سنوي", "status": "معلن"},
+        {"symbol": "ARCC", "name": "الأسمنت العربية", "sector": "صناعة", "dividend_date": "2026-05-08", "amount": 2.80, "share_price": 58.00, "yield": 4.83, "frequency": "سنوي", "status": "قريب"},
+        {"symbol": "EFID", "name": "إيديتا", "sector": "سلع استهلاكية", "dividend_date": "2026-04-18", "amount": 1.40, "share_price": 28.60, "yield": 4.90, "frequency": "سنوي", "status": "تم التوزيع"},
+        {"symbol": "JUFO", "name": "جهينة", "sector": "سلع استهلاكية", "dividend_date": "2026-05-05", "amount": 1.30, "share_price": 28.90, "yield": 4.50, "frequency": "سنوي", "status": "قريب"},
+    ]
+
+    @staticmethod
+    def get_all_dividends() -> List[dict]:
+        return DividendsEngine.DIVIDENDS
+
+    @staticmethod
+    def get_upcoming_dividends() -> List[dict]:
+        today = datetime.now().strftime("%Y-%m-%d")
+        return [d for d in DividendsEngine.DIVIDENDS if d['dividend_date'] >= today and d['status'] in ['قريب', 'معلن']]
+
+    @staticmethod
+    def get_sector_yields() -> dict:
+        sectors = {}
+        for d in DividendsEngine.DIVIDENDS:
+            sector = d['sector']
+            if sector not in sectors:
+                sectors[sector] = []
+            sectors[sector].append(d['yield'])
+        return {k: round(sum(v)/len(v), 2) for k, v in sectors.items()}
+
+dividends_engine = DividendsEngine()
+
 # ==================== RISK ENGINE ====================
 class RiskEngine:
     @staticmethod
@@ -1013,7 +1169,7 @@ class RiskEngine:
 
 risk_engine = RiskEngine()
 
-# ==================== AUTOMATED ANALYZER ====================
+# ==================== AI AUTOMATED ANALYZER ====================
 class AutomatedAnalyzer:
     @staticmethod
     def analyze_all(stocks_data: List[dict]) -> List[dict]:
@@ -1174,98 +1330,242 @@ class AutomatedAnalyzer:
 
 ai_engine = AutomatedAnalyzer()
 
-# Initialize engines
-data_engine = EGXDataEngine()
-fundamental_engine = FundamentalDataEngine()
-funds_engine = FundsEngine()
-dividends_engine = DividendsEngine()
-
-
-# ==================== END OF SESSION RECOMMENDATION SYSTEM ====================
-class EndOfSessionEngine:
+# ==================== UNIFIED RECOMMENDATION ENGINE v24 ====================
+class UnifiedRecommendationEngine:
     """
-    نظام التوصيات الذكي لنهاية الجلسة
-    يقوم بتحليل جميع الأسهم وإصدار توصيات شراء/بيع/انتظار
-    مع تقييم شامل للسوق وإشعارات فورية
+    نظام التوصيات الموحد v24
+    يعمل في جميع التبويبات مع تحديث مستمر
     """
 
-    RECOMMENDATION_HISTORY = []
-
-    @staticmethod
-    def is_market_closed() -> bool:
-        """Check if Egyptian market is closed (after 2:30 PM Cairo time)"""
-        now = datetime.now()
-        # EGX closes at 2:30 PM (14:30)
-        return now.hour >= 14 and now.minute >= 30
+    RECOMMENDATION_CACHE = {}
+    LAST_UPDATE = None
 
     @staticmethod
     def get_market_session_status() -> dict:
-        """Get current market session status"""
         now = datetime.now()
         hour = now.hour
-
         if hour < 10:
-            return {"status": "مغلق", "phase": "قبل الافتتاح", "color": "#64748b", "icon": "🌙"}
+            return {"status": "مغلق", "phase": "قبل الافتتاح", "color": "#64748b", "icon": "🌙", "is_open": False}
         elif hour < 10 or (hour == 10 and now.minute < 30):
-            return {"status": "افتتاح", "phase": "جلسة الافتتاح", "color": "#fbbf24", "icon": "🌅"}
+            return {"status": "افتتاح", "phase": "جلسة الافتتاح", "color": "#fbbf24", "icon": "🌅", "is_open": True}
         elif hour < 14 or (hour == 14 and now.minute < 30):
-            return {"status": "مفتوح", "phase": "الجلسة العادية", "color": "#10b981", "icon": "☀️"}
+            return {"status": "مفتوح", "phase": "الجلسة العادية", "color": "#10b981", "icon": "☀️", "is_open": True}
         elif hour == 14 and now.minute >= 30 and now.minute < 45:
-            return {"status": "ختام", "phase": "جلسة الختام", "color": "#f59e0b", "icon": "🌇"}
+            return {"status": "ختام", "phase": "جلسة الختام", "color": "#f59e0b", "icon": "🌇", "is_open": True}
         else:
-            return {"status": "مغلق", "phase": "بعد الإغلاق", "color": "#6366f1", "icon": "🌙"}
+            return {"status": "مغلق", "phase": "بعد الإغلاق", "color": "#6366f1", "icon": "🌙", "is_open": False}
 
     @staticmethod
-    def generate_session_summary(stocks_data: List[dict]) -> dict:
-        """Generate comprehensive end-of-session market summary"""
+    def generate_single_recommendation(stock: dict, market_summary: dict = None) -> dict:
+        """Generate recommendation for a single stock"""
+        try:
+            symbol = stock['symbol']
+            df = data_engine.get_stock_history(symbol, "3mo")
+            if df is None or len(df) < 30:
+                return None
+
+            df = ta_engine.calculate_all(df)
+            if df is None:
+                return None
+
+            latest = df.iloc[-1]
+            signals = ta_engine.generate_signals(df)
+            overall_signal, score, signal_text, trend, reasons = ta_engine.calculate_overall(signals)
+
+            current_price = stock['price']
+            daily_change = stock['change_pct']
+
+            # Volume analysis
+            base_volume = stock.get('market_cap', 1e9) / (current_price * 100) if current_price > 0 else 1e6
+            daily_volume_ratio = stock.get('volume', base_volume) / base_volume
+
+            # Support/Resistance
+            sr_levels = ai_engine.calculate_support_resistance(df)
+            supports = sr_levels.get('supports', [])
+            resistances = sr_levels.get('resistances', [])
+            nearest_support = max([s for s in supports if s < current_price], default=current_price * 0.95)
+            nearest_resistance = min([r for r in resistances if r > current_price], default=current_price * 1.05)
+            support_distance = (current_price - nearest_support) / current_price * 100
+            resistance_distance = (nearest_resistance - current_price) / current_price * 100
+
+            # Enhanced EOD scoring
+            eod_score = 50
+
+            # Technical signal weight (30%)
+            if overall_signal == "STRONG_BUY": eod_score += 18
+            elif overall_signal == "BUY": eod_score += 12
+            elif overall_signal == "STRONG_SELL": eod_score -= 18
+            elif overall_signal == "SELL": eod_score -= 12
+
+            # Daily performance weight (20%)
+            if daily_change > 5: eod_score -= 8
+            elif daily_change > 3: eod_score -= 4
+            elif daily_change < -5: eod_score += 8
+            elif daily_change < -3: eod_score += 4
+            elif 0 < daily_change < 2: eod_score += 3
+
+            # Volume confirmation (15%)
+            if daily_volume_ratio > 2: 
+                if daily_change > 0: eod_score += 6
+                else: eod_score -= 6
+            elif daily_volume_ratio > 1.5:
+                if daily_change > 0: eod_score += 3
+                else: eod_score -= 3
+
+            # Support/Resistance proximity (15%)
+            if support_distance < 2: eod_score += 8
+            elif resistance_distance < 2: eod_score -= 8
+
+            # Market sentiment alignment (10%)
+            if market_summary:
+                sentiment = market_summary.get('sentiment', 'محايد')
+                if sentiment in ['إيجابي قوي', 'إيجابي'] and overall_signal in ['BUY', 'STRONG_BUY']:
+                    eod_score += 4
+                elif sentiment in ['سلبي قوي', 'سلبي'] and overall_signal in ['SELL', 'STRONG_SELL']:
+                    eod_score += 4
+
+            # Candlestick patterns (10%)
+            open_price = stock.get('open', current_price)
+            high_price = stock.get('high', current_price)
+            low_price = stock.get('low', current_price)
+            body = abs(current_price - open_price)
+            upper_shadow = high_price - max(open_price, current_price)
+            lower_shadow = min(open_price, current_price) - low_price
+            total_range = high_price - low_price if high_price != low_price else 1
+
+            if current_price > open_price:
+                if lower_shadow > body * 2: eod_score += 6  # Hammer
+                if body > total_range * 0.6: eod_score += 4  # Strong bullish
+            else:
+                if upper_shadow > body * 2: eod_score -= 6  # Shooting star
+                if body > total_range * 0.6: eod_score -= 4  # Strong bearish
+
+            # Fundamental score integration (if available)
+            fund_data = fundamental_engine.get_fundamentals(symbol)
+            if fund_data:
+                fin_score = fund_data.get('overall_score', 50)
+                if fin_score >= 70: eod_score += 3
+                elif fin_score < 40: eod_score -= 3
+
+            eod_score = max(0, min(100, eod_score))
+
+            # Determine recommendation
+            if eod_score >= 80:
+                rec_action = "شراء قوي"; rec_icon = "🟢"; rec_color = "#10b981"; rec_type = "STRONG_BUY"
+                urgency = "فوري"; hold_period = "1-3 أيام"
+            elif eod_score >= 65:
+                rec_action = "شراء"; rec_icon = "🟢"; rec_color = "#34d399"; rec_type = "BUY"
+                urgency = "قريب"; hold_period = "2-5 أيام"
+            elif eod_score >= 50:
+                rec_action = "شراء محتمل"; rec_icon = "🟡"; rec_color = "#fbbf24"; rec_type = "WEAK_BUY"
+                urgency = "مراقبة"; hold_period = "3-7 أيام"
+            elif eod_score <= 20:
+                rec_action = "بيع قوي"; rec_icon = "🔴"; rec_color = "#ef4444"; rec_type = "STRONG_SELL"
+                urgency = "فوري"; hold_period = "تصفية"
+            elif eod_score <= 35:
+                rec_action = "بيع"; rec_icon = "🔴"; rec_color = "#f87171"; rec_type = "SELL"
+                urgency = "قريب"; hold_period = "تصفية"
+            elif eod_score <= 45:
+                rec_action = "بيع محتمل"; rec_icon = "🟠"; rec_color = "#f59e0b"; rec_type = "WEAK_SELL"
+                urgency = "مراقبة"; hold_period = "تصفية تدريجية"
+            else:
+                rec_action = "انتظار"; rec_icon = "⚪"; rec_color = "#94a3b8"; rec_type = "HOLD"
+                urgency = "-"; hold_period = "-"
+
+            # Calculate targets
+            atr = latest.get('ATR') if pd.notna(latest.get('ATR')) else current_price * 0.02
+            if rec_type in ['STRONG_BUY', 'BUY', 'WEAK_BUY']:
+                entry = current_price
+                stop = current_price - (atr * 2)
+                target1 = current_price + (atr * 2)
+                target2 = current_price + (atr * 3.5)
+            elif rec_type in ['STRONG_SELL', 'SELL', 'WEAK_SELL']:
+                entry = current_price
+                stop = current_price + (atr * 2)
+                target1 = current_price - (atr * 2)
+                target2 = current_price - (atr * 3.5)
+            else:
+                entry = current_price
+                stop = current_price * 0.95
+                target1 = current_price * 1.05
+                target2 = current_price * 1.10
+
+            return {
+                "symbol": symbol, "name": stock['name'], "sector": stock['sector'],
+                "price": current_price, "change_pct": daily_change,
+                "eod_score": round(eod_score, 1), "rec_action": rec_action,
+                "rec_icon": rec_icon, "rec_color": rec_color, "rec_type": rec_type,
+                "urgency": urgency, "hold_period": hold_period,
+                "entry": round(entry, 2), "stop_loss": round(stop, 2),
+                "target1": round(target1, 2), "target2": round(target2, 2),
+                "support": round(nearest_support, 2), "resistance": round(nearest_resistance, 2),
+                "volume_ratio": round(daily_volume_ratio, 1),
+                "technical_signal": signal_text, "score": score,
+                "rsi": round(latest.get('RSI'), 1) if pd.notna(latest.get('RSI')) else 50,
+                "adx": round(latest.get('ADX'), 1) if pd.notna(latest.get('ADX')) else 0,
+                "reasons": reasons[:3], "timestamp": datetime.now().strftime("%H:%M:%S"),
+                "fundamental_score": fund_data.get('overall_score', 50) if fund_data else 50,
+                "bb_position": round(latest.get('BB_Position'), 2) if pd.notna(latest.get('BB_Position')) else 0.5,
+            }
+        except Exception:
+            return None
+
+    @staticmethod
+    def generate_all_recommendations(stocks_data: List[dict]) -> List[dict]:
+        """Generate recommendations for all stocks"""
+        # Generate market summary first
+        market_summary = UnifiedRecommendationEngine.generate_market_summary(stocks_data)
+
+        recommendations = []
+        for stock in stocks_data:
+            rec = UnifiedRecommendationEngine.generate_single_recommendation(stock, market_summary)
+            if rec:
+                recommendations.append(rec)
+
+        # Sort: Buys first (by score desc), then holds, then sells (by score asc)
+        recommendations.sort(key=lambda x: (
+            0 if x['rec_type'] in ['STRONG_BUY', 'BUY'] else
+            1 if x['rec_type'] == 'WEAK_BUY' else
+            2 if x['rec_type'] == 'HOLD' else
+            3 if x['rec_type'] == 'WEAK_SELL' else 4,
+            -x['eod_score'] if x['rec_type'] in ['STRONG_BUY', 'BUY', 'WEAK_BUY'] else x['eod_score']
+        ))
+
+        # Cache results
+        UnifiedRecommendationEngine.RECOMMENDATION_CACHE = {
+            'recommendations': recommendations,
+            'market_summary': market_summary,
+            'timestamp': datetime.now()
+        }
+        UnifiedRecommendationEngine.LAST_UPDATE = datetime.now()
+
+        return recommendations
+
+    @staticmethod
+    def generate_market_summary(stocks_data: List[dict]) -> dict:
         try:
             if not stocks_data:
                 return {}
-
-            # Market breadth
             advancers = [s for s in stocks_data if s['change_pct'] > 0]
             decliners = [s for s in stocks_data if s['change_pct'] < 0]
-            unchanged = [s for s in stocks_data if s['change_pct'] == 0]
+            advancer_pct = len(advancers) / len(stocks_data) * 100 if stocks_data else 0
 
-            # Volume analysis
-            total_volume = sum(s['volume'] for s in stocks_data)
-            avg_volume = total_volume / len(stocks_data) if stocks_data else 0
-            high_volume = [s for s in stocks_data if s['volume'] > avg_volume * 2]
+            if advancer_pct >= 60: sentiment = "إيجابي قوي"; sentiment_color = "#10b981"; sentiment_icon = "🟢"
+            elif advancer_pct >= 50: sentiment = "إيجابي"; sentiment_color = "#34d399"; sentiment_icon = "🟢"
+            elif advancer_pct >= 40: sentiment = "محايد"; sentiment_color = "#fbbf24"; sentiment_icon = "🟡"
+            elif advancer_pct >= 30: sentiment = "سلبي"; sentiment_color = "#f87171"; sentiment_icon = "🔴"
+            else: sentiment = "سلبي قوي"; sentiment_color = "#ef4444"; sentiment_icon = "🔴"
 
-            # Best/Worst performers
-            top_gainer = max(stocks_data, key=lambda x: x['change_pct'])
-            top_loser = min(stocks_data, key=lambda x: x['change_pct'])
-
-            # Sector performance
             sectors = {}
             for s in stocks_data:
                 sector = s['sector']
-                if sector not in sectors:
-                    sectors[sector] = []
+                if sector not in sectors: sectors[sector] = []
                 sectors[sector].append(s['change_pct'])
             sector_perf = {k: round(sum(v)/len(v), 2) for k, v in sectors.items()}
-            best_sector = max(sector_perf.items(), key=lambda x: x[1]) if sector_perf else ("N/A", 0)
-            worst_sector = min(sector_perf.items(), key=lambda x: x[1]) if sector_perf else ("N/A", 0)
-
-            # Market sentiment
-            advancer_pct = len(advancers) / len(stocks_data) * 100 if stocks_data else 0
-            if advancer_pct >= 60:
-                sentiment = "إيجابي قوي"; sentiment_color = "#10b981"; sentiment_icon = "🟢"
-            elif advancer_pct >= 50:
-                sentiment = "إيجابي"; sentiment_color = "#34d399"; sentiment_icon = "🟢"
-            elif advancer_pct >= 40:
-                sentiment = "محايد"; sentiment_color = "#fbbf24"; sentiment_icon = "🟡"
-            elif advancer_pct >= 30:
-                sentiment = "سلبي"; sentiment_color = "#f87171"; sentiment_icon = "🔴"
-            else:
-                sentiment = "سلبي قوي"; sentiment_color = "#ef4444"; sentiment_icon = "🔴"
 
             return {
-                "advancers": len(advancers), "decliners": len(decliners), "unchanged": len(unchanged),
-                "advancer_pct": round(advancer_pct, 1), "total_volume": total_volume,
-                "high_volume_count": len(high_volume), "top_gainer": top_gainer,
-                "top_loser": top_loser, "sector_perf": sector_perf,
-                "best_sector": best_sector, "worst_sector": worst_sector,
+                "advancers": len(advancers), "decliners": len(decliners),
+                "advancer_pct": round(advancer_pct, 1), "sector_perf": sector_perf,
                 "sentiment": sentiment, "sentiment_color": sentiment_color, "sentiment_icon": sentiment_icon,
                 "timestamp": datetime.now().strftime("%H:%M:%S")
             }
@@ -1273,225 +1573,58 @@ class EndOfSessionEngine:
             return {}
 
     @staticmethod
-    def generate_end_of_session_recommendations(stocks_data: List[dict], alerts: List[dict] = None) -> List[dict]:
-        """Generate end-of-session buy/sell/hold recommendations"""
-        try:
-            recommendations = []
-
-            # Get market summary first
-            market_summary = EndOfSessionEngine.generate_session_summary(stocks_data)
-
-            for stock in stocks_data:
-                try:
-                    symbol = stock['symbol']
-                    df = data_engine.get_stock_history(symbol, "3mo")
-                    if df is None or len(df) < 30:
-                        continue
-
-                    df = ta_engine.calculate_all(df)
-                    if df is None:
-                        continue
-
-                    latest = df.iloc[-1]
-                    signals = ta_engine.generate_signals(df)
-                    overall_signal, score, signal_text, trend, reasons = ta_engine.calculate_overall(signals)
-
-                    # End-of-session specific analysis
-                    daily_change = stock['change_pct']
-                    daily_volume_ratio = stock['volume'] / (stock['market_cap'] / (stock['price'] * 100)) if stock['price'] > 0 else 1
-
-                    # Calculate proximity to support/resistance
-                    sr_levels = ai_engine.calculate_support_resistance(df)
-                    current_price = stock['price']
-                    supports = sr_levels.get('supports', [])
-                    resistances = sr_levels.get('resistances', [])
-
-                    nearest_support = max([s for s in supports if s < current_price], default=current_price * 0.95)
-                    nearest_resistance = min([r for r in resistances if r > current_price], default=current_price * 1.05)
-
-                    support_distance = (current_price - nearest_support) / current_price * 100
-                    resistance_distance = (nearest_resistance - current_price) / current_price * 100
-
-                    # End-of-session scoring (enhanced from intraday)
-                    eod_score = 50
-
-                    # Factor 1: Technical signal strength
-                    if overall_signal == "STRONG_BUY": eod_score += 20
-                    elif overall_signal == "BUY": eod_score += 15
-                    elif overall_signal == "STRONG_SELL": eod_score -= 20
-                    elif overall_signal == "SELL": eod_score -= 15
-
-                    # Factor 2: Daily performance
-                    if daily_change > 5: eod_score -= 10  # Overbought after big move
-                    elif daily_change > 3: eod_score -= 5
-                    elif daily_change < -5: eod_score += 10  # Oversold after big drop
-                    elif daily_change < -3: eod_score += 5
-                    elif 0 < daily_change < 2: eod_score += 5  # Healthy gradual move
-
-                    # Factor 3: Volume confirmation
-                    if daily_volume_ratio > 2: 
-                        if daily_change > 0: eod_score += 8
-                        else: eod_score -= 8
-                    elif daily_volume_ratio > 1.5:
-                        if daily_change > 0: eod_score += 5
-                        else: eod_score -= 5
-
-                    # Factor 4: Support/Resistance proximity
-                    if support_distance < 2: eod_score += 10  # Near support = good entry
-                    elif resistance_distance < 2: eod_score -= 10  # Near resistance = consider selling
-
-                    # Factor 5: Market sentiment alignment
-                    market_sentiment = market_summary.get('sentiment', 'محايد')
-                    if market_sentiment in ['إيجابي قوي', 'إيجابي'] and overall_signal in ['BUY', 'STRONG_BUY']:
-                        eod_score += 5
-                    elif market_sentiment in ['سلبي قوي', 'سلبي'] and overall_signal in ['SELL', 'STRONG_SELL']:
-                        eod_score += 5
-
-                    # Factor 6: Candlestick pattern (simplified)
-                    open_price = stock['open']
-                    close_price = stock['price']
-                    high_price = stock['high']
-                    low_price = stock['low']
-
-                    body = abs(close_price - open_price)
-                    upper_shadow = high_price - max(open_price, close_price)
-                    lower_shadow = min(open_price, close_price) - low_price
-
-                    # Bullish patterns
-                    if close_price > open_price and lower_shadow > body * 2:  # Hammer
-                        eod_score += 8
-                    if close_price > open_price and body > (high_price - low_price) * 0.6:  # Strong bullish candle
-                        eod_score += 5
-
-                    # Bearish patterns
-                    if close_price < open_price and upper_shadow > body * 2:  # Shooting star
-                        eod_score -= 8
-                    if close_price < open_price and body > (high_price - low_price) * 0.6:  # Strong bearish candle
-                        eod_score -= 5
-
-                    eod_score = max(0, min(100, eod_score))
-
-                    # Determine final recommendation
-                    if eod_score >= 80:
-                        rec_action = "شراء قوي"; rec_icon = "🟢"; rec_color = "#10b981"; rec_type = "STRONG_BUY"
-                        urgency = "فوري"; hold_period = "1-3 أيام"
-                    elif eod_score >= 65:
-                        rec_action = "شراء"; rec_icon = "🟢"; rec_color = "#34d399"; rec_type = "BUY"
-                        urgency = "قريب"; hold_period = "2-5 أيام"
-                    elif eod_score >= 50:
-                        rec_action = "شراء محتمل"; rec_icon = "🟡"; rec_color = "#fbbf24"; rec_type = "WEAK_BUY"
-                        urgency = "مراقبة"; hold_period = "3-7 أيام"
-                    elif eod_score <= 20:
-                        rec_action = "بيع قوي"; rec_icon = "🔴"; rec_color = "#ef4444"; rec_type = "STRONG_SELL"
-                        urgency = "فوري"; hold_period = "تصفية"
-                    elif eod_score <= 35:
-                        rec_action = "بيع"; rec_icon = "🔴"; rec_color = "#f87171"; rec_type = "SELL"
-                        urgency = "قريب"; hold_period = "تصفية"
-                    elif eod_score <= 45:
-                        rec_action = "بيع محتمل"; rec_icon = "🟠"; rec_color = "#f59e0b"; rec_type = "WEAK_SELL"
-                        urgency = "مراقبة"; hold_period = "تصفية تدريجية"
-                    else:
-                        rec_action = "انتظار"; rec_icon = "⚪"; rec_color = "#94a3b8"; rec_type = "HOLD"
-                        urgency = "-"; hold_period = "-"
-
-                    # Calculate targets
-                    atr = latest.get('ATR') if pd.notna(latest.get('ATR')) else current_price * 0.02
-                    if rec_type in ['STRONG_BUY', 'BUY', 'WEAK_BUY']:
-                        entry = current_price
-                        stop = current_price - (atr * 2)
-                        target1 = current_price + (atr * 2)
-                        target2 = current_price + (atr * 3.5)
-                    elif rec_type in ['STRONG_SELL', 'SELL', 'WEAK_SELL']:
-                        entry = current_price
-                        stop = current_price + (atr * 2)
-                        target1 = current_price - (atr * 2)
-                        target2 = current_price - (atr * 3.5)
-                    else:
-                        entry = current_price
-                        stop = current_price * 0.95
-                        target1 = current_price * 1.05
-                        target2 = current_price * 1.10
-
-                    recommendations.append({
-                        "symbol": symbol, "name": stock['name'], "sector": stock['sector'],
-                        "price": current_price, "change_pct": daily_change,
-                        "eod_score": round(eod_score, 1), "rec_action": rec_action,
-                        "rec_icon": rec_icon, "rec_color": rec_color, "rec_type": rec_type,
-                        "urgency": urgency, "hold_period": hold_period,
-                        "entry": round(entry, 2), "stop_loss": round(stop, 2),
-                        "target1": round(target1, 2), "target2": round(target2, 2),
-                        "support": round(nearest_support, 2), "resistance": round(nearest_resistance, 2),
-                        "volume_ratio": round(daily_volume_ratio, 1),
-                        "technical_signal": signal_text, "score": score,
-                        "rsi": round(latest.get('RSI'), 1) if pd.notna(latest.get('RSI')) else 50,
-                        "adx": round(latest.get('ADX'), 1) if pd.notna(latest.get('ADX')) else 0,
-                        "reasons": reasons[:3], "timestamp": datetime.now().strftime("%H:%M:%S")
-                    })
-                except Exception:
-                    continue
-
-            # Sort by score (highest first for buys, lowest first for sells)
-            recommendations.sort(key=lambda x: (
-                0 if x['rec_type'] in ['STRONG_BUY', 'BUY'] else
-                1 if x['rec_type'] == 'WEAK_BUY' else
-                2 if x['rec_type'] == 'HOLD' else
-                3 if x['rec_type'] == 'WEAK_SELL' else 4,
-                -x['eod_score'] if x['rec_type'] in ['STRONG_BUY', 'BUY', 'WEAK_BUY'] else x['eod_score']
-            ))
-
-            # Store in history
-            EndOfSessionEngine.RECOMMENDATION_HISTORY.append({
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "time": datetime.now().strftime("%H:%M:%S"),
-                "recommendations": recommendations,
-                "market_summary": market_summary
-            })
-
-            return recommendations
-        except Exception as e:
-            st.error(f"خطأ في توليد التوصيات: {str(e)}")
-            return []
+    def get_cached_recommendations() -> dict:
+        cache = UnifiedRecommendationEngine.RECOMMENDATION_CACHE
+        if not cache or not cache.get('timestamp'):
+            return None
+        # Check if cache is fresh (< 5 minutes)
+        if (datetime.now() - cache['timestamp']).seconds < 300:
+            return cache
+        return None
 
     @staticmethod
     def get_recommendation_stats(recommendations: List[dict]) -> dict:
-        """Get statistics about recommendations"""
-        try:
-            if not recommendations:
-                return {}
-
-            buy_recs = [r for r in recommendations if r['rec_type'] in ['STRONG_BUY', 'BUY']]
-            sell_recs = [r for r in recommendations if r['rec_type'] in ['STRONG_SELL', 'SELL']]
-            hold_recs = [r for r in recommendations if r['rec_type'] == 'HOLD']
-            weak_buy = [r for r in recommendations if r['rec_type'] == 'WEAK_BUY']
-            weak_sell = [r for r in recommendations if r['rec_type'] == 'WEAK_SELL']
-
-            avg_buy_score = sum(r['eod_score'] for r in buy_recs) / len(buy_recs) if buy_recs else 0
-            avg_sell_score = sum(r['eod_score'] for r in sell_recs) / len(sell_recs) if sell_recs else 0
-
-            sectors_buy = {}
-            sectors_sell = {}
-            for r in buy_recs:
-                s = r['sector']
-                sectors_buy[s] = sectors_buy.get(s, 0) + 1
-            for r in sell_recs:
-                s = r['sector']
-                sectors_sell[s] = sectors_sell.get(s, 0) + 1
-
-            return {
-                "total": len(recommendations), "strong_buy": len([r for r in buy_recs if r['rec_type'] == 'STRONG_BUY']),
-                "buy": len([r for r in buy_recs if r['rec_type'] == 'BUY']), "weak_buy": len(weak_buy),
-                "hold": len(hold_recs), "weak_sell": len(weak_sell),
-                "sell": len([r for r in sell_recs if r['rec_type'] == 'SELL']),
-                "strong_sell": len([r for r in sell_recs if r['rec_type'] == 'STRONG_SELL']),
-                "avg_buy_score": round(avg_buy_score, 1), "avg_sell_score": round(avg_sell_score, 1),
-                "top_buy_sector": max(sectors_buy.items(), key=lambda x: x[1])[0] if sectors_buy else "N/A",
-                "top_sell_sector": max(sectors_sell.items(), key=lambda x: x[1])[0] if sectors_sell else "N/A"
-            }
-        except Exception:
+        if not recommendations:
             return {}
+        buy_recs = [r for r in recommendations if r['rec_type'] in ['STRONG_BUY', 'BUY']]
+        sell_recs = [r for r in recommendations if r['rec_type'] in ['STRONG_SELL', 'SELL']]
 
-# Initialize end of session engine
-eos_engine = EndOfSessionEngine()
+        sectors_buy = {}
+        sectors_sell = {}
+        for r in buy_recs: sectors_buy[r['sector']] = sectors_buy.get(r['sector'], 0) + 1
+        for r in sell_recs: sectors_sell[r['sector']] = sectors_sell.get(r['sector'], 0) + 1
+
+        return {
+            "total": len(recommendations),
+            "strong_buy": len([r for r in buy_recs if r['rec_type'] == 'STRONG_BUY']),
+            "buy": len([r for r in buy_recs if r['rec_type'] == 'BUY']),
+            "weak_buy": len([r for r in recommendations if r['rec_type'] == 'WEAK_BUY']),
+            "hold": len([r for r in recommendations if r['rec_type'] == 'HOLD']),
+            "weak_sell": len([r for r in recommendations if r['rec_type'] == 'WEAK_SELL']),
+            "sell": len([r for r in sell_recs if r['rec_type'] == 'SELL']),
+            "strong_sell": len([r for r in sell_recs if r['rec_type'] == 'STRONG_SELL']),
+            "top_buy_sector": max(sectors_buy.items(), key=lambda x: x[1])[0] if sectors_buy else "N/A",
+            "top_sell_sector": max(sectors_sell.items(), key=lambda x: x[1])[0] if sectors_sell else "N/A",
+        }
+
+    @staticmethod
+    def get_recommendation_badge(rec_type: str, text: str = None) -> str:
+        """Get HTML badge for recommendation type"""
+        badges = {
+            "STRONG_BUY": ('rec-strong-buy', 'شراء قوي'),
+            "BUY": ('rec-buy', 'شراء'),
+            "WEAK_BUY": ('rec-hold', 'شراء محتمل'),
+            "HOLD": ('rec-hold', 'انتظار'),
+            "WEAK_SELL": ('rec-sell', 'بيع محتمل'),
+            "SELL": ('rec-sell', 'بيع'),
+            "STRONG_SELL": ('rec-strong-sell', 'بيع قوي'),
+        }
+        css_class, default_text = badges.get(rec_type, ('rec-hold', 'محايد'))
+        display_text = text if text else default_text
+        return f'<span class="rec-badge {css_class}">{display_text}</span>'
+
+# Initialize unified engine
+rec_engine = UnifiedRecommendationEngine()
 
 # ==================== CALLBACKS ====================
 def select_stock_callback(symbol):
@@ -1516,6 +1649,14 @@ def run_analysis_callback():
         alerts = ai_engine.analyze_all(prices)
         st.session_state.alerts_cache = alerts
         st.session_state.alerts_timestamp = datetime.now()
+
+def run_global_recommendations():
+    with st.spinner("جاري تحليل جميع الأسهم وإنشاء التوصيات الموحدة..."):
+        prices = data_engine.get_live_prices()
+        recs = rec_engine.generate_all_recommendations(prices)
+        st.session_state.global_recommendations = recs
+        st.session_state.last_scan_time = datetime.now()
+        st.toast("✅ تم تحديث التوصيات في جميع التبويبات!")
 
 def add_task_callback():
     try:
@@ -1597,39 +1738,152 @@ def save_company_data(symbol):
     except Exception as e:
         st.error(f"خطأ في الحفظ: {str(e)}")
 
+# ==================== HELPER FUNCTIONS ====================
+def get_rec_badge_class(rec_type):
+    mapping = {
+        "STRONG_BUY": "rec-strong-buy",
+        "BUY": "rec-buy", 
+        "WEAK_BUY": "rec-hold",
+        "HOLD": "rec-hold",
+        "WEAK_SELL": "rec-sell",
+        "SELL": "rec-sell",
+        "STRONG_SELL": "rec-strong-sell"
+    }
+    return mapping.get(rec_type, "rec-hold")
+
+def get_rec_text(rec_type):
+    mapping = {
+        "STRONG_BUY": "شراء قوي",
+        "BUY": "شراء",
+        "WEAK_BUY": "شراء محتمل", 
+        "HOLD": "انتظار",
+        "WEAK_SELL": "بيع محتمل",
+        "SELL": "بيع",
+        "STRONG_SELL": "بيع قوي"
+    }
+    return mapping.get(rec_type, "محايد")
+
+def get_rec_color(rec_type):
+    mapping = {
+        "STRONG_BUY": "#10b981",
+        "BUY": "#34d399",
+        "WEAK_BUY": "#fbbf24",
+        "HOLD": "#94a3b8",
+        "WEAK_SELL": "#f59e0b", 
+        "SELL": "#f87171",
+        "STRONG_SELL": "#ef4444"
+    }
+    return mapping.get(rec_type, "#94a3b8")
+
+def render_recommendation_badge(rec_type, size="normal"):
+    badge_class = get_rec_badge_class(rec_type)
+    text = get_rec_text(rec_type)
+    if size == "small":
+        return f'<span class="rec-badge {badge_class}" style="font-size:10px;padding:2px 8px;">{text}</span>'
+    return f'<span class="rec-badge {badge_class}">{text}</span>'
+
+def render_mini_recommendation_card(rec):
+    """Render a compact recommendation card for embedding in other tabs"""
+    if not rec:
+        return ""
+    color = rec['rec_color']
+    return f"""
+    <div style="padding: 10px 14px; background: {color}10; border: 1px solid {color}30; border-radius: 10px; margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">{rec['rec_icon']}</span>
+                <div>
+                    <span style="font-weight: 700; color: {color}; font-size: 13px;">{rec['rec_action']}</span>
+                    <span style="color: #64748b; font-size: 11px; margin-right: 6px;">{rec['symbol']}</span>
+                </div>
+            </div>
+            <div style="text-align: left;">
+                <span style="font-size: 16px; font-weight: 800; color: {color};">{rec['eod_score']}</span>
+                <span style="color: #64748b; font-size: 10px;">/100</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 6px;">
+            <span style="color: #94a3b8; font-size: 10px;">🎯 دخول: {rec['entry']}</span>
+            <span style="color: #94a3b8; font-size: 10px;">🛑 SL: {rec['stop_loss']}</span>
+            <span style="color: #94a3b8; font-size: 10px;">🎯 TP1: {rec['target1']}</span>
+        </div>
+    </div>
+    """
+
 # ==================== SIDEBAR NAVIGATION ====================
 with st.sidebar:
     st.markdown("""
-    <div style="text-align: center; margin-bottom: 24px; padding: 16px; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1)); border-radius: 12px; border: 1px solid rgba(99,102,241,0.2);">
-        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 12px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 24px;">⚡</div>
-        <h2 style="margin-top: 12px; font-size: 18px; font-weight: 700;">EGX Pro Terminal</h2>
-        <p style="color: #64748b; font-size: 11px; margin-top: 4px;">v23.0 | البورصة المصرية</p>
+    <div style="text-align: center; margin-bottom: 28px; padding: 20px; background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08)); border-radius: 16px; border: 1px solid rgba(99,102,241,0.25);">
+        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 14px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 20px rgba(99,102,241,0.3);">⚡</div>
+        <h2 style="margin-top: 14px; font-size: 20px; font-weight: 800;">EGX Pro Terminal</h2>
+        <p style="color: #64748b; font-size: 12px; margin-top: 6px;">v24.0 | نظام التوصيات الذكي</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Navigation Map
-    st.markdown("<p style='color: #64748b; font-size: 11px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;'>🗺️ خارطة التنقل</p>", unsafe_allow_html=True)
+    # Auto-refresh recommendations in sidebar
+    st.markdown("<p style='color: #64748b; font-size: 11px; font-weight: 600; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;'>🗺️ خارطة التنقل</p>", unsafe_allow_html=True)
+
+    # Check for cached recommendations
+    cached_recs = rec_engine.get_cached_recommendations()
+    buy_count = 0
+    if cached_recs:
+        stats = rec_engine.get_recommendation_stats(cached_recs['recommendations'])
+        buy_count = stats.get('strong_buy', 0) + stats.get('buy', 0)
 
     nav_items = [
-        ("market", "📈", "رادار السوق"),
-        ("stocks", "📋", "قائمة الأسهم"),
-        ("analysis", "🔮", "التحليل المفصل"),
-        ("fundamental", "📊", "التحليل المالي"),
-        ("funds", "💰", "صناديق الاستثمار"),
-        ("dividends", "🎁", "التوزيعات النقدية"),
-        ("eod_recommendations", "🎯", "توصيات نهاية الجلسة"),
-        ("ai_scan", "🤖", "الماسح الآلي"),
-        ("backtest", "📉", "Backtesting"),
-        ("tasks", "✅", "المهام الذكية"),
+        ("market", "📈", "رادار السوق", None),
+        ("stocks", "📋", "قائمة الأسهم", None),
+        ("analysis", "🔮", "التحليل المفصل", None),
+        ("fundamental", "📊", "التحليل المالي", None),
+        ("funds", "💰", "صناديق الاستثمار", None),
+        ("dividends", "🎁", "التوزيعات النقدية", None),
+        ("eod_recommendations", "🎯", "توصيات نهاية الجلسة", buy_count if buy_count > 0 else None),
+        ("ai_scan", "🤖", "الماسح الآلي", None),
+        ("backtest", "📉", "Backtesting", None),
+        ("tasks", "✅", "المهام الذكية", None),
     ]
 
-    for section, icon, label in nav_items:
+    for section, icon, label, badge in nav_items:
         is_active = st.session_state.active_section == section
         active_class = "active" if is_active else ""
+        badge_html = f'<span class="nav-badge">{badge}</span>' if badge else ''
         if st.button(f"{icon} {label}", key=f"nav_{section}", use_container_width=True, 
                      type="secondary" if not is_active else "primary"):
             set_section(section)
             st.rerun()
+
+    st.divider()
+
+    # Quick Recommendation Panel in Sidebar
+    st.markdown("<p style='color: #64748b; font-size: 11px; font-weight: 600; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;'>🎯 التوصيات السريعة</p>", unsafe_allow_html=True)
+
+    if cached_recs and cached_recs.get('recommendations'):
+        top_buy = next((r for r in cached_recs['recommendations'] if r['rec_type'] in ['STRONG_BUY', 'BUY']), None)
+        top_sell = next((r for r in cached_recs['recommendations'] if r['rec_type'] in ['STRONG_SELL', 'SELL']), None)
+
+        if top_buy:
+            st.markdown(f"""
+            <div style="padding: 10px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 10px; margin-bottom: 8px;">
+                <p style="margin: 0; color: #10b981; font-size: 11px; font-weight: 600;">🟢 أفضل شراء</p>
+                <p style="margin: 4px 0 0 0; color: #f1f5f9; font-size: 13px; font-weight: 700;">{top_buy['symbol']} @ {top_buy['price']:.2f}</p>
+                <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">درجة: {top_buy['eod_score']} | R/R ممتاز</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        if top_sell:
+            st.markdown(f"""
+            <div style="padding: 10px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; margin-bottom: 8px;">
+                <p style="margin: 0; color: #ef4444; font-size: 11px; font-weight: 600;">🔴 أفضل بيع</p>
+                <p style="margin: 4px 0 0 0; color: #f1f5f9; font-size: 13px; font-weight: 700;">{top_sell['symbol']} @ {top_sell['price']:.2f}</p>
+                <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">درجة: {top_sell['eod_score']} | تجنب</p>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; text-align: center;">
+            <p style="color: #64748b; font-size: 12px; margin: 0;">اضغط 🔄 لتحديث التوصيات</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.divider()
 
@@ -1638,6 +1892,22 @@ with st.sidebar:
     st.session_state.risk_settings['max_risk_pct'] = st.slider("المخاطرة/صفقة %", 0.5, 5.0, 2.0, 0.5)
     st.session_state.risk_settings['max_portfolio_heat'] = st.slider("سخونة المحفظة %", 10.0, 50.0, 25.0, 5.0)
     st.session_state.risk_settings['min_rr'] = st.slider("الحد الأدنى R/R", 1.0, 3.0, 1.5, 0.5)
+
+    st.divider()
+
+    # Global Refresh Button
+    if st.button("🔄 تحديث البيانات والتوصيات", use_container_width=True, type="primary"):
+        st.session_state.market_data_cache = {}
+        st.session_state.alerts_cache = None
+        st.session_state.price_history_sim = {}
+        st.session_state.global_recommendations = None
+        # Generate new recommendations
+        prices = data_engine.get_live_prices()
+        recs = rec_engine.generate_all_recommendations(prices)
+        st.session_state.global_recommendations = recs
+        st.session_state.last_scan_time = datetime.now()
+        st.toast("✅ تم تحديث البيانات والتوصيات في جميع التبويبات!")
+        st.rerun()
 
     st.divider()
 
@@ -1654,11 +1924,8 @@ with st.sidebar:
     c1.metric("قيد التنفيذ", pending)
     c2.metric("عالية الأولوية", high_priority, delta_color="inverse")
 
-    if st.button("🔄 تحديث البيانات", use_container_width=True):
-        st.session_state.market_data_cache = {}
-        st.session_state.alerts_cache = None
-        st.session_state.price_history_sim = {}
-        st.toast("✅ تم تحديث البيانات")
+    if st.session_state.get('last_scan_time'):
+        st.caption(f"آخر تحديث: {st.session_state.last_scan_time.strftime('%H:%M:%S')}")
 
 # ==================== HEADER ====================
 best_stock = {"symbol": "N/A", "change_pct": 0}
@@ -1671,25 +1938,29 @@ if not df_live.empty:
     best_stock = max(stocks_live, key=lambda x: x["change_pct"])
     worst_stock = min(stocks_live, key=lambda x: x["change_pct"])
 
+# Market session status
+session_status = rec_engine.get_market_session_status()
+
 st.markdown(f"""
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 16px; background: linear-gradient(90deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05)); border-radius: 12px; border: 1px solid rgba(99,102,241,0.1);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 20px; background: linear-gradient(90deg, rgba(99,102,241,0.1), rgba(139,92,246,0.06)); border-radius: 16px; border: 1px solid rgba(99,102,241,0.15);">
     <div>
-        <h1 style="margin: 0; font-size: 26px; font-weight: 800; background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-            ⚡ EGX Pro Terminal v23
+        <h1 style="margin: 0; font-size: 28px; font-weight: 800; background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            ⚡ EGX Pro Terminal v24
         </h1>
-        <p style="color: #64748b; margin-top: 4px; font-size: 13px;">
-            <span class="live-pulse"></span> السوق مفتوح | تحديث لحظي | {datetime.now().strftime("%H:%M:%S")}
+        <p style="color: #64748b; margin-top: 6px; font-size: 14px;">
+            <span class="live-pulse"></span> {session_status['phase']} | تحديث لحظي | {datetime.now().strftime("%H:%M:%S")}
         </p>
     </div>
-    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-        <div style="padding: 10px 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px;">
+    <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+        <div style="padding: 12px 18px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px;">
             <span style="color: #64748b; font-size: 11px;">EGX30</span>
-            <span style="color: #10b981; margin-right: 8px; font-size: 18px; font-weight: 700;">24,850</span>
+            <span style="color: #10b981; margin-right: 8px; font-size: 20px; font-weight: 800;">24,850</span>
             <span class="badge badge-green">+1.24%</span>
         </div>
-        <div style="padding: 10px 16px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px;">
+        <div style="padding: 12px 18px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 10px;">
             <span style="color: #64748b; font-size: 11px;">الأقوى</span>
-            <span style="color: #fbbf24; margin-right: 8px; font-size: 16px; font-weight: 700;">{best_stock['symbol']}</span>
+            <span style="color: #fbbf24; margin-right: 8px; font-size: 18px; font-weight: 700;">{best_stock['symbol']}</span>
+            <span class="badge badge-green">+{best_stock['change_pct']:.2f}%</span>
         </div>
     </div>
 </div>
@@ -1697,6 +1968,7 @@ st.markdown(f"""
 
 # ==================== SECTION: MARKET RADAR ====================
 if st.session_state.active_section == 'market':
+    # Market Indices
     idx_cols = st.columns(5)
     indices = [
         {"name": "EGX30", "value": 24850.32, "change": 1.24, "vol": "1.2B"},
@@ -1711,14 +1983,50 @@ if st.session_state.active_section == 'market':
             arrow = "▲" if idx['change'] >= 0 else "▼"
             st.markdown(f"""
             <div class="pro-panel" style="text-align: center;">
-                <p style="color: #64748b; font-size: 11px; margin: 0; text-transform: uppercase;">{idx['name']}</p>
-                <p style="font-size: 20px; font-weight: 700; margin: 4px 0; color: {change_color};">{idx['value']:,.2f}</p>
+                <p style="color: #64748b; font-size: 11px; margin: 0; text-transform: uppercase; font-weight: 600;">{idx['name']}</p>
+                <p style="font-size: 22px; font-weight: 800; margin: 6px 0; color: {change_color};">{idx['value']:,.2f}</p>
                 <div style="display: flex; justify-content: center; gap: 8px;">
-                    <span style="color: {change_color}; font-size: 12px; font-weight: 600;">{arrow} {abs(idx['change']):.2f}%</span>
+                    <span style="color: {change_color}; font-size: 13px; font-weight: 700;">{arrow} {abs(idx['change']):.2f}%</span>
                     <span style="color: #64748b; font-size: 11px;">{idx['vol']}</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+    # Recommendation Banner in Market Radar
+    cached_recs = rec_engine.get_cached_recommendations()
+    if cached_recs and cached_recs.get('recommendations'):
+        stats = rec_engine.get_recommendation_stats(cached_recs['recommendations'])
+        market_sum = cached_recs.get('market_summary', {})
+
+        st.markdown(f"""
+        <div class="rec-panel">
+            <div class="rec-header">
+                <div class="rec-title">🎯 توصيات السوق الحالية</div>
+                <div style="display: flex; gap: 8px;">
+                    <span class="rec-count">{stats.get('strong_buy', 0) + stats.get('buy', 0)} شراء</span>
+                    <span class="rec-count" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">{stats.get('strong_sell', 0) + stats.get('sell', 0)} بيع</span>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 16px; align-items: center;">
+                    <span style="color: {market_sum.get('sentiment_color', '#94a3b8')}; font-size: 14px; font-weight: 600;">
+                        {market_sum.get('sentiment_icon', '⚪')} مزاج السوق: {market_sum.get('sentiment', 'محايد')}
+                    </span>
+                    <span style="color: #64748b; font-size: 13px;">
+                        📈 {market_sum.get('advancers', 0)} صاعد | 📉 {market_sum.get('decliners', 0)} هابط
+                    </span>
+                </div>
+                <span style="color: #64748b; font-size: 12px;">آخر تحديث: {cached_recs.get('timestamp', datetime.now()).strftime('%H:%M:%S')}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Top 3 recommendations quick view
+        top_recs = cached_recs['recommendations'][:3]
+        rec_cols = st.columns(3)
+        for i, rec in enumerate(top_recs):
+            with rec_cols[i]:
+                st.markdown(render_mini_recommendation_card(rec), unsafe_allow_html=True)
 
     if not df_live.empty:
         row2_col1, row2_col2 = st.columns([2, 1])
@@ -1735,7 +2043,7 @@ if st.session_state.active_section == 'market':
                 fig_treemap.update_layout(
                     paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                     font=dict(family="Inter", color="#94a3b8", size=11),
-                    height=380, margin=dict(t=0, b=0, l=0, r=0),
+                    height=400, margin=dict(t=0, b=0, l=0, r=0),
                 )
                 st.plotly_chart(fig_treemap, use_container_width=True)
             except Exception as e:
@@ -1751,14 +2059,14 @@ if st.session_state.active_section == 'market':
                     change_class = "status-up" if stock['change_pct'] >= 0 else "status-down"
                     change_sign = "+" if stock['change_pct'] >= 0 else ""
                     st.markdown(f"""
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
                         <div>
-                            <span style="color: #fbbf24; font-weight: 600; font-size: 13px;">{stock['symbol']}</span>
-                            <span style="color: #64748b; font-size: 11px; margin-right: 6px;">{stock['name'][:15]}</span>
+                            <span style="color: #fbbf24; font-weight: 700; font-size: 14px;">{stock['symbol']}</span>
+                            <span style="color: #64748b; font-size: 12px; margin-right: 6px;">{stock['name'][:15]}</span>
                         </div>
                         <div style="text-align: left;">
-                            <span style="font-size: 13px; font-weight: 600;">{stock['price']:.2f}</span>
-                            <span class="{change_class}" style="font-size: 11px; margin-right: 4px;">{change_sign}{stock['change_pct']:.2f}%</span>
+                            <span style="font-size: 14px; font-weight: 700;">{stock['price']:.2f}</span>
+                            <span class="{change_class}" style="font-size: 12px; margin-right: 4px; font-weight: 600;">{change_sign}{stock['change_pct']:.2f}%</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -1780,24 +2088,64 @@ if st.session_state.active_section == 'market':
                 font=dict(family="Inter", color="#94a3b8"),
                 xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
                 yaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
-                height=300, margin=dict(t=20, b=40)
+                height=320, margin=dict(t=20, b=40)
             )
             st.plotly_chart(fig_sector, use_container_width=True)
         except Exception:
             pass
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # Market Heatmap (if recommendations available)
+    if cached_recs and cached_recs.get('recommendations'):
+        st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
+        st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🌡️ خريطة حرارية للتوصيات</span></div>', unsafe_allow_html=True)
+
+        recs = cached_recs['recommendations']
+        heatmap_data = []
+        for r in recs[:30]:
+            heatmap_data.append({
+                'السهم': r['symbol'],
+                'القطاع': r['sector'],
+                'الدرجة': r['eod_score'],
+                'التوصية': r['rec_action'],
+                'السعر': r['price']
+            })
+
+        heatmap_df = pd.DataFrame(heatmap_data)
+        if not heatmap_df.empty:
+            fig_heat = px.density_heatmap(
+                heatmap_df, x='القطاع', y='السهم', z='الدرجة',
+                color_continuous_scale=['#ef4444', '#f59e0b', '#10b981'],
+                title="توزيع درجات التوصيات بالقطاعات"
+            )
+            fig_heat.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(family="Inter", color="#94a3b8"),
+                height=350
+            )
+            st.plotly_chart(fig_heat, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
 # ==================== SECTION: STOCKS LIST ====================
 elif st.session_state.active_section == 'stocks':
     st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">📋 جميع الأسهم المتداولة - اضغط للتحليل</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">📋 جميع الأسهم المتداولة - مع التوصيات الذكية</span></div>', unsafe_allow_html=True)
 
-    f_col1, f_col2 = st.columns([3, 1])
+    # Get cached recommendations for stock cards
+    cached_recs = rec_engine.get_cached_recommendations()
+    rec_map = {}
+    if cached_recs and cached_recs.get('recommendations'):
+        for r in cached_recs['recommendations']:
+            rec_map[r['symbol']] = r
+
+    f_col1, f_col2, f_col3 = st.columns([3, 1, 1])
     with f_col1:
         search_term = st.text_input("🔍 البحث", placeholder="ابحث بالرمز أو اسم الشركة...", key="stocks_search", label_visibility="collapsed")
     with f_col2:
         sectors = ["الكل"] + sorted(df_live['sector'].unique().tolist()) if 'sector' in df_live.columns else ["الكل"]
         sector_filter = st.selectbox("القطاع", sectors, key="stocks_sector", label_visibility="collapsed")
+    with f_col3:
+        rec_filter = st.selectbox("التوصية", ["الكل", "شراء", "بيع", "انتظار"], key="rec_filter", label_visibility="collapsed")
 
     display_stocks = df_live.copy()
     if search_term:
@@ -1822,11 +2170,47 @@ elif st.session_state.active_section == 'stocks':
         except:
             quick_signals[stock['symbol']] = {"signal": "HOLD", "trend": "neutral", "text": "محايد"}
 
+    # Filter by recommendation if selected
+    filtered_stocks = []
     for stock in stock_list:
+        rec_data = rec_map.get(stock['symbol'])
+        if rec_filter == "الكل":
+            filtered_stocks.append(stock)
+        elif rec_filter == "شراء" and rec_data and rec_data['rec_type'] in ['STRONG_BUY', 'BUY', 'WEAK_BUY']:
+            filtered_stocks.append(stock)
+        elif rec_filter == "بيع" and rec_data and rec_data['rec_type'] in ['STRONG_SELL', 'SELL', 'WEAK_SELL']:
+            filtered_stocks.append(stock)
+        elif rec_filter == "انتظار" and rec_data and rec_data['rec_type'] == 'HOLD':
+            filtered_stocks.append(stock)
+        elif not rec_data and rec_filter == "الكل":
+            filtered_stocks.append(stock)
+
+    # Show recommendation summary bar
+    if rec_map:
+        buy_count = sum(1 for s in filtered_stocks if rec_map.get(s['symbol'], {}).get('rec_type') in ['STRONG_BUY', 'BUY'])
+        sell_count = sum(1 for s in filtered_stocks if rec_map.get(s['symbol'], {}).get('rec_type') in ['STRONG_SELL', 'SELL'])
+        hold_count = len(filtered_stocks) - buy_count - sell_count
+
+        st.markdown(f"""
+        <div style="display: flex; gap: 12px; margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+            <span style="color: #10b981; font-size: 13px; font-weight: 600;">🟢 {buy_count} شراء</span>
+            <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">⚪ {hold_count} انتظار</span>
+            <span style="color: #ef4444; font-size: 13px; font-weight: 600;">🔴 {sell_count} بيع</span>
+            <span style="color: #64748b; font-size: 13px; margin-right: auto;">من {len(stock_list)} سهم</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    for stock in filtered_stocks:
         signal_info = quick_signals.get(stock['symbol'], {"signal": "HOLD", "trend": "neutral", "text": "محايد"})
         signal_class = "buy-signal" if signal_info['signal'] in ['BUY', 'STRONG_BUY'] else "sell-signal" if signal_info['signal'] in ['SELL', 'STRONG_SELL'] else "hold-signal" if signal_info['trend'] in ['weak_bullish', 'weak_bearish'] else "neutral-signal"
         change_class = "up" if stock['change_pct'] >= 0 else "down"
         change_sign = "+" if stock['change_pct'] >= 0 else ""
+
+        # Add recommendation badge if available
+        rec_badge_html = ""
+        rec_data = rec_map.get(stock['symbol'])
+        if rec_data:
+            rec_badge_html = render_recommendation_badge(rec_data['rec_type'], size="small")
 
         st.markdown(f"""
         <div class="stock-card-rect {signal_class}">
@@ -1835,6 +2219,7 @@ elif st.session_state.active_section == 'stocks':
                     <span class="stock-rect-symbol">{stock['symbol']}</span>
                     <span class="badge {'badge-green' if signal_info['signal'] in ['BUY', 'STRONG_BUY'] else 'badge-red' if signal_info['signal'] in ['SELL', 'STRONG_SELL'] else 'badge-yellow'}">{signal_info['text']}</span>
                     <span class="badge badge-blue">{stock['sector']}</span>
+                    {rec_badge_html}
                 </div>
                 <span class="stock-rect-name">{stock['name']}</span>
             </div>
@@ -1844,6 +2229,17 @@ elif st.session_state.active_section == 'stocks':
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+        # Show mini recommendation details if available
+        if rec_data:
+            st.markdown(f"""
+            <div style="margin: -8px 0 12px 0; padding: 8px 16px; background: {rec_data['rec_color']}08; border-radius: 0 0 12px 12px; border: 1px solid {rec_data['rec_color']}15; border-top: none;">
+                <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <span style="color: {rec_data['rec_color']}; font-size: 11px; font-weight: 600;">🎯 {rec_data['rec_action']} (درجة: {rec_data['eod_score']})</span>
+                    <span style="color: #64748b; font-size: 11px;">دخول: {rec_data['entry']:.2f} | SL: {rec_data['stop_loss']:.2f} | TP: {rec_data['target1']:.2f}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         # Compact buttons inside card area
         btn_cols = st.columns([1, 1, 1, 1])
@@ -1859,396 +2255,15 @@ elif st.session_state.active_section == 'stocks':
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== SECTION: DETAILED ANALYSIS ====================
-elif st.session_state.active_section == 'analysis':
-    st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🔮 التحليل الذكي الشامل</span></div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="padding: 12px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; margin-bottom: 16px;">
-        <p style="color: #f87171; font-weight: 600; margin: 0; font-size: 13px;">⚠️ تحذير المخاطر</p>
-        <p style="color: #fca5a5; font-size: 12px; margin-top: 4px;">التوقعات نتائج رياضية للبيانات التاريخية فقط. لا تعتبر توصية استثمارية.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    ctrl1, ctrl2, ctrl3, ctrl4 = st.columns([2, 1, 1, 1])
-    with ctrl1:
-        analysis_symbols = df_live['symbol'].tolist() if not df_live.empty else ["COMI"]
-        analysis_stock = st.selectbox("السهم", analysis_symbols, key="ai_stock")
-    with ctrl2:
-        analysis_period = st.selectbox("الفترة", ["1mo", "3mo", "6mo", "1y", "2y"], index=2, key="ai_period")
-    with ctrl3:
-        prediction_days = st.slider("أيام التوقع", 3, 30, 10, key="ai_days")
-    with ctrl4:
-        account_balance = st.number_input("رأس المال", value=100000, step=10000, key="ai_balance")
-
-    if st.button("🔮 تشغيل التحليل الشامل", type="primary", use_container_width=True):
-        with st.spinner("جاري التحليل الشامل..."):
-            df = data_engine.get_stock_history(analysis_stock, analysis_period)
-            if df is None or df.empty:
-                st.error("❌ تعذر جلب البيانات.")
-            else:
-                df = ta_engine.calculate_all(df)
-                if df is None:
-                    st.error("❌ خطأ في حساب المؤشرات.")
-                else:
-                    signals = ta_engine.generate_signals(df)
-                    overall_signal, score, signal_text, trend, reasons = ta_engine.calculate_overall(signals)
-                    predictions = ai_engine.predict_prices(df, days=prediction_days)
-                    sr_levels = ai_engine.calculate_support_resistance(df)
-
-                    current_price = df['Close'].iloc[-1]
-                    atr = df['ATR'].iloc[-1] if pd.notna(df['ATR'].iloc[-1]) else current_price * 0.02
-                    stop_loss = current_price - (atr * 2)
-                    take_profit_1 = current_price + (atr * 2)
-                    take_profit_2 = current_price + (atr * 3.5)
-
-                    risk_profile = risk_engine.analyze_risk_profile(df, current_price, stop_loss, take_profit_1, account_balance)
-                    fund_data = fundamental_engine.get_fundamentals(analysis_stock)
-                    fin_score = fund_data.get('overall_score', 50) if fund_data else 50
-
-                    # Signal Display
-                    st.subheader("🎯 إشارة التداول الرئيسية")
-                    sig_cols = st.columns([1, 2, 1])
-                    with sig_cols[1]:
-                        if overall_signal == "STRONG_BUY":
-                            st.markdown('<div class="signal-box signal-buy"><h2 style="margin: 0; color: #10b981; font-size: 32px;">🟢 شراء قوي</h2></div>', unsafe_allow_html=True)
-                        elif overall_signal == "BUY":
-                            st.markdown('<div class="signal-box signal-buy"><h2 style="margin: 0; color: #34d399; font-size: 28px;">🟢 شراء</h2></div>', unsafe_allow_html=True)
-                        elif overall_signal == "STRONG_SELL":
-                            st.markdown('<div class="signal-box signal-sell"><h2 style="margin: 0; color: #ef4444; font-size: 32px;">🔴 بيع قوي</h2></div>', unsafe_allow_html=True)
-                        elif overall_signal == "SELL":
-                            st.markdown('<div class="signal-box signal-sell"><h2 style="margin: 0; color: #f87171; font-size: 28px;">🔴 بيع</h2></div>', unsafe_allow_html=True)
-                        else:
-                            st.markdown('<div class="signal-box signal-hold"><h2 style="margin: 0; color: #fbbf24; font-size: 28px;">🟡 انتظار</h2></div>', unsafe_allow_html=True)
-
-                    if reasons:
-                        st.subheader("📋 أسباب الإشارة")
-                        for reason in reasons:
-                            st.markdown(f"<div style='padding: 8px; background: rgba(99,102,241,0.05); border-radius: 6px; margin-bottom: 4px; border-right: 2px solid #6366f1;'><span style='color: #e2e8f0; font-size: 13px;'>✓ {reason}</span></div>", unsafe_allow_html=True)
-
-                    # Risk Levels
-                    st.subheader("🛡️ مستويات إدارة المخاطرة")
-                    risk_cols = st.columns(4)
-                    risk_data = [
-                        ("🛑 Stop Loss", stop_loss, ((current_price-stop_loss)/current_price*100) if current_price > 0 else 0, "#ef4444"),
-                        ("📍 السعر الحالي", current_price, 0, "#6366f1"),
-                        ("🎯 الهدف 1", take_profit_1, ((take_profit_1-current_price)/current_price*100) if current_price > 0 else 0, "#10b981"),
-                        ("🎯🎯 الهدف 2", take_profit_2, ((take_profit_2-current_price)/current_price*100) if current_price > 0 else 0, "#fbbf24")
-                    ]
-                    for i, (label, value, pct, color) in enumerate(risk_data):
-                        with risk_cols[i]:
-                            st.markdown(f"""
-                            <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid {color}30;">
-                                <p style="color: #64748b; font-size: 11px; margin: 0;">{label}</p>
-                                <p style="font-size: 22px; font-weight: 700; color: {color}; margin: 4px 0;">{value:.2f}</p>
-                                {f'<p style="font-size: 11px; color: {color}; margin: 0;">{pct:.1f}%</p>' if pct else ''}
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                    # Advanced Risk Metrics
-                    st.subheader("📊 تحليل المخاطرة المتقدم")
-                    risk_metric_cols = st.columns(4)
-                    risk_metrics = [
-                        ("التقلب السنوي", f"{risk_profile.get('volatility_annual', 0):.1f}%", risk_profile.get('volatility_annual', 0) < 30),
-                        ("VaR (95%)", f"{risk_profile.get('var_95', 0):.2f}%", risk_profile.get('var_95', 0) > -5),
-                        ("CVaR (95%)", f"{risk_profile.get('cvar_95', 0):.2f}%", risk_profile.get('cvar_95', 0) > -8),
-                        ("نسبة R/R", f"{risk_profile.get('rr_ratio', 0):.2f}", risk_profile.get('rr_ratio', 0) >= 1.5)
-                    ]
-                    for i, (label, value, good) in enumerate(risk_metrics):
-                        with risk_metric_cols[i]:
-                            color = "#10b981" if good else "#ef4444"
-                            st.markdown(f"""
-                            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {color}30;">
-                                <p style="color: #64748b; font-size: 11px; margin: 0;">{label}</p>
-                                <p style="font-size: 18px; font-weight: 700; color: {color}; margin: 4px 0;">{value}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                    # Position Sizing
-                    st.subheader("💰 توصية حجم المركز")
-                    pos_cols = st.columns(4)
-                    with pos_cols[0]: st.metric("الأسهم المقترحة", f"{risk_profile.get('shares', 0)}")
-                    with pos_cols[1]: st.metric("قيمة المركز", f"{risk_profile.get('position_value', 0):,.0f} ج.م")
-                    with pos_cols[2]: st.metric("المخاطرة الفعلية", f"{risk_profile.get('actual_risk_pct', 0):.2f}%")
-                    with pos_cols[3]: st.metric("شيب", f"{risk_profile.get('sharpe', 0):.2f}")
-
-                    # Technical Indicators
-                    st.subheader("📊 المؤشرات الفنية التفصيلية")
-                    latest = df.iloc[-1]
-                    ind_exp1, ind_exp2 = st.columns(2)
-
-                    with ind_exp1:
-                        rsi_val = latest.get('RSI')
-                        if pd.notna(rsi_val):
-                            rsi_color = "#ef4444" if rsi_val > 70 else "#10b981" if rsi_val < 30 else "#fbbf24"
-                            rsi_status = "ذروة شراء" if rsi_val > 70 else "ذروة بيع" if rsi_val < 30 else "محايد"
-                            st.markdown(f"""
-                            <div class="indicator-card">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="color: #94a3b8; font-size: 12px; font-weight: 600;">RSI (14)</span>
-                                    <span class="badge" style="background: {rsi_color}20; color: {rsi_color};">{rsi_status}</span>
-                                </div>
-                                <p class="indicator-value" style="color: {rsi_color};">{rsi_val:.1f}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                        macd_val = latest.get('MACD')
-                        macd_sig = latest.get('MACD_Signal')
-                        if pd.notna(macd_val) and pd.notna(macd_sig):
-                            macd_color = "#10b981" if macd_val > macd_sig else "#ef4444"
-                            st.markdown(f"""
-                            <div class="indicator-card">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="color: #94a3b8; font-size: 12px; font-weight: 600;">MACD</span>
-                                    <span class="badge" style="background: {macd_color}20; color: {macd_color};">{'إيجابي' if macd_val > macd_sig else 'سلبي'}</span>
-                                </div>
-                                <p class="indicator-value" style="color: {macd_color};">{macd_val:.2f}</p>
-                                <p class="indicator-desc">Signal: {macd_sig:.2f} | Hist: {latest.get('MACD_Histogram', 0):.2f}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                    with ind_exp2:
-                        adx_val = latest.get('ADX')
-                        if pd.notna(adx_val):
-                            adx_color = "#10b981" if adx_val > 25 else "#f59e0b"
-                            adx_status = "اتجاه قوي" if adx_val > 25 else "اتجاه ضعيف"
-                            st.markdown(f"""
-                            <div class="indicator-card">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="color: #94a3b8; font-size: 12px; font-weight: 600;">ADX (14)</span>
-                                    <span class="badge" style="background: {adx_color}20; color: {adx_color};">{adx_status}</span>
-                                </div>
-                                <p class="indicator-value" style="color: {adx_color};">{adx_val:.1f}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                        atr_val = latest.get('ATR')
-                        atr_pct = latest.get('ATR_Pct')
-                        if pd.notna(atr_val):
-                            atr_color = "#ef4444" if atr_pct > 3 else "#10b981"
-                            st.markdown(f"""
-                            <div class="indicator-card">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="color: #94a3b8; font-size: 12px; font-weight: 600;">ATR (14)</span>
-                                    <span class="badge" style="background: {atr_color}20; color: {atr_color};">{'تقلب عالٍ' if atr_pct > 3 else 'تقلب طبيعي'}</span>
-                                </div>
-                                <p class="indicator-value" style="color: {atr_color};">{atr_val:.2f}</p>
-                                <p class="indicator-desc">{atr_pct:.2f}% من السعر</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                    # Support/Resistance
-                    st.subheader("🎯 مستويات الدعم والمقاومة")
-                    sr_cols = st.columns(2)
-                    with sr_cols[0]:
-                        st.markdown("**الدعم:**")
-                        for s in sr_levels.get('supports', []):
-                            st.markdown(f"<span style='color: #10b981; font-weight: 600;'>▲ {s}</span>", unsafe_allow_html=True)
-                    with sr_cols[1]:
-                        st.markdown("**المقاومة:**")
-                        for r in sr_levels.get('resistances', []):
-                            st.markdown(f"<span style='color: #ef4444; font-weight: 600;'>▼ {r}</span>", unsafe_allow_html=True)
-
-                    # Prediction Chart
-                    if 'combined' in predictions:
-                        st.subheader("🔮 توقعات الأسعار")
-                        pred_df = pd.DataFrame(predictions['combined'])
-                        fig_pred = go.Figure()
-                        hist_days = min(60, len(df))
-                        fig_pred.add_trace(go.Scatter(
-                            x=df.index[-hist_days:], y=df['Close'].tail(hist_days),
-                            mode='lines', name='السعر الفعلي', line=dict(color='#6366f1', width=2),
-                            fill='tozeroy', fillcolor='rgba(99, 102, 241, 0.1)'
-                        ))
-                        last_date = df.index[-1]
-                        future_dates = pd.date_range(start=last_date + timedelta(days=1), periods=prediction_days, freq='B')
-                        pred_prices = [p['predicted'] for p in predictions['combined']]
-                        upper = [p['upper_bound'] for p in predictions['combined']]
-                        lower = [p['lower_bound'] for p in predictions['combined']]
-
-                        fig_pred.add_trace(go.Scatter(x=future_dates, y=pred_prices, mode='lines+markers', name='التوقع', line=dict(color='#fbbf24', width=3)))
-                        fig_pred.add_trace(go.Scatter(x=list(future_dates)+list(future_dates)[::-1], y=upper+list(reversed(pred_prices)), fill='tonexty', fillcolor='rgba(251, 191, 36, 0.1)', line=dict(color='rgba(251, 191, 36, 0.3)'), name='الحد الأعلى'))
-                        fig_pred.add_trace(go.Scatter(x=list(future_dates)+list(future_dates)[::-1], y=list(reversed(pred_prices))+lower, fill='tonexty', fillcolor='rgba(251, 191, 36, 0.1)', line=dict(color='rgba(251, 191, 36, 0.3)'), name='الحد الأدنى'))
-                        fig_pred.add_hline(y=stop_loss, line_dash="dash", line_color="#ef4444", annotation_text="SL")
-                        fig_pred.add_hline(y=take_profit_1, line_dash="dash", line_color="#10b981", annotation_text="TP1")
-                        fig_pred.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(family="Inter", color="#94a3b8"), height=400)
-                        st.plotly_chart(fig_pred, use_container_width=True)
-
-                    # Candlestick Chart
-                    st.subheader("📈 الرسم البياني التفاعلي")
-                    fig = go.Figure()
-                    fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name='الشموع'))
-                    if pd.notna(latest.get('SMA_20')):
-                        fig.add_trace(go.Scatter(x=df.index, y=df['SMA_20'], mode='lines', name='SMA 20', line=dict(color='#6366f1', width=1)))
-                    if pd.notna(latest.get('BB_Upper')):
-                        fig.add_trace(go.Scatter(x=df.index, y=df['BB_Upper'], mode='lines', name='BB Upper', line=dict(color='rgba(16,185,129,0.5)', width=1, dash='dash')))
-                        fig.add_trace(go.Scatter(x=df.index, y=df['BB_Lower'], mode='lines', name='BB Lower', line=dict(color='rgba(239,68,68,0.5)', width=1, dash='dash')))
-                    fig.add_hline(y=stop_loss, line_dash="dash", line_color="#ef4444")
-                    fig.add_hline(y=take_profit_1, line_dash="dash", line_color="#10b981")
-                    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(family="Inter", color="#94a3b8"), height=450)
-                    st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ==================== SECTION: FUNDAMENTAL ANALYSIS ====================
-elif st.session_state.active_section == 'fundamental':
-    st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">📊 التحليل المالي الأساسي - 4 محاور</span></div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="padding: 12px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; margin-bottom: 16px;">
-        <p style="color: #818cf8; font-weight: 600; margin: 0; font-size: 13px;">📌 التحليل المالي</p>
-        <p style="color: #a5b4fc; font-size: 12px; margin-top: 4px;">تقييم صحة الشركة عبر 4 محاور: الربحية، السيولة، الكفاءة، الملاءة.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    fa_symbols = df_live['symbol'].tolist() if not df_live.empty else ["COMI"]
-    fa_stock = st.selectbox("اختر السهم", fa_symbols, key="fa_stock_select")
-
-    if fa_stock:
-        fund_data = fundamental_engine.get_fundamentals(fa_stock)
-        if fund_data:
-            score = fund_data.get('overall_score', 0)
-            score_color = "#10b981" if score >= 70 else "#f59e0b" if score >= 50 else "#ef4444"
-
-            st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 20px; background: linear-gradient(90deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05)); border-radius: 12px; border: 1px solid rgba(99,102,241,0.1);">
-                <div>
-                    <h2 style="margin: 0; font-size: 22px; font-weight: 700;">{fund_data['name']} ({fund_data['symbol']})</h2>
-                    <p style="color: #64748b; margin: 4px 0; font-size: 13px;">{fund_data['sector']} | القيمة السوقية: {fund_data['market_cap']:,.0f} ج.م</p>
-                </div>
-                <div style="text-align: center;">
-                    <div style="width: 100px; height: 100px; border-radius: 50%; background: conic-gradient({score_color} {score}%, rgba(255,255,255,0.05) 0); display: flex; align-items: center; justify-content: center; position: relative;">
-                        <div style="width: 82px; height: 82px; border-radius: 50%; background: #12121a; display: flex; align-items: center; justify-content: center;">
-                            <span style="font-size: 24px; font-weight: 800; color: {score_color};">{score:.0f}</span>
-                        </div>
-                    </div>
-                    <p style="color: #64748b; font-size: 11px; margin-top: 6px;">التقييم المالي</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # 4 Pillars
-            pillar_cols = st.columns(4)
-            pillars = [
-                ("🟢 الربحية", fund_data.get('profitability_score', 0), [
-                    ("هامش الربح الإجمالي", f"{fund_data.get('gross_margin', 0):.1f}%", fund_data.get('gross_margin', 0) > 20),
-                    ("هامش صافي الربح", f"{fund_data.get('net_margin', 0):.1f}%", fund_data.get('net_margin', 0) > 8),
-                    ("ROA", f"{fund_data.get('roa', 0):.1f}%", fund_data.get('roa', 0) > 5),
-                    ("ROE", f"{fund_data.get('roe', 0):.1f}%", fund_data.get('roe', 0) > 10),
-                ], "#10b981"),
-                ("🔵 السيولة", fund_data.get('liquidity_score', 0), [
-                    ("نسبة السيولة الحالية", f"{fund_data.get('current_ratio', 0):.2f}x", fund_data.get('current_ratio', 0) > 1.5),
-                    ("نسبة السيولة السريعة", f"{fund_data.get('quick_ratio', 0):.2f}x", fund_data.get('quick_ratio', 0) > 1.0),
-                    ("رأس المال العامل", f"{fund_data.get('working_capital', 0):,.0f}", fund_data.get('working_capital', 0) > 0),
-                ], "#3b82f6"),
-                ("🟡 الكفاءة", fund_data.get('efficiency_score', 0), [
-                    ("دورة المخزون", f"{fund_data.get('inventory_turnover', 0):.1f}x", fund_data.get('inventory_turnover', 0) > 4),
-                    ("أيام المدينون", f"{fund_data.get('receivables_days', 0):.0f}", fund_data.get('receivables_days', 0) < 45),
-                    ("CCC", f"{fund_data.get('ccc', 0):.0f} يوم", fund_data.get('ccc', 0) < 60),
-                ], "#f59e0b"),
-                ("🔴 الملاءة", fund_data.get('leverage_score', 0), [
-                    ("نسبة الدين", f"{fund_data.get('debt_ratio', 0):.1f}%", fund_data.get('debt_ratio', 0) < 50),
-                    ("الدين/حقوق الملكية", f"{fund_data.get('debt_to_equity', 0):.2f}x", fund_data.get('debt_to_equity', 0) < 1.0),
-                    ("تغطية الفائدة", f"{fund_data.get('interest_coverage', 0):.1f}x", fund_data.get('interest_coverage', 0) > 3),
-                ], "#ef4444"),
-            ]
-
-            for i, (title, pscore, metrics, color) in enumerate(pillars):
-                with pillar_cols[i]:
-                    st.markdown(f"""
-                    <div class="pillar-card" style="border-top: 3px solid {color};">
-                        <p class="pillar-title" style="color: {color};">{title}</p>
-                        <p class="pillar-score" style="color: {color};">{pscore:.0f}<span style="font-size: 14px; color: #64748b;">/100</span></p>
-                        <div class="pillar-bar"><div class="pillar-fill" style="width: {pscore}%; background: {color};"></div></div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    for metric_name, metric_value, good in metrics:
-                        metric_color = "#10b981" if good else "#ef4444"
-                        st.markdown(f"""
-                        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
-                            <span style="color: #94a3b8; font-size: 11px;">{metric_name}</span>
-                            <span style="color: {metric_color}; font-size: 12px; font-weight: 600;">{metric_value}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-            # CCC Calculator
-            st.subheader("🧮 حاسبة دورة التحويل النقدي (CCC)")
-            ccc_cols = st.columns(3)
-            with ccc_cols[0]: inv_days = st.number_input("أيام المخزون", value=float(fund_data.get('inventory_days', 0)), step=1.0, key="ccc_inv")
-            with ccc_cols[1]: rec_days = st.number_input("أيام المدينون", value=float(fund_data.get('receivables_days', 0)), step=1.0, key="ccc_rec")
-            with ccc_cols[2]: pay_days = st.number_input("أيام الدائنون", value=float(fund_data.get('payables_days', 0)), step=1.0, key="ccc_pay")
-
-            ccc_calc = inv_days + rec_days - pay_days
-            ccc_status = "ممتاز" if ccc_calc < 0 else "جيد" if ccc_calc < 30 else "مقبول" if ccc_calc < 60 else "يحتاج تحسين"
-            ccc_color = "#10b981" if ccc_calc < 30 else "#f59e0b" if ccc_calc < 60 else "#ef4444"
-            st.markdown(f"""
-            <div style="padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {ccc_color}30; margin-top: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <p style="margin: 0; color: #64748b; font-size: 13px;">دورة التحويل النقدي المحسوبة</p>
-                        <p style="margin: 4px 0 0 0; font-size: 24px; font-weight: 700; color: {ccc_color};">{ccc_calc:.0f} يوم</p>
-                    </div>
-                    <span style="padding: 6px 12px; background: {ccc_color}15; color: {ccc_color}; border-radius: 6px; font-weight: 600; font-size: 13px;">{ccc_status}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # Technical Integration
-            st.subheader("🔗 الربط مع التحليل الفني")
-            df_fa = data_engine.get_stock_history(fa_stock, "3mo")
-            if df_fa is not None and len(df_fa) > 30:
-                df_fa = ta_engine.calculate_all(df_fa)
-                if df_fa is not None:
-                    sigs = ta_engine.generate_signals(df_fa)
-                    tech_signal, tech_score, tech_text, tech_trend, _ = ta_engine.calculate_overall(sigs)
-                    tech_color = "#10b981" if tech_signal in ['BUY', 'STRONG_BUY'] else "#ef4444" if tech_signal in ['SELL', 'STRONG_SELL'] else "#f59e0b"
-                    fin_color = "#10b981" if score >= 70 else "#f59e0b" if score >= 50 else "#ef4444"
-
-                    if tech_signal in ['BUY', 'STRONG_BUY'] and score >= 70:
-                        combined = "شراء مؤكد (فني + مالي)"; combined_color = "#10b981"
-                    elif tech_signal in ['SELL', 'STRONG_SELL'] or score < 40:
-                        combined = "تجنب/بيع (ضعف مالي أو فني)"; combined_color = "#ef4444"
-                    else:
-                        combined = "مراقبة (عدم توافق تام)"; combined_color = "#f59e0b"
-
-                    int_cols = st.columns(3)
-                    with int_cols[0]:
-                        st.markdown(f"""
-                        <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {tech_color}30;">
-                            <p style="color: #64748b; font-size: 11px; margin: 0;">التقييم الفني</p>
-                            <p style="font-size: 18px; font-weight: 700; color: {tech_color}; margin: 4px 0;">{tech_text}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with int_cols[1]:
-                        st.markdown(f"""
-                        <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {fin_color}30;">
-                            <p style="color: #64748b; font-size: 11px; margin: 0;">التقييم المالي</p>
-                            <p style="font-size: 18px; font-weight: 700; color: {fin_color}; margin: 4px 0;">{score:.0f}/100</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with int_cols[2]:
-                        st.markdown(f"""
-                        <div style="text-align: center; padding: 16px; background: {combined_color}10; border-radius: 8px; border: 1px solid {combined_color}40;">
-                            <p style="color: #64748b; font-size: 11px; margin: 0;">التوصية المدمجة</p>
-                            <p style="font-size: 18px; font-weight: 700; color: {combined_color}; margin: 4px 0;">{combined}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-        else:
-            st.error("لا توجد بيانات مالية لهذا السهم")
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
 # ==================== SECTION: INVESTMENT FUNDS ====================
 elif st.session_state.active_section == 'funds':
     st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
     st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">💰 صناديق الاستثمار وصناديق الأسهم المصرية</span></div>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div style="padding: 12px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; margin-bottom: 16px;">
-        <p style="color: #818cf8; font-weight: 600; margin: 0; font-size: 13px;">📌 صناديق الاستثمار المصرية</p>
-        <p style="color: #a5b4fc; font-size: 12px; margin-top: 4px;">بيانات محاكاة واقعية للصناديق المتداولة في البورصة المصرية.</p>
+    <div style="padding: 14px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; margin-bottom: 20px;">
+        <p style="color: #818cf8; font-weight: 700; margin: 0; font-size: 14px;">📌 صناديق الاستثمار المصرية</p>
+        <p style="color: #a5b4fc; font-size: 13px; margin-top: 6px;">بيانات محاكاة واقعية للصناديق المتداولة في البورصة المصرية مع التوصيات المقترحة.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -2282,31 +2297,31 @@ elif st.session_state.active_section == 'funds':
 
         st.markdown(f"""
         <div class="fund-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div>
-                    <h3 style="margin: 0; font-size: 16px; color: #f1f5f9;">{fund['name']}</h3>
-                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                    <h3 style="margin: 0; font-size: 17px; color: #f1f5f9; font-weight: 700;">{fund['name']}</h3>
+                    <div style="display: flex; gap: 8px; margin-top: 6px;">
                         <span class="badge badge-blue">{fund['type']}</span>
                         <span class="badge" style="background: {risk_color}15; color: {risk_color};">مخاطرة: {fund['risk']}</span>
                     </div>
                 </div>
                 <div style="text-align: left;">
-                    <p style="margin: 0; font-size: 20px; font-weight: 700; color: {change_color};">{fund['nav']:.2f}</p>
-                    <p style="margin: 0; font-size: 12px; color: {change_color};">{change_sign}{fund['change']:.2f}%</p>
+                    <p style="margin: 0; font-size: 22px; font-weight: 800; color: {change_color};">{fund['nav']:.2f}</p>
+                    <p style="margin: 0; font-size: 13px; color: {change_color}; font-weight: 600;">{change_sign}{fund['change']:.2f}%</p>
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
                 <div style="text-align: center;">
-                    <p style="color: #64748b; font-size: 11px; margin: 0;">YTD</p>
-                    <p style="color: #fbbf24; font-size: 14px; font-weight: 600; margin: 2px 0;">+{fund['ytd']:.1f}%</p>
+                    <p style="color: #64748b; font-size: 12px; margin: 0; font-weight: 600;">YTD</p>
+                    <p style="color: #fbbf24; font-size: 16px; font-weight: 700; margin: 4px 0;">+{fund['ytd']:.1f}%</p>
                 </div>
                 <div style="text-align: center;">
-                    <p style="color: #64748b; font-size: 11px; margin: 0;">الأصول (AUM)</p>
-                    <p style="color: #e2e8f0; font-size: 14px; font-weight: 600; margin: 2px 0;">{fund['aum']/1e6:.0f}M ج.م</p>
+                    <p style="color: #64748b; font-size: 12px; margin: 0; font-weight: 600;">الأصول (AUM)</p>
+                    <p style="color: #e2e8f0; font-size: 16px; font-weight: 700; margin: 4px 0;">{fund['aum']/1e6:.0f}M ج.م</p>
                 </div>
                 <div style="text-align: center;">
-                    <p style="color: #64748b; font-size: 11px; margin: 0;">أهم القابضات</p>
-                    <p style="color: #94a3b8; font-size: 11px; margin: 2px 0;">{', '.join(fund['top_holdings'][:3]) if fund['top_holdings'] else 'متنوع'}</p>
+                    <p style="color: #64748b; font-size: 12px; margin: 0; font-weight: 600;">أهم القابضات</p>
+                    <p style="color: #94a3b8; font-size: 12px; margin: 4px 0;">{', '.join(fund['top_holdings'][:3]) if fund['top_holdings'] else 'متنوع'}</p>
                 </div>
             </div>
         </div>
@@ -2337,9 +2352,9 @@ elif st.session_state.active_section == 'dividends':
     st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🎁 التوزيعات النقدية للشركات المصرية</span></div>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div style="padding: 12px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; margin-bottom: 16px;">
-        <p style="color: #34d399; font-weight: 600; margin: 0; font-size: 13px;">📌 توزيعات الأرباح النقدية</p>
-        <p style="color: #6ee7b7; font-size: 12px; margin-top: 4px;">متابعة مواعيد التوزيعات النقدية للشركات المدرجة في البورصة المصرية.</p>
+    <div style="padding: 14px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; margin-bottom: 20px;">
+        <p style="color: #34d399; font-weight: 700; margin: 0; font-size: 14px;">📌 توزيعات الأرباح النقدية</p>
+        <p style="color: #6ee7b7; font-size: 13px; margin-top: 6px;">متابعة مواعيد التوزيعات النقدية للشركات المدرجة في البورصة المصرية.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -2367,20 +2382,20 @@ elif st.session_state.active_section == 'dividends':
                 st.markdown(f"""
                 <div class="dividend-card">
                     <div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <span style="font-size: 16px; font-weight: 700; color: #fbbf24;">{div['symbol']}</span>
-                            <span style="font-size: 13px; color: #e2e8f0;">{div['name']}</span>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                            <span style="font-size: 18px; font-weight: 800; color: #fbbf24;">{div['symbol']}</span>
+                            <span style="font-size: 14px; color: #e2e8f0; font-weight: 600;">{div['name']}</span>
                             <span class="badge badge-blue">{div['sector']}</span>
                         </div>
-                        <div style="display: flex; gap: 12px;">
-                            <span style="font-size: 12px; color: #94a3b8;">📅 {div['dividend_date']}</span>
-                            <span style="font-size: 12px; color: {status_color};">⏳ {days_until} يوم</span>
-                            <span style="font-size: 12px; color: #94a3b8;">🔁 {div['frequency']}</span>
+                        <div style="display: flex; gap: 14px;">
+                            <span style="font-size: 13px; color: #94a3b8;">📅 {div['dividend_date']}</span>
+                            <span style="font-size: 13px; color: {status_color}; font-weight: 600;">⏳ {days_until} يوم</span>
+                            <span style="font-size: 13px; color: #94a3b8;">🔁 {div['frequency']}</span>
                         </div>
                     </div>
                     <div style="text-align: left;">
-                        <p style="margin: 0; font-size: 20px; font-weight: 700; color: #10b981;">{div['amount']:.2f} ج.م</p>
-                        <p style="margin: 0; font-size: 12px; color: #fbbf24;">عائد: {div['yield']:.2f}%</p>
+                        <p style="margin: 0; font-size: 22px; font-weight: 800; color: #10b981;">{div['amount']:.2f} ج.م</p>
+                        <p style="margin: 0; font-size: 13px; color: #fbbf24; font-weight: 600;">عائد: {div['yield']:.2f}%</p>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -2392,9 +2407,6 @@ elif st.session_state.active_section == 'dividends':
         all_divs = dividends_engine.get_all_dividends()
         div_df = pd.DataFrame(all_divs)
         if not div_df.empty:
-            # Color code status
-            status_colors = {"تم التوزيع": "#10b981", "قريب": "#f59e0b", "معلن": "#6366f1"}
-            div_df['الحالة'] = div_df['status']
             st.dataframe(div_df[['symbol', 'name', 'sector', 'dividend_date', 'amount', 'yield', 'frequency', 'status']].rename(columns={
                 'symbol': 'الرمز', 'name': 'الشركة', 'sector': 'القطاع', 'dividend_date': 'التاريخ',
                 'amount': 'القيمة', 'yield': 'العائد %', 'frequency': 'التكرار'
@@ -2424,14 +2436,14 @@ elif st.session_state.active_section == 'dividends':
     top_yields = sorted(all_divs, key=lambda x: x['yield'], reverse=True)[:10]
     for div in top_yields:
         st.markdown(f"""
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="color: #fbbf24; font-weight: 600; font-size: 14px;">{div['symbol']}</span>
-                <span style="color: #94a3b8; font-size: 12px;">{div['name']}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="color: #fbbf24; font-weight: 700; font-size: 15px;">{div['symbol']}</span>
+                <span style="color: #94a3b8; font-size: 13px;">{div['name']}</span>
             </div>
-            <div style="display: flex; gap: 16px;">
-                <span style="color: #10b981; font-size: 14px; font-weight: 600;">{div['yield']:.2f}%</span>
-                <span style="color: #64748b; font-size: 12px;">{div['amount']:.2f} ج.م</span>
+            <div style="display: flex; gap: 18px;">
+                <span style="color: #10b981; font-size: 15px; font-weight: 700;">{div['yield']:.2f}%</span>
+                <span style="color: #64748b; font-size: 13px;">{div['amount']:.2f} ج.م</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -2441,12 +2453,12 @@ elif st.session_state.active_section == 'dividends':
 # ==================== SECTION: AI SCANNER ====================
 elif st.session_state.active_section == 'ai_scan':
     st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🤖 الماسح الآلي الذكي</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🤖 الماسح الآلي الذكي - مع التوصيات الموحدة</span></div>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div style="padding: 12px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; margin-bottom: 16px;">
-        <p style="color: #f87171; font-weight: 600; margin: 0; font-size: 13px;">⚠️ تحذير المخاطر</p>
-        <p style="color: #fca5a5; font-size: 12px; margin-top: 4px;">التحليل الآلي يعتمد على البيانات التاريخية والمحاكاة. استخدم Stop Loss لحماية رأس مالك.</p>
+    <div style="padding: 14px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; margin-bottom: 20px;">
+        <p style="color: #f87171; font-weight: 700; margin: 0; font-size: 14px;">⚠️ تحذير المخاطر</p>
+        <p style="color: #fca5a5; font-size: 13px; margin-top: 6px;">التحليل الآلي يعتمد على البيانات التاريخية والمحاكاة. استخدم Stop Loss لحماية رأس مالك.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -2457,6 +2469,18 @@ elif st.session_state.active_section == 'ai_scan':
 
     if st.button("🚀 تشغيل الماسح الآلي", type="primary", use_container_width=True, on_click=run_analysis_callback):
         pass
+
+    # Also show unified recommendations if available
+    cached_recs = rec_engine.get_cached_recommendations()
+    if cached_recs and cached_recs.get('recommendations'):
+        st.markdown("""
+        <div class="rec-panel" style="margin-top: 16px;">
+            <div class="rec-header">
+                <div class="rec-title">🎯 التوصيات الموحدة المتاحة</div>
+            </div>
+            <p style="color: #94a3b8; font-size: 13px;">تم تحديث التوصيات لجميع الأسهم. استخدم "تشغيل الماسح الآلي" للحصول على تحليل تفصيلي إضافي.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     if st.session_state.alerts_cache is not None:
         alerts = st.session_state.alerts_cache
@@ -2481,25 +2505,25 @@ elif st.session_state.active_section == 'ai_scan':
                     sig_cols = st.columns([1, 3, 1])
                     with sig_cols[0]:
                         st.markdown(f"""
-                        <div style="text-align: center; padding: 12px; background: {alert['alert_color']}15; border: 1px solid {alert['alert_color']}40; border-radius: 8px;">
-                            <p style="margin: 0; color: {alert['alert_color']}; font-size: 28px; font-weight: 700;">{alert['score']}</p>
-                            <p style="margin: 4px 0 0 0; color: {alert['alert_color']}; font-size: 11px;">درجة الفرصة</p>
+                        <div style="text-align: center; padding: 14px; background: {alert['alert_color']}15; border: 1px solid {alert['alert_color']}40; border-radius: 10px;">
+                            <p style="margin: 0; color: {alert['alert_color']}; font-size: 32px; font-weight: 800;">{alert['score']}</p>
+                            <p style="margin: 6px 0 0 0; color: {alert['alert_color']}; font-size: 12px; font-weight: 600;">درجة الفرصة</p>
                         </div>
                         """, unsafe_allow_html=True)
                     with sig_cols[1]:
                         st.markdown(f"""
                         <div>
-                            <p style="margin: 0; font-weight: 600; font-size: 16px;">{alert['name']} | {alert['sector']}</p>
-                            <p style="color: #64748b; font-size: 13px; margin: 4px 0;">
+                            <p style="margin: 0; font-weight: 700; font-size: 17px;">{alert['name']} | {alert['sector']}</p>
+                            <p style="color: #64748b; font-size: 14px; margin: 6px 0;">
                                 السعر: <b>{alert['price']}</b> | RSI: <b>{alert['rsi']}</b> | MACD: <b>{alert['macd']}</b>
                             </p>
-                            <p style="color: #10b981; font-size: 11px; margin: 4px 0;">{' | '.join(alert.get('reasons', []))}</p>
+                            <p style="color: #10b981; font-size: 12px; margin: 6px 0;">{' | '.join(alert.get('reasons', []))}</p>
                         </div>
                         """, unsafe_allow_html=True)
                     with sig_cols[2]:
                         st.markdown(f"""
-                        <div style="text-align: center; padding: 8px; background: {alert['risk_color']}15; border: 1px solid {alert['risk_color']}40; border-radius: 8px;">
-                            <p style="margin: 0; color: {alert['risk_color']}; font-size: 11px; font-weight: 600;">{alert['risk_class']}</p>
+                        <div style="text-align: center; padding: 10px; background: {alert['risk_color']}15; border: 1px solid {alert['risk_color']}40; border-radius: 10px;">
+                            <p style="margin: 0; color: {alert['risk_color']}; font-size: 12px; font-weight: 700;">{alert['risk_class']}</p>
                         </div>
                         """, unsafe_allow_html=True)
 
@@ -2513,10 +2537,10 @@ elif st.session_state.active_section == 'ai_scan':
                     for j, (label, value, pct, color) in enumerate(risk_data):
                         with risk_cols[j]:
                             st.markdown(f"""
-                            <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {color}30;">
-                                <p style="color: #64748b; font-size: 10px; margin: 0;">{label}</p>
-                                <p style="font-size: 18px; font-weight: 700; color: {color}; margin: 4px 0;">{value:.2f}</p>
-                                {f'<p style="font-size: 10px; color: {color}; margin: 0;">{pct:.1f}%</p>' if pct else ''}
+                            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px solid {color}30;">
+                                <p style="color: #64748b; font-size: 11px; margin: 0; font-weight: 600;">{label}</p>
+                                <p style="font-size: 20px; font-weight: 700; color: {color}; margin: 6px 0;">{value:.2f}</p>
+                                {f'<p style="font-size: 11px; color: {color}; margin: 0;">{pct:.1f}%</p>' if pct else ''}
                             </div>
                             """, unsafe_allow_html=True)
 
@@ -2680,12 +2704,12 @@ elif st.session_state.active_section == 'tasks':
         <div class="task-item" style="border-right-color: {p_color}; {opacity}">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 18px;">{status_icon}</span>
+                    <span style="font-size: 20px;">{status_icon}</span>
                     <div>
-                        <p style="margin: 0; font-weight: 600; font-size: 14px;">{task['title']}</p>
+                        <p style="margin: 0; font-weight: 700; font-size: 15px;">{task['title']}</p>
                         <div style="display: flex; gap: 8px; margin-top: 4px;">
                             <span class="badge badge-blue">{category_icons.get(task['category'], '📋')} {task['category']}</span>
-                            <span style="color: #64748b; font-size: 11px;">📅 {task['due']}</span>
+                            <span style="color: #64748b; font-size: 12px;">📅 {task['due']}</span>
                         </div>
                     </div>
                 </div>
@@ -2701,61 +2725,70 @@ elif st.session_state.active_section == 'tasks':
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-
 # ==================== SECTION: END OF SESSION RECOMMENDATIONS ====================
 elif st.session_state.active_section == 'eod_recommendations':
     st.markdown('<div class="pro-panel">', unsafe_allow_html=True)
     st.markdown('<div class="pro-panel-header"><span class="pro-panel-title">🎯 توصيات نهاية الجلسة - End of Session Signals</span></div>', unsafe_allow_html=True)
 
     # Market session status
-    session_status = eos_engine.get_market_session_status()
+    session_status = rec_engine.get_market_session_status()
     st.markdown(f"""
-    <div style="padding: 16px; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05)); border-radius: 12px; border: 1px solid rgba(99,102,241,0.2); margin-bottom: 20px;">
+    <div style="padding: 20px; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.06)); border-radius: 16px; border: 1px solid rgba(99,102,241,0.25); margin-bottom: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h2 style="margin: 0; font-size: 20px; font-weight: 700;">{session_status['icon']} حالة السوق: {session_status['status']}</h2>
-                <p style="color: {session_status['color']}; margin: 4px 0; font-size: 14px; font-weight: 600;">{session_status['phase']}</p>
+                <h2 style="margin: 0; font-size: 22px; font-weight: 800;">{session_status['icon']} حالة السوق: {session_status['status']}</h2>
+                <p style="color: {session_status['color']}; margin: 6px 0; font-size: 15px; font-weight: 700;">{session_status['phase']}</p>
             </div>
-            <div style="text-align: center; padding: 12px 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
-                <p style="margin: 0; color: #64748b; font-size: 11px;">الوقت الحالي</p>
-                <p style="margin: 4px 0 0 0; font-size: 24px; font-weight: 700; color: #f1f5f9;">{datetime.now().strftime("%H:%M")}</p>
+            <div style="text-align: center; padding: 14px 24px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 600;">الوقت الحالي</p>
+                <p style="margin: 6px 0 0 0; font-size: 28px; font-weight: 800; color: #f1f5f9;">{datetime.now().strftime("%H:%M")}</p>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
     # Warning if market still open
-    if not eos_engine.is_market_closed():
+    if not session_status['is_open'] and datetime.now().hour < 14:
         st.warning("⚠️ السوق ما زال مفتوحاً. التوصيات تُحسب بناءً على البيانات الحالية وقد تتغير عند الإغلاق.")
-    else:
+    elif session_status['status'] == "مغلق":
         st.success("✅ السوق مغلق. التوصيات نهائية للجلسة الحالية.")
 
     # Generate recommendations button
     col_gen1, col_gen2 = st.columns([3, 1])
     with col_gen1:
-        st.markdown("<p style='color: #94a3b8; font-size: 13px;'>يحلل النظام جميع الأسهم ويولد توصيات شراء/بيع/انتظار بناءً على:</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #94a3b8; font-size: 14px;'>يحلل النظام جميع الأسهم ويولد توصيات شراء/بيع/انتظار بناءً على:</p>", unsafe_allow_html=True)
         st.markdown("""
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
             <span class="badge badge-blue">📊 المؤشرات الفنية</span>
             <span class="badge badge-green">📈 أداء الجلسة</span>
             <span class="badge badge-yellow">📊 حجم التداول</span>
             <span class="badge badge-purple">🎯 الدعم والمقاومة</span>
             <span class="badge badge-blue">🕯️ نماذج الشموع</span>
             <span class="badge badge-green">🌍 مزاج السوق</span>
+            <span class="badge badge-yellow">📊 التحليل المالي</span>
         </div>
         """, unsafe_allow_html=True)
     with col_gen2:
         if st.button("🎯 توليد التوصيات", type="primary", use_container_width=True):
             with st.spinner("جاري تحليل جميع الأسهم وإنشاء التوصيات..."):
                 prices = data_engine.get_live_prices()
-                st.session_state.eod_recommendations = eos_engine.generate_end_of_session_recommendations(prices)
-                st.session_state.eod_timestamp = datetime.now()
+                recs = rec_engine.generate_all_recommendations(prices)
+                st.session_state.global_recommendations = recs
+                st.session_state.last_scan_time = datetime.now()
                 st.toast("✅ تم إنشاء التوصيات بنجاح!")
+                st.rerun()
 
-    # Display recommendations if available
-    if st.session_state.get('eod_recommendations') is not None:
-        recs = st.session_state.eod_recommendations
-        stats = eos_engine.get_recommendation_stats(recs)
+    # Display recommendations
+    recs = st.session_state.get('global_recommendations')
+    if recs is None:
+        # Try to get from unified engine cache
+        cached = rec_engine.get_cached_recommendations()
+        if cached and cached.get('recommendations'):
+            recs = cached['recommendations']
+
+    if recs:
+        stats = rec_engine.get_recommendation_stats(recs)
+        market_summary = rec_engine.RECOMMENDATION_CACHE.get('market_summary', {}) if rec_engine.RECOMMENDATION_CACHE else {}
 
         # Summary dashboard
         st.subheader("📊 ملخص توصيات الجلسة")
@@ -2771,9 +2804,9 @@ elif st.session_state.active_section == 'eod_recommendations':
         for i, (label, value, color) in enumerate(summary_items):
             with sum_cols[i]:
                 st.markdown(f"""
-                <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {color}30;">
-                    <p style="color: #64748b; font-size: 10px; margin: 0;">{label}</p>
-                    <p style="font-size: 22px; font-weight: 700; color: {color}; margin: 4px 0;">{value}</p>
+                <div style="text-align: center; padding: 14px; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px solid {color}30;">
+                    <p style="color: #64748b; font-size: 11px; margin: 0; font-weight: 600;">{label}</p>
+                    <p style="font-size: 24px; font-weight: 800; color: {color}; margin: 6px 0;">{value}</p>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -2782,16 +2815,16 @@ elif st.session_state.active_section == 'eod_recommendations':
             sec_cols = st.columns(2)
             with sec_cols[0]:
                 st.markdown(f"""
-                <div style="padding: 12px; background: rgba(16,185,129,0.05); border-radius: 8px; border: 1px solid rgba(16,185,129,0.2);">
-                    <p style="color: #64748b; font-size: 11px; margin: 0;">🏆 أفضل قطاع للشراء</p>
-                    <p style="color: #10b981; font-size: 16px; font-weight: 700; margin: 4px 0;">{stats.get('top_buy_sector', 'N/A')}</p>
+                <div style="padding: 14px; background: rgba(16,185,129,0.05); border-radius: 10px; border: 1px solid rgba(16,185,129,0.25);">
+                    <p style="color: #64748b; font-size: 12px; margin: 0; font-weight: 600;">🏆 أفضل قطاع للشراء</p>
+                    <p style="color: #10b981; font-size: 18px; font-weight: 800; margin: 6px 0;">{stats.get('top_buy_sector', 'N/A')}</p>
                 </div>
                 """, unsafe_allow_html=True)
             with sec_cols[1]:
                 st.markdown(f"""
-                <div style="padding: 12px; background: rgba(239,68,68,0.05); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2);">
-                    <p style="color: #64748b; font-size: 11px; margin: 0;">⚠️ قطاع يحتاج بيع</p>
-                    <p style="color: #ef4444; font-size: 16px; font-weight: 700; margin: 4px 0;">{stats.get('top_sell_sector', 'N/A')}</p>
+                <div style="padding: 14px; background: rgba(239,68,68,0.05); border-radius: 10px; border: 1px solid rgba(239,68,68,0.25);">
+                    <p style="color: #64748b; font-size: 12px; margin: 0; font-weight: 600;">⚠️ قطاع يحتاج بيع</p>
+                    <p style="color: #ef4444; font-size: 18px; font-weight: 800; margin: 6px 0;">{stats.get('top_sell_sector', 'N/A')}</p>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -2804,30 +2837,30 @@ elif st.session_state.active_section == 'eod_recommendations':
                     rec_cols = st.columns([1, 2, 1])
                     with rec_cols[0]:
                         st.markdown(f"""
-                        <div style="text-align: center; padding: 12px; background: {rec['rec_color']}15; border: 1px solid {rec['rec_color']}40; border-radius: 10px;">
-                            <p style="margin: 0; color: {rec['rec_color']}; font-size: 32px; font-weight: 800;">{rec['eod_score']}</p>
-                            <p style="margin: 4px 0 0 0; color: {rec['rec_color']}; font-size: 11px;">درجة التوصية</p>
+                        <div style="text-align: center; padding: 14px; background: {rec['rec_color']}15; border: 1px solid {rec['rec_color']}40; border-radius: 12px;">
+                            <p style="margin: 0; color: {rec['rec_color']}; font-size: 36px; font-weight: 800;">{rec['eod_score']}</p>
+                            <p style="margin: 6px 0 0 0; color: {rec['rec_color']}; font-size: 12px; font-weight: 700;">درجة التوصية</p>
                         </div>
                         """, unsafe_allow_html=True)
                     with rec_cols[1]:
                         st.markdown(f"""
                         <div>
-                            <p style="margin: 0; font-weight: 600; font-size: 16px;">{rec['name']} | {rec['sector']}</p>
-                            <p style="color: #64748b; font-size: 13px; margin: 4px 0;">
+                            <p style="margin: 0; font-weight: 700; font-size: 17px;">{rec['name']} | {rec['sector']}</p>
+                            <p style="color: #64748b; font-size: 14px; margin: 6px 0;">
                                 السعر: <b style="color: #f1f5f9;">{rec['price']:.2f}</b> | 
                                 تغيير اليوم: <b style="color: {'#10b981' if rec['change_pct'] >= 0 else '#ef4444'};">{rec['change_pct']:+.2f}%</b> |
                                 RSI: <b>{rec['rsi']}</b>
                             </p>
-                            <p style="color: #10b981; font-size: 12px; margin: 4px 0;">{' | '.join(rec.get('reasons', []))}</p>
+                            <p style="color: #10b981; font-size: 13px; margin: 6px 0;">{' | '.join(rec.get('reasons', []))}</p>
                         </div>
                         """, unsafe_allow_html=True)
                     with rec_cols[2]:
                         st.markdown(f"""
-                        <div style="text-align: center; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 8px;">
-                            <p style="color: #64748b; font-size: 10px; margin: 0;">الإلحاح</p>
-                            <p style="color: {rec['rec_color']}; font-size: 13px; font-weight: 600; margin: 2px 0;">{rec['urgency']}</p>
-                            <p style="color: #64748b; font-size: 10px; margin: 4px 0 0 0;">مدة الاحتفاظ</p>
-                            <p style="color: #818cf8; font-size: 12px; font-weight: 600; margin: 2px 0;">{rec['hold_period']}</p>
+                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 10px;">
+                            <p style="color: #64748b; font-size: 11px; margin: 0; font-weight: 600;">الإلحاح</p>
+                            <p style="color: {rec['rec_color']}; font-size: 14px; font-weight: 700; margin: 4px 0;">{rec['urgency']}</p>
+                            <p style="color: #64748b; font-size: 11px; margin: 6px 0 0 0; font-weight: 600;">مدة الاحتفاظ</p>
+                            <p style="color: #818cf8; font-size: 13px; font-weight: 700; margin: 4px 0;">{rec['hold_period']}</p>
                         </div>
                         """, unsafe_allow_html=True)
 
@@ -2843,9 +2876,9 @@ elif st.session_state.active_section == 'eod_recommendations':
                     for j, (label, value, color) in enumerate(levels):
                         with level_cols[j]:
                             st.markdown(f"""
-                            <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid {color}30;">
-                                <p style="color: #64748b; font-size: 10px; margin: 0;">{label}</p>
-                                <p style="font-size: 16px; font-weight: 700; color: {color}; margin: 4px 0;">{value:.2f}</p>
+                            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px solid {color}30;">
+                                <p style="color: #64748b; font-size: 11px; margin: 0; font-weight: 600;">{label}</p>
+                                <p style="font-size: 18px; font-weight: 700; color: {color}; margin: 6px 0;">{value:.2f}</p>
                             </div>
                             """, unsafe_allow_html=True)
 
@@ -2863,26 +2896,26 @@ elif st.session_state.active_section == 'eod_recommendations':
             for rec in sell_recs[:8]:
                 with st.expander(f"{rec['rec_icon']} {rec['name']} ({rec['symbol']}) - درجة: {rec['eod_score']} | {rec['rec_action']}"):
                     st.markdown(f"""
-                    <div style="padding: 12px; background: rgba(239,68,68,0.05); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2);">
+                    <div style="padding: 14px; background: rgba(239,68,68,0.05); border-radius: 10px; border: 1px solid rgba(239,68,68,0.2);">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <p style="margin: 0; font-weight: 600; color: #f1f5f9;">{rec['name']} | {rec['sector']}</p>
-                                <p style="color: #64748b; font-size: 13px; margin: 4px 0;">
+                                <p style="margin: 0; font-weight: 700; color: #f1f5f9; font-size: 16px;">{rec['name']} | {rec['sector']}</p>
+                                <p style="color: #64748b; font-size: 14px; margin: 6px 0;">
                                     السعر: <b>{rec['price']:.2f}</b> | تغيير: <b>{rec['change_pct']:+.2f}%</b> | RSI: <b>{rec['rsi']}</b>
                                 </p>
                             </div>
-                            <div style="text-align: center; padding: 8px 16px; background: {rec['rec_color']}15; border-radius: 8px;">
-                                <p style="margin: 0; color: {rec['rec_color']}; font-size: 20px; font-weight: 700;">{rec['eod_score']}</p>
+                            <div style="text-align: center; padding: 10px 18px; background: {rec['rec_color']}15; border-radius: 10px;">
+                                <p style="margin: 0; color: {rec['rec_color']}; font-size: 22px; font-weight: 800;">{rec['eod_score']}</p>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 12px; margin-top: 8px;">
-                            <span style="color: #94a3b8; font-size: 12px;">🛑 SL: {rec['stop_loss']:.2f}</span>
-                            <span style="color: #94a3b8; font-size: 12px;">📊 مقاومة: {rec['resistance']:.2f}</span>
+                        <div style="display: flex; gap: 14px; margin-top: 10px;">
+                            <span style="color: #94a3b8; font-size: 13px;">🛑 SL: {rec['stop_loss']:.2f}</span>
+                            <span style="color: #94a3b8; font-size: 13px;">📊 مقاومة: {rec['resistance']:.2f}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
 
-        # Watch list (HOLD + WEAK signals)
+        # Watch list
         watch_recs = [r for r in recs if r['rec_type'] in ['HOLD', 'WEAK_BUY', 'WEAK_SELL']]
         if watch_recs:
             st.subheader("👁️ قائمة المراقبة")
@@ -2895,22 +2928,21 @@ elif st.session_state.active_section == 'eod_recommendations':
             st.dataframe(watch_df, use_container_width=True, hide_index=True)
 
         # Export recommendations
-        if recs:
-            export_df = pd.DataFrame([{
-                "الرمز": r['symbol'], "الشركة": r['name'], "القطاع": r['sector'],
-                "السعر": r['price'], "التغيير %": r['change_pct'],
-                "التوصية": r['rec_action'], "الدرجة": r['eod_score'],
-                "الدخول": r['entry'], "وقف الخسارة": r['stop_loss'],
-                "الهدف 1": r['target1'], "الهدف 2": r['target2'],
-                "الإلحاح": r['urgency'], "مدة الاحتفاظ": r['hold_period']
-            } for r in recs])
+        export_df = pd.DataFrame([{
+            "الرمز": r['symbol'], "الشركة": r['name'], "القطاع": r['sector'],
+            "السعر": r['price'], "التغيير %": r['change_pct'],
+            "التوصية": r['rec_action'], "الدرجة": r['eod_score'],
+            "الدخول": r['entry'], "وقف الخسارة": r['stop_loss'],
+            "الهدف 1": r['target1'], "الهدف 2": r['target2'],
+            "الإلحاح": r['urgency'], "مدة الاحتفاظ": r['hold_period']
+        } for r in recs])
 
-            st.download_button(
-                label="📥 تصدير التوصيات CSV",
-                data=export_df.to_csv(index=False).encode('utf-8-sig'),
-                file_name=f"eod_recommendations_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime="text/csv", use_container_width=True
-            )
+        st.download_button(
+            label="📥 تصدير التوصيات CSV",
+            data=export_df.to_csv(index=False).encode('utf-8-sig'),
+            file_name=f"eod_recommendations_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv", use_container_width=True
+        )
     else:
         st.info("👈 اضغط 'توليد التوصيات' لتحليل جميع الأسهم وإنشاء التوصيات لنهاية الجلسة")
 
@@ -2922,23 +2954,22 @@ footer_cols = st.columns(3)
 with footer_cols[0]:
     st.markdown(f"""
     <div style="text-align: center;">
-        <p style="color: #64748b; font-size: 12px; margin: 0;">⚡ EGX Pro Terminal v23.0</p>
-        <p style="color: #475569; font-size: 11px; margin: 4px 0;">نظام تحليلي احترافي | البورصة المصرية</p>
+        <p style="color: #64748b; font-size: 13px; margin: 0; font-weight: 600;">⚡ EGX Pro Terminal v24.0</p>
+        <p style="color: #475569; font-size: 12px; margin: 6px 0;">نظام تحليلي احترافي | البورصة المصرية</p>
     </div>
     """, unsafe_allow_html=True)
 with footer_cols[1]:
     st.markdown(f"""
     <div style="text-align: center;">
-        <p style="color: #fbbf24; font-size: 13px; margin: 0; font-weight: 600;">
+        <p style="color: #fbbf24; font-size: 14px; margin: 0; font-weight: 700;">
             🏆 الأقوى: {best_stock['symbol']} +{best_stock['change_pct']:.2f}% | 📉 الأضعف: {worst_stock['symbol']} {worst_stock['change_pct']:.2f}%
         </p>
-        <p style="color: #475569; font-size: 11px; margin: 4px 0;">آخر تحديث: {datetime.now().strftime("%H:%M:%S")}</p>
+        <p style="color: #475569; font-size: 12px; margin: 6px 0;">آخر تحديث: {datetime.now().strftime("%H:%M:%S")}</p>
     </div>
     """, unsafe_allow_html=True)
 with footer_cols[2]:
     st.markdown(f"""
     <div style="text-align: center;">
-        <p style="color: #475569; font-size: 11px; margin: 0;">© 2026 | جميع البيانات للتوضيح | التوقعات للأغراض التعليمية فقط</p>
-        <p style="color: #475569; font-size: 10px; margin: 4px 0;">صناديق استثمار | توزيعات | تحليل فني | إدارة مخاطر</p>
+        <p style="color: #475569; font-size: 12px; margin: 0;">© 2026 | جميع البيانات للتوضيح | التوقعات للأغراض التعليمية فقط</p>
+        <p style="color: #475569; font-size: 11px; margin: 6px 0;">صناديق استثمار | توزيعات | تحليل فني | إدارة مخاطر | توصيات ذكية</p>
     </div>
-    """, unsafe_allow_html=True)
