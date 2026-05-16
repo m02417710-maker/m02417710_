@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # التطبيق الرئيسي
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: egx-pro-terminal
+    ports:
+      - "8501:8501"
+    environment:
+      - ENVIRONMENT=production
+      - STREAMLIT_SERVER_HEADLESS=true
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+      - ./temp:/app/temp
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - egx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # قاعدة البيانات
+  postgres:
+    image: postgres:15-alpine
+    container_name: egx-pro-postgres
+    environment:
+      POSTGRES_DB: egx_pro_terminal
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - egx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Cache
+  redis:
+    image: redis:7-alpine
+    container_name: egx-pro-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - egx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # قاعدة بيانات MongoDB (اختياري)
+  mongodb:
+    image: mongo:6-alpine
+    container_name: egx-pro-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongo}
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - egx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # الخادم الخلفي (Backend) - اختياري
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: egx-pro-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-postgres}@postgres:5432/egx_pro_terminal
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - egx-network
+    restart: unless-stopped
+    profiles:
+      - backend
+
+  # Adminer لإدارة قاعدة البيانات (اختياري)
+  adminer:
+    image: adminer:latest
+    container_name: egx-pro-adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - egx-network
+    restart: unless-stopped
+    profiles:
+      - admin
+
+volumes:
+  postgres-data:
+  redis-data:
+  mongodb-data:
+
+networks:
+  egx-network:
+    driver: bridge
+
+# =====================================
+# كيفية الاستخدام:
+# =====================================
+
+# تشغيل جميع الخدمات:
+# docker-compose up -d
+
+# تشغيل مع الـ backend:
+# docker-compose --profile backend up -d
+
+# تشغيل مع الـ Adminer:
+# docker-compose --profile admin up -d
+
+# عرض السجلات:
+# docker-compose logs -f app
+
+# إيقاف الخدمات:
+# docker-compose down
+
+# حذف جميع البيانات:
+# docker-compose down -v
+
+# =====================================
+# المنافذ:
+# =====================================
+# Streamlit App: http://localhost:8501
+# PostgreSQL: localhost:5432
+# Redis: localhost:6379
+# MongoDB: localhost:27017
+# Adminer: http://localhost:8080
+# Backend API: http://localhost:5000
