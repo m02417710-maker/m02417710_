@@ -1,325 +1,195 @@
-# 🤝 دليل المساهمة - EGX Pro Terminal v26
+# 🤝 دليل المساهمة في EGX Pro Terminal
 
-شكراً على اهتمامك بالمساهمة في **EGX Pro Terminal v26**! هذا المستند يشرح كيفية المساهمة بشكل فعّال.
+> **شكراً لاهتمامك بالمساهمة في EGX Pro Terminal!**  
+> هذا الدليل يوضح كيفية المساهمة بشكل فعال واحترافي.
 
 ---
 
 ## 📋 جدول المحتويات
 
-- [أنواع المساهمات](#أنواع-المساهمات)
-- [عملية المساهمة](#عملية-المساهمة)
-- [معايير الكود](#معايير-الكود)
-- [رسائل الـ Commit](#رسائل-الـ-commit)
-- [Pull Request](#pull-request)
-- [الإبلاغ عن الأخطاء](#الإبلاغ-عن-الأخطاء)
-- [الاقتراحات والأفكار](#الاقتراحات-والأفكار)
+1. [قبل البدء](#قبل-البدء)
+2. [كيفية المساهمة](#كيفية-المساهمة)
+3. [معايير الكود](#معايير-الكود)
+4. [اختبار التغييرات](#اختبار-التغييرات)
+5. [إرسال الطلب (Pull Request)](#إرسال-الطلب)
 
 ---
 
-## 🎯 أنواع المساهمات
+## قبل البدء
 
-### 1. **تحسينات الكود** 💻
-- إصلاح الأخطاء
-- تحسين الأداء
-- تنظيف الكود
-- إضافة ميزات جديدة
+### المتطلبات الأساسية:
 
-### 2. **تحسينات التوثيق** 📚
-- إضافة أمثلة
-- تصحيح الأخطاء الإملائية
-- تحسين الشروح
-- ترجمات
+- Python 3.10 أو أحدث
+- Git
+- حساب GitHub
 
-### 3. **الاختبارات** ✅
-- كتابة unit tests
-- اختبارات التكامل
-- اختبارات الأداء
+### إعداد البيئة:
 
-### 4. **التصميم والواجهات** 🎨
-- تحسينات UI/UX
-- تحسينات التصميم
-- إضافة أيقونات وعناصر بصرية
-
----
-
-## 🔄 عملية المساهمة
-
-### الخطوة 1: Fork المستودع
 ```bash
-# اذهب إلى GitHub وانقر على Fork
-# ثم استنسخ المشروع الخاص بك
-git clone https://github.com/YOUR_USERNAME/m02417710_.git
-cd m02417710_
+# 1. استنساخ المستودع
+git clone https://github.com/m02417710-maker/egx-pro-terminal.git
+cd egx-pro-terminal
+
+# 2. إنشاء بيئة افتراضية
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# أو: venv\Scripts\activate  # Windows
+
+# 3. تثبيت المتطلبات
+pip install -r requirements.txt
+
+# 4. تشغيل الاختبارات
+python -m pytest tests/
 ```
 
-### الخطوة 2: إنشاء فرع جديد
-```bash
-# انتقل إلى الفرع الرئيسي
-git checkout main
+---
 
-# أنشئ فرعاً جديداً باسم واضح
+## كيفية المساهمة
+
+### 1. الإبلاغ عن مشكلة (Issue)
+
+إذا وجدت خطأ أو لديك اقتراح:
+
+1. تأكد من عدم وجود مشكلة مشابهة مفتوحة.
+2. افتح مشكلة جديدة باستخدام القوالب المتوفرة.
+3. اشرح المشكلة بوضوح مع أمثلة قابلة للتكرار.
+
+### 2. إصلاح خطأ
+
+```bash
+# 1. أنشئ فرعاً جديداً
+git checkout -b fix/وصف-مختصر-للخطأ
+
+# 2. أجرِ التغييرات
+# ...
+
+# 3. اختبر التغييرات
+python -m pytest tests/
+
+# 4. commit
+git commit -m "fix: وصف مختصر للإصلاح"
+
+# 5. push
+git push origin fix/وصف-مختصر-للخطأ
+```
+
+### 3. إضافة ميزة جديدة
+
+```bash
+# 1. أنشئ فرعاً جديداً
 git checkout -b feature/اسم-الميزة
-# أو
-git checkout -b fix/اسم-الخطأ
-# أو
-git checkout -b docs/اسم-التحسين
-```
 
-### الخطوة 3: قم بالتغييرات
-```bash
-# قم بتعديل الملفات
-# اختبر التغييرات بشكل كامل
-```
+# 2. طوّر الميزة
+# ...
 
-### الخطوة 4: Commit التغييرات
-```bash
-git add .
-git commit -m "شرح واضح للتغييرات"
-```
+# 3. اختبر التغييرات
+python -m pytest tests/
 
-### الخطوة 5: Push إلى GitHub
-```bash
+# 4. commit
+git commit -m "feat: وصف الميزة الجديدة"
+
+# 5. push
 git push origin feature/اسم-الميزة
 ```
 
-### الخطوة 6: Open Pull Request
-- اذهب إلى GitHub
-- انقر على "New Pull Request"
-- اختر الفرع الخاص بك
-- املأ الوصف بوضوح
-
 ---
 
-## 📝 معايير الكود
+## معايير الكود
 
-### Python:
+### التنسيق:
+
+- اتبع [PEP 8](https://pep8.org/) لتنسيق Python.
+- استخدم Black formatter: `black core/ data/ config/ tests/`
+- أقصى طول للسطر: 100 حرف.
+
+### التوثيق:
+
+- جميع الدوال يجب أن تحتوي على docstrings.
+- استخدم النوعية (Type Hints) في المعاملات.
+- علّق الكود المعقد بشكل وافٍ.
+
+### مثال:
+
 ```python
-# ✅ صحيح: نمط PEP 8
-def calculate_sharpe_ratio(returns, risk_free_rate=0.05):
+def calculate_rsi(data: pd.Series, period: int = 14) -> pd.Series:
     """
-    حساب Sharpe Ratio.
-    
+    Calculate Relative Strength Index (RSI).
+
     Args:
-        returns (list): قائمة العائدات
-        risk_free_rate (float): معدل بدون مخاطر
-        
+        data: Closing price series
+        period: RSI calculation period (default: 14)
+
     Returns:
-        float: نسبة Sharpe
+        pd.Series: RSI values (0-100)
     """
-    mean_return = np.mean(returns)
-    std_return = np.std(returns)
-    return (mean_return - risk_free_rate) / std_return
-
-# ❌ خاطئ: كود غير منظم
-def calc(r,rf=0.05):
-    return (np.mean(r)-rf)/np.std(r)
+    delta = data.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
 ```
-
-### JavaScript/React:
-```javascript
-// ✅ صحيح: أسلوب React حديث
-const StockList = ({ stocks }) => {
-  return (
-    <div className="stock-list">
-      {stocks.map(stock => (
-        <StockCard key={stock.id} stock={stock} />
-      ))}
-    </div>
-  );
-};
-
-// ❌ خاطئ: نمط قديم
-const StockList = (props) => {
-  return React.createElement('div', 
-    { className: 'stock-list' },
-    props.stocks.map(s => React.createElement(StockCard, { stock: s }))
-  );
-};
-```
-
-### معايير عامة:
-- ✅ أضف تعليقات واضحة
-- ✅ استخدم أسماء متغيرات واضحة
-- ✅ اكتب docstrings
-- ✅ اتبع نمط الكود الموجود
-- ✅ اختبر الكود قبل الدفع
-- ❌ لا تستخدم hardcoded values
-- ❌ لا تقم بحذف الكود القديم مباشرة
 
 ---
 
-## 💬 رسائل الـ Commit
+## اختبار التغييرات
 
-### نمط الرسالة:
-```
-<type>(<scope>): <subject>
+### تشغيل الاختبارات:
 
-<body>
-
-<footer>
-```
-
-### أنواع الـ Type:
-```
-feat:     ميزة جديدة
-fix:      إصلاح خطأ
-docs:     توثيق فقط
-style:    تنسيق الكود
-refactor: إعادة هيكلة الكود
-perf:     تحسين الأداء
-test:     إضافة اختبارات
-chore:    تحديثات البناء والتبعيات
-```
-
-### أمثلة:
 ```bash
-# ✅ صحيح
-git commit -m "feat(alerts): إضافة نظام تنبيهات ذكية للأسعار"
-git commit -m "fix(risk): إصلاح حساب Sharpe Ratio"
-git commit -m "docs(readme): تحديث التعليمات"
-git commit -m "refactor(screener): إعادة هيكلة مسح الأسهم"
+# جميع الاختبارات
+python -m pytest tests/
 
-# ❌ خاطئ
-git commit -m "fixed"
-git commit -m "update"
-git commit -m "changes"
+# مع تغطية الكود
+python -m pytest tests/ --cov=core --cov=data --cov=config
+
+# اختبار معين
+python -m pytest tests/test_analysis.py::test_rsi_calculation -v
 ```
+
+### إضافة اختبارات جديدة:
+
+- جميع الميزات الجديدة يجب أن تُرفق باختبارات.
+- استخدم pytest framework.
+- غطّي حالات الحافة (Edge Cases).
 
 ---
 
-## 🔀 Pull Request
+## إرسال الطلب
 
-### متطلبات PR:
-- [ ] اختبر التغييرات محلياً
-- [ ] تأكد من عدم وجود تضارب
-- [ ] أضف وصفاً واضحاً
-- [ ] اربط بـ Issues ذات الصلة
-- [ ] تأكد من أن الكود يتبع المعايير
+### Pull Request Checklist:
 
-### قالب PR:
-```markdown
-## الوصف
-أوضح التغييرات والدافع وراءها.
+- [ ] الفرع محدّث مع `main`.
+- [ ] جميع الاختبارات تمر بنجاح.
+- [ ] الكود مُنسّق بـ Black.
+- [ ] docstrings مكتملة.
+- [ ] التغييرات موثقة في `CHANGELOG.md`.
+- [ ] لا يوجد أسرار (API keys) في الكود.
 
-## نوع التغيير
-- [ ] ميزة جديدة
-- [ ] إصلاح خطأ
-- [ ] تحسين توثيق
-- [ ] تحسين أداء
+### عنوان الـ PR:
 
-## الاختبار
-كيف تم اختبار هذا التغيير؟
+اتبع [Conventional Commits](https://www.conventionalcommits.org/):
 
-## Checklist
-- [ ] تم اختبار الكود محلياً
-- [ ] تم إضافة التعليقات
-- [ ] تم تحديث التوثيق
-- [ ] لا توجد أخطاء جديدة
-```
+- `feat:` ميزة جديدة
+- `fix:` إصلاح خطأ
+- `docs:` تغيير في التوثيق
+- `test:` اختبارات
+- `refactor:` إعادة هيكلة
+- `perf:` تحسين الأداء
 
----
-
-## 🐛 الإبلاغ عن الأخطاء
-
-### قالب Issue:
-```markdown
-## الوصف
-وصف واضح للمشكلة.
-
-## خطوات إعادة الإنتاج
-1. اذهب إلى...
-2. انقر على...
-3. لاحظ المشكلة...
-
-## السلوك المتوقع
-ما الذي يجب أن يحدث؟
-
-## السلوك الفعلي
-ما الذي حدث بالفعل؟
-
-## البيئة
-- OS: Windows/Mac/Linux
-- Browser: Chrome/Firefox
-- Python Version: 3.8/3.9/3.10
-
-## صور/فيديو (اختياري)
-أضف لقطات شاشة إذا كانت مفيدة.
-```
-
----
-
-## 💡 الاقتراحات والأفكار
-
-### كيفية اقتراح ميزة:
-
-1. **تحقق أولاً**: ابحث عن Issues موجودة بنفس الفكرة
-2. **صف الفكرة**: وضح ماذا تريد وكيف سيفيد المستخدمين
-3. **قدم أمثلة**: أضف أمثلة استخدام
-4. **ناقش البدائل**: هل هناك طرق أخرى؟
-
-### قالب الاقتراح:
-```markdown
-## الملخص
-وصف قصير للميزة المطلوبة.
-
-## الدافع
-لماذا تحتاج هذه الميزة؟
-
-## التصميم المقترح
-كيف ستعمل الميزة؟
-
-## الأمثلة
-```python
-# مثال الاستخدام
-```
-
-## البدائل
-هناك بدائل أخرى؟
-```
-
----
-
-## ✅ قائمة التحقق النهائية
-
-قبل إرسال PR، تأكد من:
+### مثال:
 
 ```
-الكود:
-- [ ] يتبع معايير الكود
-- [ ] يحتوي على تعليقات واضحة
-- [ ] تم اختباره محلياً
-- [ ] لا توجد أخطاء
+feat: إضافة مؤشر ADX إلى لوحة التحليل
 
-التوثيق:
-- [ ] تم تحديث README إذا لزم
-- [ ] تم إضافة docstrings
-- [ ] تم تحديث التوثيق الموجود
-
-الالتزام:
-- [ ] رسالة commit واضحة
-- [ ] وصف PR مفصل
-- [ ] روابط إلى Issues ذات الصلة
-
-الأداء:
-- [ ] لا يؤثر سلباً على الأداء
-- [ ] لا توجد تسريبات الذاكرة
-- [ ] الكود محسّن
+- إضافة حساب ADX في core/analysis.py
+- إضافة اختبارات الوحدة
+- تحديث واجهة Streamlit
 ```
 
 ---
 
 ## 🙏 شكراً!
 
-شكراً على مساهمتك! مساهمتك تساعد في جعل EGX Pro Terminal v26 أفضل وأقوى.
+كل مساهمة — صغيرة كانت أم كبيرة — تُحدث فرقاً. نقدّر وقتك وجهدك.
 
----
-
-## 📞 الدعم
-
-- 📧 البريد: support@egxpro.com
-- 💬 Discussions: في قسم Discussions على GitHub
-- 📖 التوثيق: راجع الملفات في المستودع
-
----
-
-**Happy Contributing! 🎉**
+**صُنع بـ ❤️ في مصر** 🇪🇬
