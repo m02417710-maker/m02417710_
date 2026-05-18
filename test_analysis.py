@@ -1,191 +1,149 @@
 """
-EGX Pro Terminal - Unit Tests for Analysis Engine
+EGX Pro Terminal - Analysis Unit Tests
 """
 
-import pytest
+import unittest
 import pandas as pd
 import numpy as np
-from unittest.mock import Mock, patch
-import sys
+from datetime import datetime, timedelta
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.analysis import EGXAnalyzer
-from config.settings import *
+from core.analysis import analysis_engine
 
-class TestEGXAnalyzer:
-    """Test suite for EGXAnalyzer class"""
 
-    @pytest.fixture
-    def mock_data(self):
-        """Create mock OHLCV data"""
-        dates = pd.date_range(start='2024-01-01', periods=100, freq='D')
+class TestTechnicalAnalysis(unittest.TestCase):
+
+    def setUp(self):
+        """Create sample data for testing"""
+        dates = pd.date_range(end=datetime.now(), periods=100, freq='D')
         np.random.seed(42)
 
-        data = pd.DataFrame({
-            'Open': np.random.normal(100, 2, 100),
-            'High': np.random.normal(102, 2, 100),
-            'Low': np.random.normal(98, 2, 100),
-            'Close': np.random.normal(101, 2, 100),
-            'Volume': np.random.randint(1000000, 5000000, 100)
-        }, index=dates)
+        base_price = 50
+        returns = np.random.normal(0.001, 0.02, 100)
+        prices = base_price * np.exp(np.cumsum(returns))
 
-        # Ensure High >= Low and High >= Close >= Low
-        data['High'] = data[['Open', 'Close', 'High']].max(axis=1) + 0.5
-        data['Low'] = data[['Open', 'Close', 'Low']].min(axis=1) - 0.5
+        self.sample_df = pd.DataFrame({
+            'date': dates,
+            'open': prices * (1 + np.random.normal(0, 0.005, 100)),
+            'high': prices * (1 + np.abs(np.random.normal(0, 0.01, 100))),
+            'low': prices * (1 - np.abs(np.random.normal(0, 0.01, 100))),
+            'close': prices,
+            'volume': np.random.randint(100000, 5000000, 100)
+        })
 
-        return data
+    def test_compute_all(self):
+        """Test that all indicators are computed"""
+        result = analysis_engine.compute_all(self.sample_df)
 
-    def test_init(self):
-        """Test analyzer initialization"""
-        analyzer = EGXAnalyzer("COMI", period="6mo", interval="1d")
-        assert analyzer.symbol == "COMI"
-        assert analyzer.yahoo_symbol == "COMI.CA"
-        assert analyzer.period == "6mo"
-        assert analyzer.interval == "1d"
+        # Check that key indicators exist
+        self.assertIn('rsi', result.columns)
+        self.assertIn('macd', result.columns)
+        self.assertIn('macd_signal', result.columns)
+        self.assertIn('bb_upper', result.columns)
+        self.assertIn('bb_lower', result.columns)
+        self.assertIn('ema_9', result.columns)
+        self.assertIn('ema_21', result.columns)
+        self.assertIn('ema_50', result.columns)
+        self.assertIn('ema_200', result.columns)
+        self.assertIn('atr', result.columns)
+        self.assertIn('adx', result.columns)
+        self.assertIn('trend', result.columns)
+        self.assertIn('final_signal', result.columns)
 
-    @patch('core.analysis.yf.Ticker')
-    def test_fetch_data(self, mock_ticker, mock_data):
-        """Test data fetching"""
-        mock_instance = Mock()
-        mock_instance.history.return_value = mock_data
-        mock_ticker.return_value = mock_instance
+    def test_rsi_range(self):
+        """Test RSI is within 0-100 range"""
+        result = analysis_engine.compute_all(self.sample_df)
+        rsi_values = result['rsi'].dropna()
 
-        analyzer = EGXAnalyzer("COMI")
-        result = analyzer.fetch_data()
+        self.assertTrue(all(rsi_values >= 0))
+        self.assertTrue(all(rsi_values <= 100))
 
-        assert isinstance(result, pd.DataFrame)
-        assert len(result) == 100
-        assert all(col in result.columns for col in ['Open', 'High', 'Low', 'Close', 'Volume'])
+    def test_bollinger_bands(self):
+        """Test Bollinger Bands relationship"""
+        result = analysis_engine.compute_all(self.sample_df)
 
-    @patch('core.analysis.yf.Ticker')
-    def test_calculate_indicators(self, mock_ticker, mock_data):
-        """Test indicator calculations"""
-        mock_instance = Mock()
-        mock_instance.history.return_value = mock_data
-        mock_ticker.return_value = mock_instance
+        for idx, row in result.iterrows():
+            if pd.notna(row['bb_upper']) and pd.notna(row['bb_lower']):
+                self.assertGreaterEqual(row['bb_upper'], row['bb_middle'])
+                self.assertLessEqual(row['bb_lower'], row['bb_middle'])
 
-        analyzer = EGXAnalyzer("COMI")
-        analyzer.fetch_data()
-        indicators = analyzer.calculate_all_indicators()
+    def test_signals(self):
+        """Test signal generation"""
+        result = analysis_engine.compute_all(self.sample_df)
+        signals = result['final_signal'].unique()
 
-        required_indicators = [
-            'EMA_9', 'EMA_20', 'EMA_50', 'EMA_200',
-            'RSI', 'MACD', 'MACD_Signal', 'MACD_Hist',
-            'BB_Upper', 'BB_Lower', 'BB_Middle',
-            'ATR', 'ADX', 'ADX_Pos', 'ADX_Neg',
-            'Volume_MA', 'Volume_Ratio'
-        ]
+        expected_signals = ['STRONG_BUY', 'BUY', 'HOLD', 'SELL', 'STRONG_SELL']
+        for signal in signals:
+            self.assertIn(signal, expected_signals)
 
-        for ind in required_indicators:
-            assert ind in indicators, f"Missing indicator: {ind}"
-            assert isinstance(indicators[ind], pd.Series)
-
-    @patch('core.analysis.yf.Ticker')
-    def test_trend_analysis(self, mock_ticker, mock_data):
-        """Test trend analysis"""
-        mock_instance = Mock()
-        mock_instance.history.return_value = mock_data
-        mock_ticker.return_value = mock_instance
-
-        analyzer = EGXAnalyzer("COMI")
-        analyzer.fetch_data()
-        analyzer.calculate_all_indicators()
-
-        trend = analyzer.get_trend_analysis()
-
-        assert 'direction' in trend
-        assert 'strength' in trend
-        assert 'score' in trend
-        assert 'signals' in trend
-        assert isinstance(trend['score'], int)
-        assert isinstance(trend['signals'], list)
-
-    @patch('core.analysis.yf.Ticker')
-    def test_support_resistance(self, mock_ticker, mock_data):
+    def test_support_resistance(self):
         """Test support/resistance calculation"""
-        mock_instance = Mock()
-        mock_instance.history.return_value = mock_data
-        mock_ticker.return_value = mock_instance
+        result = analysis_engine.compute_all(self.sample_df)
+        sr = analysis_engine.get_support_resistance(result)
 
-        analyzer = EGXAnalyzer("COMI")
-        analyzer.fetch_data()
+        self.assertIn('supports', sr)
+        self.assertIn('resistances', sr)
+        self.assertIn('nearest_support', sr)
+        self.assertIn('nearest_resistance', sr)
 
-        levels = analyzer.get_support_resistance(lookback=20)
+        current_price = result['close'].iloc[-1]
+        self.assertLessEqual(sr['nearest_support'], current_price)
+        self.assertGreaterEqual(sr['nearest_resistance'], current_price)
 
-        assert 'support' in levels
-        assert 'resistance' in levels
-        assert 'pivot' in levels
-        assert 'range_pct' in levels
+    def test_fibonacci_levels(self):
+        """Test Fibonacci levels"""
+        result = analysis_engine.compute_all(self.sample_df)
+        fib = analysis_engine.get_fibonacci_levels(result)
 
-        assert levels['support'] < levels['resistance']
-        assert levels['pivot'] > levels['support']
-        assert levels['pivot'] < levels['resistance']
+        self.assertIn('0.0%', fib)
+        self.assertIn('100.0%', fib)
+        self.assertIn('61.8%', fib)
+        self.assertIn('current', fib)
 
-    @patch('core.analysis.yf.Ticker')
-    def test_summary(self, mock_ticker, mock_data):
-        """Test summary generation"""
-        mock_instance = Mock()
-        mock_instance.history.return_value = mock_data
-        mock_ticker.return_value = mock_instance
+        self.assertGreaterEqual(fib['0.0%'], fib['100.0%'])
 
-        analyzer = EGXAnalyzer("COMI")
-        summary = analyzer.get_summary()
+    def test_summary(self):
+        """Test analysis summary"""
+        result = analysis_engine.compute_all(self.sample_df)
+        summary = analysis_engine.get_summary(result)
 
-        required_keys = [
-            'symbol', 'date', 'price', 'change_pct', 'volume',
-            'rsi', 'macd', 'adx', 'atr', 'bb_position',
-            'trend', 'levels'
-        ]
-
-        for key in required_keys:
-            assert key in summary, f"Missing summary key: {key}"
-
-    def test_empty_data_error(self):
-        """Test handling of empty data"""
-        with patch('core.analysis.yf.Ticker') as mock_ticker:
-            mock_instance = Mock()
-            mock_instance.history.return_value = pd.DataFrame()
-            mock_ticker.return_value = mock_instance
-
-            analyzer = EGXAnalyzer("COMI")
-
-            with pytest.raises(ValueError):
-                analyzer.fetch_data()
+        self.assertIn('price', summary)
+        self.assertIn('rsi', summary)
+        self.assertIn('trend', summary)
+        self.assertIn('final_signal', summary)
+        self.assertIn('support_resistance', summary)
 
 
-class TestSettings:
-    """Test configuration settings"""
+class TestEdgeCases(unittest.TestCase):
 
-    def test_app_info(self):
-        """Test application info constants"""
-        assert APP_NAME == "EGX Pro Terminal"
-        assert APP_VERSION == "v26.0.0"
-        assert APP_AUTHOR == "m02417710-maker"
+    def test_empty_dataframe(self):
+        """Test with empty dataframe"""
+        empty_df = pd.DataFrame()
+        result = analysis_engine.compute_all(empty_df)
+        self.assertTrue(result.empty)
 
-    def test_data_sources(self):
-        """Test data source configuration"""
-        assert YAHOO_FINANCE_SUFFIX == ".CA"
-        assert DEFAULT_PERIOD == "1y"
-        assert DEFAULT_INTERVAL == "1d"
+    def test_insufficient_data(self):
+        """Test with insufficient data"""
+        small_df = pd.DataFrame({
+            'date': [datetime.now()],
+            'open': [10], 'high': [11], 'low': [9], 'close': [10], 'volume': [1000]
+        })
+        result = analysis_engine.compute_all(small_df)
+        self.assertEqual(len(result), 1)
 
-    def test_indicator_params(self):
-        """Test indicator parameters"""
-        assert RSI_PERIOD == 14
-        assert RSI_OVERBOUGHT == 70
-        assert RSI_OVERSOLD == 30
-        assert MACD_FAST == 12
-        assert MACD_SLOW == 26
-        assert MACD_SIGNAL == 9
-        assert BOLLINGER_PERIOD == 20
-        assert BOLLINGER_STD == 2
-
-    def test_alert_thresholds(self):
-        """Test alert thresholds"""
-        assert ALERT_RSI_EXTREME == 80
-        assert ALERT_RSI_DEEP == 20
-        assert ALERT_VOLUME_SPIKE == 2.0
-        assert ALERT_PRICE_CHANGE == 0.05
+    def test_nan_handling(self):
+        """Test handling of NaN values"""
+        df = pd.DataFrame({
+            'date': pd.date_range(end=datetime.now(), periods=50),
+            'open': [10] * 50,
+            'high': [11] * 50,
+            'low': [9] * 50,
+            'close': [10] * 50,
+            'volume': [1000] * 50
+        })
+        result = analysis_engine.compute_all(df)
+        # Should not raise exception
+        self.assertIsNotNone(result)
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+if __name__ == '__main__':
+    unittest.main()

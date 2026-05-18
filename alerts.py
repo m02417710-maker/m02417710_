@@ -1,270 +1,383 @@
 """
-EGX Pro Terminal - Smart Alert System
-Automated trading alerts and signal generation
+EGX Pro Terminal - Intelligent Alert Engine
+Multi-condition alert system with severity levels and notification channels
 """
 
 import pandas as pd
 import numpy as np
+from typing import Dict, List, Optional, Callable
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional
-from dataclasses import dataclass
 from enum import Enum
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.settings import *
-from core.analysis import EGXAnalyzer
+import threading
+import time
 
-class SignalType(Enum):
-    BUY = "BUY"
-    SELL = "SELL"
-    HOLD = "HOLD"
-    STRONG_BUY = "STRONG_BUY"
-    STRONG_SELL = "STRONG_SELL"
+from config.settings import app_config
+from data.storage import local_storage
+from core.analysis import analysis_engine
 
-class AlertPriority(Enum):
-    HIGH = "🔴 عالي"
-    MEDIUM = "🟡 متوسط"
-    LOW = "🟢 منخفض"
+
+class AlertSeverity(Enum):
+    INFO = "info"
+    WARNING = "warning"
+    CRITICAL = "critical"
+
+
+class AlertType(Enum):
+    PRICE_TARGET = "price_target"
+    STOP_LOSS = "stop_loss"
+    RSI_OVERSOLD = "rsi_oversold"
+    RSI_OVERBOUGHT = "rsi_overbought"
+    MACD_CROSS = "macd_cross"
+    EMA_CROSS = "ema_cross"
+    BB_BREAKOUT = "bb_breakout"
+    VOLUME_SPIKE = "volume_spike"
+    TREND_CHANGE = "trend_change"
+    PATTERN_DETECTED = "pattern_detected"
+    SUPPORT_RESISTANCE = "support_resistance"
+    CUSTOM = "custom"
+
 
 @dataclass
-class TradingAlert:
+class AlertCondition:
+    """Alert condition definition"""
+    name: str
+    alert_type: AlertType
     symbol: str
-    signal: SignalType
-    priority: AlertPriority
-    price: float
-    timestamp: datetime
-    message: str
-    indicators: Dict
+    condition_func: Callable
+    severity: AlertSeverity = AlertSeverity.INFO
+    cooldown_minutes: int = 30
+    enabled: bool = True
+    last_triggered: Optional[datetime] = None
+    trigger_count: int = 0
+    params: Dict = field(default_factory=dict)
 
-    def to_dict(self) -> dict:
-        return {
-            'symbol': self.symbol,
-            'signal': self.signal.value,
-            'priority': self.priority.value,
-            'price': self.price,
-            'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M'),
-            'message': self.message,
-            'indicators': self.indicators
-        }
 
 class AlertEngine:
-    """Professional alert engine for EGX stocks"""
+    """Advanced multi-condition alert engine"""
 
     def __init__(self):
-        self.alerts_history: List[TradingAlert] = []
-        self.watchlist: List[str] = []
+        self.conditions: List[AlertCondition] = []
+        self.notification_callbacks: List[Callable] = []
+        self.running = False
+        self._thread = None
+        self._lock = threading.Lock()
 
-    def add_to_watchlist(self, symbol: str):
-        """Add stock to monitoring watchlist"""
-        if symbol.upper() not in self.watchlist:
-            self.watchlist.append(symbol.upper())
+    def add_condition(self, condition: AlertCondition) -> bool:
+        """Add new alert condition"""
+        with self._lock:
+            self.conditions.append(condition)
+        return True
 
-    def remove_from_watchlist(self, symbol: str):
-        """Remove stock from watchlist"""
-        if symbol.upper() in self.watchlist:
-            self.watchlist.remove(symbol.upper())
+    def add_price_alert(self, symbol: str, target_price: float, 
+                        direction: str = 'above', severity: AlertSeverity = AlertSeverity.INFO) -> bool:
+        """Add price target alert"""
+        def condition_func(df, params):
+            if df is None or df.empty:
+                return False
+            current = df['close'].iloc[-1]
+            if params['direction'] == 'above':
+                return current >= params['target']
+            else:
+                return current <= params['target']
 
-    def scan_stock(self, symbol: str) -> List[TradingAlert]:
-        """Scan single stock for trading signals"""
-        alerts = []
-        try:
-            analyzer = EGXAnalyzer(symbol)
-            analyzer.fetch_data()
-            analyzer.calculate_all_indicators()
+        alert = AlertCondition(
+            name=f"Price {direction} {target_price} for {symbol}",
+            alert_type=AlertType.PRICE_TARGET,
+            symbol=symbol,
+            condition_func=condition_func,
+            severity=severity,
+            params={'target': target_price, 'direction': direction}
+        )
+        return self.add_condition(alert)
 
-            data = analyzer.data
-            indicators = analyzer.indicators
-            latest_idx = data.index[-1]
-            close = data['Close'].iloc[-1]
+    def add_rsi_alert(self, symbol: str, threshold: float = 30, 
+                     direction: str = 'below') -> bool:
+        """Add RSI alert"""
+        def condition_func(df, params):
+            if df is None or len(df) < 15:
+                return False
+            latest = df.iloc[-1]
+            rsi = latest.get('rsi', 50)
+            if params['direction'] == 'below':
+                return rsi <= params['threshold']
+            else:
+                return rsi >= params['threshold']
 
-            # 1. RSI Extreme Levels
-            rsi = indicators['RSI'].iloc[-1]
-            if rsi < ALERT_RSI_DEEP:
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.STRONG_BUY,
-                    priority=AlertPriority.HIGH,
-                    price=close,
-                    timestamp=latest_idx,
-                    message=f"RSI متطرف منخفض ({rsi:.1f}) - منطقة تشبع بيعي قوية",
-                    indicators={'RSI': rsi, 'level': 'Oversold'}
-                ))
-            elif rsi < RSI_OVERSOLD:
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.BUY,
-                    priority=AlertPriority.MEDIUM,
-                    price=close,
-                    timestamp=latest_idx,
-                    message=f"RSI في منطقة التشبع البيعي ({rsi:.1f})",
-                    indicators={'RSI': rsi, 'level': 'Near Oversold'}
-                ))
-            elif rsi > ALERT_RSI_EXTREME:
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.STRONG_SELL,
-                    priority=AlertPriority.HIGH,
-                    price=close,
-                    timestamp=latest_idx,
-                    message=f"RSI متطرف مرتفع ({rsi:.1f}) - منطقة تشبع شرائي قوية",
-                    indicators={'RSI': rsi, 'level': 'Overbought'}
-                ))
-            elif rsi > RSI_OVERBOUGHT:
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.SELL,
-                    priority=AlertPriority.MEDIUM,
-                    price=close,
-                    timestamp=latest_idx,
-                    message=f"RSI في منطقة التشبع الشرائي ({rsi:.1f})",
-                    indicators={'RSI': rsi, 'level': 'Near Overbought'}
-                ))
+        alert_type = AlertType.RSI_OVERSOLD if direction == 'below' else AlertType.RSI_OVERBOUGHT
+        severity = AlertSeverity.WARNING if direction == 'below' else AlertSeverity.INFO
 
-            # 2. MACD Crossover
-            macd = indicators['MACD'].iloc[-1]
-            macd_signal = indicators['MACD_Signal'].iloc[-1]
-            macd_prev = indicators['MACD'].iloc[-2]
-            signal_prev = indicators['MACD_Signal'].iloc[-2]
+        alert = AlertCondition(
+            name=f"RSI {direction} {threshold} for {symbol}",
+            alert_type=alert_type,
+            symbol=symbol,
+            condition_func=condition_func,
+            severity=severity,
+            params={'threshold': threshold, 'direction': direction}
+        )
+        return self.add_condition(alert)
 
-            if macd_prev < signal_prev and macd > macd_signal:
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.BUY,
-                    priority=AlertPriority.HIGH,
-                    price=close,
-                    timestamp=latest_idx,
-                    message="تقاطع MACD إيجابي (الخط السريع يتجاوز البطيء من أسفل)",
-                    indicators={'MACD': macd, 'Signal': macd_signal, 'cross': 'Golden Cross'}
-                ))
-            elif macd_prev > signal_prev and macd < macd_signal:
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.SELL,
-                    priority=AlertPriority.HIGH,
-                    price=close,
-                    timestamp=latest_idx,
-                    message="تقاطع MACD سلبي (الخط السريع يتجاوز البطيء من أعلى)",
-                    indicators={'MACD': macd, 'Signal': macd_signal, 'cross': 'Death Cross'}
-                ))
+    def add_macd_alert(self, symbol: str, cross_type: str = 'bullish') -> bool:
+        """Add MACD crossover alert"""
+        def condition_func(df, params):
+            if df is None or len(df) < 3:
+                return False
+            latest = df.iloc[-1]
+            prev = df.iloc[-2]
 
-            # 3. EMA Crossover (9 vs 20)
-            ema9 = indicators['EMA_9'].iloc[-1]
-            ema20 = indicators['EMA_20'].iloc[-1]
-            ema9_prev = indicators['EMA_9'].iloc[-2]
-            ema20_prev = indicators['EMA_20'].iloc[-2]
+            if params['cross_type'] == 'bullish':
+                return (prev['macd'] < prev['macd_signal']) and (latest['macd'] > latest['macd_signal'])
+            else:
+                return (prev['macd'] > prev['macd_signal']) and (latest['macd'] < latest['macd_signal'])
 
-            if ema9_prev < ema20_prev and ema9 > ema20:
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.BUY,
-                    priority=AlertPriority.MEDIUM,
-                    price=close,
-                    timestamp=latest_idx,
-                    message="تقاطع EMA9/20 إيجابي - إشارة دخول قصيرة المدى",
-                    indicators={'EMA9': ema9, 'EMA20': ema20}
-                ))
-            elif ema9_prev > ema20_prev and ema9 < ema20:
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.SELL,
-                    priority=AlertPriority.MEDIUM,
-                    price=close,
-                    timestamp=latest_idx,
-                    message="تقاطع EMA9/20 سلبي - إشارة خروج قصيرة المدى",
-                    indicators={'EMA9': ema9, 'EMA20': ema20}
-                ))
+        alert = AlertCondition(
+            name=f"MACD {cross_type} cross for {symbol}",
+            alert_type=AlertType.MACD_CROSS,
+            symbol=symbol,
+            condition_func=condition_func,
+            severity=AlertSeverity.WARNING,
+            params={'cross_type': cross_type}
+        )
+        return self.add_condition(alert)
 
-            # 4. Volume Spike
-            vol_ratio = indicators['Volume_Ratio'].iloc[-1]
-            if vol_ratio > ALERT_VOLUME_SPIKE:
-                direction = "شرائي" if close > data['Open'].iloc[-1] else "بيعي"
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.BUY if direction == "شرائي" else SignalType.SELL,
-                    priority=AlertPriority.MEDIUM,
-                    price=close,
-                    timestamp=latest_idx,
-                    message=f"ارتفاع حجم تداول استثنائي ({vol_ratio:.1f}x المتوسط) - ضغط {direction}",
-                    indicators={'Volume_Ratio': vol_ratio, 'Volume': int(data['Volume'].iloc[-1])}
-                ))
+    def add_ema_alert(self, symbol: str, fast: int = 9, slow: int = 21, 
+                     cross_type: str = 'bullish') -> bool:
+        """Add EMA crossover alert"""
+        def condition_func(df, params):
+            if df is None or len(df) < 3:
+                return False
+            fast_col = f"ema_{params['fast']}"
+            slow_col = f"ema_{params['slow']}"
 
-            # 5. Bollinger Bands Breakout
-            bb_upper = indicators['BB_Upper'].iloc[-1]
-            bb_lower = indicators['BB_Lower'].iloc[-1]
-            bb_width = indicators['BB_Width'].iloc[-1]
+            if fast_col not in df.columns or slow_col not in df.columns:
+                return False
 
-            if close > bb_upper and bb_width > bb_width * 0.5:  # Not too narrow
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.BUY,
-                    priority=AlertPriority.LOW,
-                    price=close,
-                    timestamp=latest_idx,
-                    message="اختراق Bollinger Bands العلوي - زخم صاعد",
-                    indicators={'BB_Upper': bb_upper, 'BB_Width': bb_width}
-                ))
-            elif close < bb_lower and bb_width > bb_width * 0.5:
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.SELL,
-                    priority=AlertPriority.LOW,
-                    price=close,
-                    timestamp=latest_idx,
-                    message="اختراق Bollinger Bands السفلي - زخم هابط",
-                    indicators={'BB_Lower': bb_lower, 'BB_Width': bb_width}
-                ))
+            latest = df.iloc[-1]
+            prev = df.iloc[-2]
 
-            # 6. ADX Trend Strength Alert
-            adx = indicators['ADX'].iloc[-1]
-            if adx > 30:
-                adx_pos = indicators['ADX_Pos'].iloc[-1]
-                adx_neg = indicators['ADX_Neg'].iloc[-1]
-                trend_dir = "صاعد" if adx_pos > adx_neg else "هابط"
-                alerts.append(TradingAlert(
-                    symbol=symbol,
-                    signal=SignalType.BUY if trend_dir == "صاعد" else SignalType.SELL,
-                    priority=AlertPriority.LOW,
-                    price=close,
-                    timestamp=latest_idx,
-                    message=f"ADX قوي ({adx:.1f}) - اتجاه {trend_dir} مؤكد",
-                    indicators={'ADX': adx, 'DI+': adx_pos, 'DI-': adx_neg}
-                ))
+            if params['cross_type'] == 'bullish':
+                return (prev[fast_col] < prev[slow_col]) and (latest[fast_col] > latest[slow_col])
+            else:
+                return (prev[fast_col] > prev[slow_col]) and (latest[fast_col] < latest[slow_col])
 
-            # Store alerts
-            self.alerts_history.extend(alerts)
+        alert = AlertCondition(
+            name=f"EMA{fast}/{slow} {cross_type} cross for {symbol}",
+            alert_type=AlertType.EMA_CROSS,
+            symbol=symbol,
+            condition_func=condition_func,
+            severity=AlertSeverity.CRITICAL,
+            params={'fast': fast, 'slow': slow, 'cross_type': cross_type}
+        )
+        return self.add_condition(alert)
 
-        except Exception as e:
-            print(f"Error scanning {symbol}: {str(e)}")
+    def add_bb_alert(self, symbol: str, breakout_type: str = 'upper') -> bool:
+        """Add Bollinger Bands breakout alert"""
+        def condition_func(df, params):
+            if df is None or df.empty:
+                return False
+            latest = df.iloc[-1]
 
-        return alerts
+            if params['breakout_type'] == 'upper':
+                return latest['close'] > latest.get('bb_upper', float('inf'))
+            else:
+                return latest['close'] < latest.get('bb_lower', 0)
 
-    def scan_watchlist(self) -> Dict[str, List[TradingAlert]]:
-        """Scan all stocks in watchlist"""
-        results = {}
-        for symbol in self.watchlist:
-            results[symbol] = self.scan_stock(symbol)
-        return results
+        alert = AlertCondition(
+            name=f"BB {breakout_type} breakout for {symbol}",
+            alert_type=AlertType.BB_BREAKOUT,
+            symbol=symbol,
+            condition_func=condition_func,
+            severity=AlertSeverity.WARNING,
+            params={'breakout_type': breakout_type}
+        )
+        return self.add_condition(alert)
 
-    def get_recent_alerts(self, hours: int = 24) -> List[TradingAlert]:
-        """Get alerts from last N hours"""
-        cutoff = datetime.now() - timedelta(hours=hours)
-        return [a for a in self.alerts_history if a.timestamp > cutoff]
+    def add_volume_alert(self, symbol: str, multiplier: float = 2.0) -> bool:
+        """Add volume spike alert"""
+        def condition_func(df, params):
+            if df is None or len(df) < 20:
+                return False
+            latest = df.iloc[-1]
+            return latest.get('volume_ratio', 0) >= params['multiplier']
 
-    def get_alert_summary(self) -> dict:
-        """Get summary of all alerts"""
-        if not self.alerts_history:
-            return {"total": 0, "by_signal": {}, "by_priority": {}}
+        alert = AlertCondition(
+            name=f"Volume spike {multiplier}x for {symbol}",
+            alert_type=AlertType.VOLUME_SPIKE,
+            symbol=symbol,
+            condition_func=condition_func,
+            severity=AlertSeverity.INFO,
+            params={'multiplier': multiplier}
+        )
+        return self.add_condition(alert)
 
-        by_signal = {}
-        by_priority = {}
+    def add_trend_change_alert(self, symbol: str) -> bool:
+        """Add trend change alert"""
+        def condition_func(df, params):
+            if df is None or len(df) < 3:
+                return False
+            latest = df.iloc[-1]
+            prev = df.iloc[-2]
 
-        for alert in self.alerts_history:
-            by_signal[alert.signal.value] = by_signal.get(alert.signal.value, 0) + 1
-            by_priority[alert.priority.value] = by_priority.get(alert.priority.value, 0) + 1
+            current_trend = latest.get('trend', 'Neutral')
+            prev_trend = prev.get('trend', 'Neutral')
 
-        return {
-            "total": len(self.alerts_history),
-            "by_signal": by_signal,
-            "by_priority": by_priority
+            return current_trend != prev_trend and current_trend != 'Neutral'
+
+        alert = AlertCondition(
+            name=f"Trend change for {symbol}",
+            alert_type=AlertType.TREND_CHANGE,
+            symbol=symbol,
+            condition_func=condition_func,
+            severity=AlertSeverity.WARNING,
+            params={}
+        )
+        return self.add_condition(alert)
+
+    def check_all(self, symbol: str, df: pd.DataFrame) -> List[Dict]:
+        """Check all conditions for a symbol"""
+        triggered = []
+
+        with self._lock:
+            conditions = [c for c in self.conditions if c.symbol == symbol and c.enabled]
+
+        for condition in conditions:
+            # Check cooldown
+            if condition.last_triggered:
+                cooldown = timedelta(minutes=condition.cooldown_minutes)
+                if datetime.now() - condition.last_triggered < cooldown:
+                    continue
+
+            try:
+                if condition.condition_func(df, condition.params):
+                    latest = df.iloc[-1]
+
+                    alert_data = {
+                        'symbol': symbol,
+                        'alert_type': condition.alert_type.value,
+                        'name': condition.name,
+                        'severity': condition.severity.value,
+                        'price': latest['close'],
+                        'timestamp': datetime.now().isoformat(),
+                        'message': self._generate_message(condition, latest),
+                        'condition': condition.name
+                    }
+
+                    triggered.append(alert_data)
+
+                    # Update condition state
+                    condition.last_triggered = datetime.now()
+                    condition.trigger_count += 1
+
+                    # Store in database
+                    local_storage.add_alert(
+                        symbol=symbol,
+                        alert_type=condition.alert_type.value,
+                        condition=condition.name,
+                        price=latest['close'],
+                        message=alert_data['message'],
+                        severity=condition.severity.value
+                    )
+
+                    # Send notifications
+                    self._notify(alert_data)
+
+            except Exception as e:
+                print(f"Error checking condition {condition.name}: {e}")
+
+        return triggered
+
+    def _generate_message(self, condition: AlertCondition, latest: pd.Series) -> str:
+        """Generate human-readable alert message"""
+        price = latest['close']
+
+        messages = {
+            AlertType.PRICE_TARGET: f"🎯 Price target reached: {price:.2f} EGP",
+            AlertType.STOP_LOSS: f"🛑 Stop loss triggered at {price:.2f} EGP",
+            AlertType.RSI_OVERSOLD: f"📉 RSI oversold: {latest.get('rsi', 0):.1f}",
+            AlertType.RSI_OVERBOUGHT: f"📈 RSI overbought: {latest.get('rsi', 0):.1f}",
+            AlertType.MACD_CROSS: f"⚡ MACD crossover detected at {price:.2f} EGP",
+            AlertType.EMA_CROSS: f"📊 EMA crossover at {price:.2f} EGP",
+            AlertType.BB_BREAKOUT: f"💥 Bollinger Bands breakout at {price:.2f} EGP",
+            AlertType.VOLUME_SPIKE: f"📢 Volume spike: {latest.get('volume_ratio', 0):.1f}x average",
+            AlertType.TREND_CHANGE: f"🔄 Trend changed to {latest.get('trend', 'Unknown')}",
+            AlertType.PATTERN_DETECTED: f"🔍 Pattern detected at {price:.2f} EGP",
+            AlertType.SUPPORT_RESISTANCE: f"⚠️ Support/Resistance test at {price:.2f} EGP",
+            AlertType.CUSTOM: f"🔔 Alert: {condition.name} at {price:.2f} EGP"
         }
+
+        return messages.get(condition.alert_type, f"Alert: {condition.name}")
+
+    def _notify(self, alert_data: Dict):
+        """Send notifications through all registered channels"""
+        for callback in self.notification_callbacks:
+            try:
+                callback(alert_data)
+            except Exception as e:
+                print(f"Notification error: {e}")
+
+    def add_notification_callback(self, callback: Callable):
+        """Add notification channel"""
+        self.notification_callbacks.append(callback)
+
+    def remove_condition(self, name: str) -> bool:
+        """Remove alert condition by name"""
+        with self._lock:
+            self.conditions = [c for c in self.conditions if c.name != name]
+        return True
+
+    def get_conditions(self, symbol: Optional[str] = None) -> List[AlertCondition]:
+        """Get all conditions or filter by symbol"""
+        with self._lock:
+            if symbol:
+                return [c for c in self.conditions if c.symbol == symbol]
+            return self.conditions.copy()
+
+    def enable_condition(self, name: str) -> bool:
+        """Enable alert condition"""
+        with self._lock:
+            for c in self.conditions:
+                if c.name == name:
+                    c.enabled = True
+                    return True
+        return False
+
+    def disable_condition(self, name: str) -> bool:
+        """Disable alert condition"""
+        with self._lock:
+            for c in self.conditions:
+                if c.name == name:
+                    c.enabled = False
+                    return True
+        return False
+
+    def start_monitoring(self, data_fetcher: Callable, interval: int = 60):
+        """Start background monitoring thread"""
+        self.running = True
+
+        def monitor():
+            while self.running:
+                try:
+                    symbols = set(c.symbol for c in self.conditions if c.enabled)
+                    for symbol in symbols:
+                        df = data_fetcher(symbol)
+                        if df is not None:
+                            self.check_all(symbol, df)
+                    time.sleep(interval)
+                except Exception as e:
+                    print(f"Monitoring error: {e}")
+                    time.sleep(interval)
+
+        self._thread = threading.Thread(target=monitor, daemon=True)
+        self._thread.start()
+        print(f"🔔 Alert monitoring started ({interval}s interval)")
+
+    def stop_monitoring(self):
+        """Stop background monitoring"""
+        self.running = False
+        if self._thread:
+            self._thread.join(timeout=5)
+        print("🔕 Alert monitoring stopped")
+
+
+# Global instance
+alert_engine = AlertEngine()

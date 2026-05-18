@@ -1,1 +1,3 @@
-# EGX Pro Terminal - Documentation Module
+"""
+EGX Pro Terminal - Tests Package
+"""
